@@ -1,0 +1,15 @@
+# composer dependencies
+vendor/
+
+# environment
+.env
+
+# vs code settings folder
+.vscode/
+
+# os system files
+Thumbs.db
+
+# xampp / apache logs & php session files
+*.log
+/tmp/
