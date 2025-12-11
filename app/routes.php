@@ -39,4 +39,16 @@ if ($page === 'logout' && $method === 'GET') {
     exit();
 }
 
+if($page === 'register' && $method === 'GET'){
+    $controller = new AuthController();
+    $controller->showRegisterForm();
+    exit();
+}
+
+if ($page === 'register' && $method === 'POST') {
+    $controller = new AuthController();
+    $controller->processRegister();
+    exit();
+}
+
 header('Location: index.php?page=login');
