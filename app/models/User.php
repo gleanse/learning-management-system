@@ -1,6 +1,6 @@
 <?php
 
-require_once __DIR__ . '/../config/db_connection.php';
+require_once __DIR__ . '/../../config/db_connection.php';
 
 class User
 {
@@ -24,5 +24,3 @@ class User
         return false;
     }
 }
-
-?>

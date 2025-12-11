@@ -11,27 +11,38 @@ class AuthController
         $this->userModel = new User();
     }
 
-    public function login()
+    public function showLoginForm()
     {
-        if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-            $email = $_POST['email'] ?? '';
-            $password = $_POST['password'] ?? '';
+        $error = null;
+        $email = '';
 
-            $user = $this->userModel->authenticate($email, $password);
+        require __DIR__ . '/../views/login.php';
+    }
 
-            if ($user) {
-                session_start();
-                $_SESSION['user_id'] = $user['id'];
-                $_SESSION['user_email'] = $user['email'];
-                $_SESSION['user_type'] = $user['user_type'];
-                $_SESSION['user_name'] = $user['name'];
+    public function processLogin()
+    {
+        $email = $_POST['email'] ?? '';
+        $password = $_POST['password'] ?? '';
 
-                header('Location: dashboard.php');
-                exit();
-            } else {
-                return "Invalid email or password";
-            }
+        $user = $this->userModel->authenticate($email, $password);
+
+        if ($user) {
+            $_SESSION['user_id'] = $user['id'];
+            $_SESSION['user_email'] = $user['email'];
+            $_SESSION['user_type'] = $user['user_type'];
+            $_SESSION['user_name'] = $user['name'];
+            header('Location: index.php?page=dashboard');
+            exit();
+        } else {
+            $error = 'Invalid email or password';
+            require __DIR__ . '/../views/login.php';
         }
-        return null;
+    }
+
+    public function logout()
+    {
+        session_destroy();
+        header('Location: index.php?page=login');
+        exit();
     }
 }

@@ -1,26 +1,11 @@
-<?php
-
-require_once __DIR__ . '/../controllers/AuthController.php';
-
-$controller = new AuthController();
-$error = null;
-$email = '';
-
-if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    $email = $_POST['email'] ?? '';
-    $error = $controller->login();
-}
-
-?>
-
 <!DOCTYPE html>
 <html lang="en">
 
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <link rel="stylesheet" href="../../public/bootstrap/css/bootstrap.min.css">
-    <link rel="stylesheet" href="../../public/css/style.css">
+    <link rel="stylesheet" href="bootstrap/css/bootstrap.min.css">
+    <link rel="stylesheet" href="css/style.css">
     <title>Sign In</title>
 </head>
 
@@ -40,7 +25,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                             </div>
                         <?php endif; ?>
 
-                        <form action="login.php" method="POST">
+                        <form action="index.php?page=login" method="POST">
                             <div class="mb-3">
                                 <label for="email" class="form-label">Email</label>
                                 <input type="email" class="form-control" id="email" name="email"
