@@ -14,27 +14,28 @@ class AuthController
     public function showLoginForm()
     {
         $error = null;
-        $email = '';
+        $username_or_email = '';
 
         require __DIR__ . '/../views/login.php';
     }
 
     public function processLogin()
     {
-        $email = $_POST['email'] ?? '';
+        $username_or_email = $_POST['username_or_email'] ?? '';
         $password = $_POST['password'] ?? '';
 
-        $user = $this->userModel->authenticate($email, $password);
+        $user = $this->userModel->authenticate($username_or_email, $password);
 
         if ($user) {
             $_SESSION['user_id'] = $user['id'];
+            $_SESSION['user_username'] = $user['username'];
             $_SESSION['user_email'] = $user['email'];
-            $_SESSION['user_type'] = $user['user_type'];
-            $_SESSION['user_name'] = $user['name'];
+            $_SESSION['user_role'] = $user['role'];
+            $_SESSION['user_firstname'] = $user['first_name'];
             header('Location: index.php?page=dashboard');
             exit();
         } else {
-            $error = 'Invalid email or password';
+            $error = 'Invalid login credentials';
             require __DIR__ . '/../views/login.php';
         }
     }
@@ -54,38 +55,47 @@ class AuthController
 
     public function processRegister()
     {
-        $name = trim($_POST['name'] ?? '');
+        $first_name = trim($_POST['first_name'] ?? '');
+        $middle_name = trim($_POST['middle_name'] ?? '');
+        $last_name = trim($_POST['last_name'] ?? '');
+        $username = trim($_POST['username'] ?? '');
         $email = trim($_POST['email'] ?? '');
         $password = $_POST['password'] ?? '';
-        $userType = $_POST['user_type'] ?? null;
+        $role = $_POST['role'] ?? '';
 
-        if ($name === '' || $email === '' || $password === '' || $userType === null) {
+        if ($first_name === '' || $last_name === '' || $username === '' || $password === '' || $role === null) {
             $error = 'All fields are required.';
             require __DIR__ . '/../views/register.php';
             return;
         }
 
-        if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
+        if ($email !== '' && !filter_var($email, FILTER_VALIDATE_EMAIL)) {
             $error = 'Invalid email format.';
             require __DIR__ . '/../views/register.php';
             return;
         }
 
-        $userType = (int)$userType;
+        $allowedRoles = ['student', 'teacher', 'admin', 'superadmin'];
         // validate if the usertype range is valid
-        if ($userType < 1 || $userType > 4) {
+        if (!in_array($role, $allowedRoles, true)) {
             $error = 'Please select a valid user type.';
             require __DIR__ . '/../views/register.php';
             return;
         }
 
-        $result = $this->userModel->register($name, $email, $password, $userType);
+        $result = $this->userModel->register($first_name, $middle_name, $last_name, $username, $email, $password, $role);
 
         if ($result === true) {
             header('Location: index.php?page=login&registered=1');
             exit();
         }
-
+        
+        if ($result === 'username_exists') {
+            $error = 'Username already exists. Please use different username.';
+        } else {
+            $error = 'Registration failed. Please try again.';
+        }
+        
         if ($result === 'email_exists') {
             $error = 'Email already exists. Please use different email.';
         } else {
