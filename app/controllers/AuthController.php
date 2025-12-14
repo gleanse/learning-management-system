@@ -47,61 +47,92 @@ class AuthController
         exit();
     }
 
-    public function showRegisterForm(){
+    public function showRegisterForm()
+    {
         $error = null;
-
+        
         require __DIR__ . '/../views/register.php';
     }
 
     public function processRegister()
     {
-        $first_name = trim($_POST['first_name'] ?? '');
-        $middle_name = trim($_POST['middle_name'] ?? '');
-        $last_name = trim($_POST['last_name'] ?? '');
-        $username = trim($_POST['username'] ?? '');
-        $email = trim($_POST['email'] ?? '');
-        $password = $_POST['password'] ?? '';
-        $role = $_POST['role'] ?? '';
-
-        if ($first_name === '' || $last_name === '' || $username === '' || $password === '' || $role === null) {
-            $error = 'All fields are required.';
-            require __DIR__ . '/../views/register.php';
-            return;
-        }
-
-        if ($email !== '' && !filter_var($email, FILTER_VALIDATE_EMAIL)) {
-            $error = 'Invalid email format.';
-            require __DIR__ . '/../views/register.php';
-            return;
-        }
-
-        $allowedRoles = ['student', 'teacher', 'admin', 'superadmin'];
-        // validate if the usertype range is valid
-        if (!in_array($role, $allowedRoles, true)) {
-            $error = 'Please select a valid user type.';
-            require __DIR__ . '/../views/register.php';
-            return;
-        }
-
-        $result = $this->userModel->register($first_name, $middle_name, $last_name, $username, $email, $password, $role);
-
-        if ($result === true) {
-            header('Location: index.php?page=login&registered=1');
+        // check if superadmin is logged in
+        if (!isset($_SESSION['user_id'])) {
+            header('Location: index.php?page=login');
             exit();
         }
         
-        if ($result === 'username_exists') {
-            $error = 'Username already exists. Please use different username.';
-        } else {
-            $error = 'Registration failed. Please try again.';
+        $user_data = [
+            'username' => trim($_POST['username'] ?? ''),
+            'email' => !empty(trim($_POST['email'])) ? trim($_POST['email']) : null,
+            'password' => $_POST['password'] ?? '',
+            'role' => $_POST['role'] ?? '',
+            'first_name' => trim($_POST['first_name'] ?? ''),
+            'middle_name' => trim($_POST['middle_name'] ?? ''),
+            'last_name' => trim($_POST['last_name'] ?? ''),
+            'created_by' => $_SESSION['user_id']
+        ];
+        
+        // validate required fields
+        $errors = [];
+        if (empty($user_data['first_name'])) {
+            $errors['first_name'] = 'First name is required.';
+        }
+    
+        if (empty($user_data['last_name'])) {
+            $errors['last_name'] = 'Last name is required.';
+        }
+    
+        if (empty($user_data['username'])) {
+            $errors['username'] = 'Username is required.';
+        }
+    
+        if (empty($user_data['password'])) {
+            $errors['password'] = 'Password is required.';
+        }
+    
+        if (empty($user_data['role'])) {
+            $errors['role'] = 'Role is required.';
+        }
+    
+        // validate email format if provided
+        if ($user_data['email'] !== null && !filter_var($user_data['email'], FILTER_VALIDATE_EMAIL)) {
+            $errors['email'] = 'Invalid email format.';
+        }
+    
+        // validate if the role is valid
+        $allowed_roles = ['student', 'teacher', 'admin', 'superadmin'];
+        if (!empty($user_data['role']) && !in_array($user_data['role'], $allowed_roles, true)) {
+            $errors['role'] = 'Please select a valid user role.';
+        }
+    
+        // if there are validation errors, show form with errors
+        if (!empty($errors)) {
+            require __DIR__ . '/../views/register.php';
+            return;
         }
         
-        if ($result === 'email_exists') {
-            $error = 'Email already exists. Please use different email.';
+        $result = $this->userModel->register($user_data);
+        
+        if (is_array($result)) {
+            if (in_array('username_exists', $result)) {
+                $errors['username'] = 'Username already exists.';
+            }
+        
+            if (in_array('email_exists', $result)) {
+                $errors['email'] = 'Email already exists.';
+            }
+        
+            require __DIR__ . '/../views/register.php';
+            return;
+        } elseif ($result) {
+            // success register
+            header('Location: index.php?page=users');
+            exit();
         } else {
-            $error = 'Registration failed. Please try again.';
+            $errors['general'] = 'Registration failed. Please try again.';
+            require __DIR__ . '/../views/register.php';
         }
 
-        require __DIR__ . '/../views/register.php';
     }
 }
