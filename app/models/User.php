@@ -11,10 +11,10 @@ class User
         $this->connection = $connection;
     }
 
-    public function authenticate($email, $password)
+    public function authenticate($username_or_email, $password)
     {
-        $stmt = $this->connection->prepare("SELECT * FROM users WHERE email = ?");
-        $stmt->execute([$email]);
+        $stmt = $this->connection->prepare("SELECT * FROM users WHERE username = ? OR email = ?");
+        $stmt->execute([$username_or_email, $username_or_email]);
         $user = $stmt->fetch();
 
         if ($user && password_verify($password, $user['password'])) {
@@ -24,19 +24,49 @@ class User
         return false;
     }
 
-    public function register($name, $email, $password, $user_type)
+    public function register(array $user_data)
     {
-        $checkStmt = $this->connection->prepare("SELECT id FROM users WHERE email = ?");
-        $checkStmt->execute([$email]);
-
-        // checking if email that about to register already exist before attempting to insert
-        if ($checkStmt->fetch()){
-            return 'email_exists';
+        $errors = [];
+        
+        $check_username = $this->connection->prepare("SELECT id FROM users WHERE username = ?");
+        $check_username->execute([$user_data['username']]);
+        
+        if ($check_username->fetch()) {
+            $errors[] = 'username_exists';
+        }
+        
+        if (!empty($user_data['email'])) {
+            $check_email = $this->connection->prepare("SELECT id FROM users WHERE email = ?");
+            $check_email->execute([$user_data['email']]);
+            
+            if ($check_email->fetch()){
+                $errors[] = 'email_exists';
+            }
+        }
+        
+        // return if theres any validation error
+        if (!empty($errors)) {
+            return $errors;
         }
 
-        $stmt = $this->connection->prepare("INSERT INTO users (name, email, password, user_type) VALUES (?, ?, ?, ?)");
-        $hash = password_hash($password, PASSWORD_DEFAULT);
-
-        return $stmt->execute([$name, $email, $hash, $user_type]);
+        $stmt = $this->connection->prepare("
+            INSERT INTO users (username, email, password, role, first_name, middle_name, last_name, created_by)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?)");
+        
+        // if insert execution succeed return the id of created user
+        if ($stmt->execute([
+            $user_data['username'],
+            $user_data['email'],
+            password_hash($user_data['password'], PASSWORD_DEFAULT),
+            $user_data['role'],
+            $user_data['first_name'],
+            $user_data['middle_name'],
+            $user_data['last_name'],
+            $user_data['created_by']
+        ])) {
+            return $this->connection->lastInsertId();
+        }
+        
+        return false;
     }
 }
