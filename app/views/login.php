@@ -19,23 +19,47 @@
                     <div class="card-body p-4">
                         <h4 class="mb-4 text-center">Sign In</h4>
 
-                        <?php if ($error): ?>
+                        <?php if (isset($errors['general'])): ?>
                             <div class="alert alert-danger" role="alert">
-                                <?= $error ?>
+                                <?= htmlspecialchars($errors['general']) ?>
                             </div>
                         <?php endif; ?>
 
                         <form action="index.php?page=login" method="POST">
                             <div class="mb-3">
-                                <label for="email" class="form-label">Email</label>
-                                <input type="email" class="form-control" id="email" name="email"
-                                    value="<?= htmlspecialchars($email) ?>"
-                                    placeholder="your@email.com" required autofocus>
+                                <label for="username_or_email" class="form-label">Username or Email</label>
+                                <input 
+                                    type="text" 
+                                    class="form-control <?= isset($errors['username_or_email']) ? 'is-invalid' : '' ?>" 
+                                    id="username_or_email" 
+                                    name="username_or_email"
+                                    value="<?= htmlspecialchars($_POST['username_or_email'] ?? '') ?>"
+                                    placeholder="Enter username or email" 
+                                    required 
+                                    autofocus
+                                >
+                                <?php if (isset($errors['username_or_email'])): ?>
+                                    <div class="invalid-feedback">
+                                    <?= htmlspecialchars($errors['username_or_email']) ?>
+                                    </div>
+                                <?php endif; ?>
                             </div>
 
                             <div class="mb-3">
                                 <label for="password" class="form-label">Password</label>
-                                <input type="password" class="form-control" id="password" name="password" placeholder="Enter your password" required>
+                                <input 
+                                    type="password" 
+                                    class="form-control <?= isset($errors['password']) ? 'is-invalid' : '' ?>" 
+                                    id="password" 
+                                    name="password" 
+                                    placeholder="Enter your password" 
+                                    required
+                                >
+                                <?php if (isset($errors['password'])): ?>
+                                    <div class="invalid-feedback">
+                                        <?= htmlspecialchars($errors['password']) ?>
+                                    </div>
+                                <?php endif; ?>
                             </div>
 
                             <div class="d-grid mt-4">

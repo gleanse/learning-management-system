@@ -13,7 +13,7 @@ class AuthController
 
     public function showLoginForm()
     {
-        $error = null;
+        $errors = [];
         $username_or_email = '';
 
         require __DIR__ . '/../views/login.php';
@@ -21,9 +21,26 @@ class AuthController
 
     public function processLogin()
     {
-        $username_or_email = $_POST['username_or_email'] ?? '';
+        $username_or_email = trim($_POST['username_or_email'] ?? '');
         $password = $_POST['password'] ?? '';
-
+        
+        $errors = [];
+        
+        if (empty($username_or_email)) {
+            $errors['username_or_email'] = 'Please enter your username or email.';
+        }
+        
+        if (empty($password)) {
+            $errors['password'] = 'Please enter your password.';
+        }
+        
+        if (!empty($errors)) {
+            require __DIR__ . '/../views/login.php';
+            return;
+        }
+        
+        
+        
         $user = $this->userModel->authenticate($username_or_email, $password);
 
         if ($user) {
@@ -35,7 +52,11 @@ class AuthController
             header('Location: index.php?page=dashboard');
             exit();
         } else {
-            $error = 'Invalid login credentials';
+            if (filter_var($username_or_email,FILTER_VALIDATE_EMAIL)) {
+                $errors['general'] = 'Invalid email or password.';
+            } else {
+                $errors['general'] = 'Invalid username or password.';
+            }
             require __DIR__ . '/../views/login.php';
         }
     }
@@ -49,7 +70,7 @@ class AuthController
 
     public function showRegisterForm()
     {
-        $error = null;
+        $errors = [];
         
         require __DIR__ . '/../views/register.php';
     }
