@@ -13,11 +13,11 @@
         <div class="card">
             <div class="card-body">
                 <div class="d-flex justify-content-between align-items-center mb-3">
-                    <h2>Welcome, <?= htmlspecialchars($userName) ?>!</h2>
+                    <h2>Welcome, <?= htmlspecialchars($_SESSION['user_username']) ?>!</h2>
                     <a href="index.php?page=logout" class="btn btn-danger btn-sm">Logout</a>
                 </div>
-                <p>Email: <?= htmlspecialchars($userEmail) ?></p>
-                <p>User Type: <span class="badge bg-primary"><?= htmlspecialchars($userTypeName) ?></span></p>
+                <p>Email: <?= htmlspecialchars($_SESSION['user_email']) ?></p>
+                <p>User Account Role: <span class="badge bg-primary"><?= htmlspecialchars($_SESSION['user_role']) ?></span></p>
             </div>
         </div>
     </div>
