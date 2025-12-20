@@ -1,10 +1,14 @@
 <?php
+require_once __DIR__ . '/../vendor/autoload.php';
 
-// hardcoded for now, use env for production later
-$host = "localhost";
-$db = "lmsDB";
-$user = "root";
-$pass = "";
+// for environment variables using vlucas/phpdotenv via composer
+$dotenv = Dotenv\Dotenv::createImmutable(__DIR__ . '/..');
+$dotenv->load();
+
+$host = $_ENV['DB_HOST'];
+$db = $_ENV['DB_NAME'];
+$user = $_ENV['DB_USER'];
+$pass = $_ENV['DB_PASS'];
 $charset = "utf8mb4";
 
 // data source connection string

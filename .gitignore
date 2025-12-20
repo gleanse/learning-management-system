@@ -1,5 +1,7 @@
 # composer dependencies
 vendor/
+composer.json
+composer.lock
 
 # environment
 .env
