@@ -39,11 +39,12 @@ class AuthController
             return;
         }
         
-        
-        
         $user = $this->userModel->authenticate($username_or_email, $password);
 
         if ($user) {
+            // for session fixation security
+            session_regenerate_id(true);
+            
             $_SESSION['user_id'] = $user['id'];
             $_SESSION['user_username'] = $user['username'];
             $_SESSION['user_email'] = $user['email'];
