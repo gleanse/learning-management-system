@@ -26,6 +26,10 @@
                         <?php endif; ?>
 
                         <form action="index.php?page=login" method="POST">
+                            
+                            <!-- token gets compared on server side csrf token to prevent fake form submissions -->
+                            <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($_SESSION['csrf_token'] ?? '') ?>">
+                            
                             <div class="mb-3">
                                 <label for="username_or_email" class="form-label">Username or Email</label>
                                 <input 

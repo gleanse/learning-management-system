@@ -13,6 +13,11 @@ class AuthController
 
     public function showLoginForm()
     {
+        // generate a csrf token to prevent csrf attacks
+        if (empty($_SESSION['csrf_token'])) {
+            $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
+        }
+        
         $errors = [];
         $username_or_email = '';
 
@@ -21,6 +26,16 @@ class AuthController
 
     public function processLogin()
     {
+        // check if csrf token exists stop script if missing
+        if (!isset($_POST['csrf_token']) || !isset($_SESSION['csrf_token'])) {
+            die('CSRF token missing. Possible attack detected.');
+        }
+        
+        // compare csrf token from session and form submission
+        if (!hash_equals($_SESSION['csrf_token'], $_POST['csrf_token'])) {
+            die('CSRF token validation failed. Possible attack detected.');
+        }
+        
         $username_or_email = trim($_POST['username_or_email'] ?? '');
         $password = $_POST['password'] ?? '';
         
@@ -50,6 +65,11 @@ class AuthController
             $_SESSION['user_email'] = $user['email'];
             $_SESSION['user_role'] = $user['role'];
             $_SESSION['user_firstname'] = $user['first_name'];
+            $_SESSION['user_middlename'] = $user['middle_name'];
+            $_SESSION['user_lastname'] = $user['last_name'];
+            // regenerate new csrf token after login
+            $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
+            
             header('Location: index.php?page=dashboard');
             exit();
         } else {
