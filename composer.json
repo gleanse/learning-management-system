@@ -1,0 +1,7 @@
+{
+    "name": "glen/learning-management-system",
+    "description": "Learning Management System for school",
+    "require": {
+        "vlucas/phpdotenv": "^5.6"
+    }
+}

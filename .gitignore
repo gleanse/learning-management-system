@@ -1,17 +1,22 @@
 # composer dependencies
 vendor/
-composer.json
 composer.lock
 
 # environment
 .env
+.env.local
+.env.*.local
 
 # vs code settings folder
 .vscode/
 
 # os system files
 Thumbs.db
+Desktop.ini
+.DS_Store
+
+# logs files
+/tmp/*.log
 
 # xampp / apache logs & php session files
-*.log
 /tmp/
