@@ -5,6 +5,7 @@ require_once __DIR__ . '/../../config/db_connection.php';
 class User
 {
     private $connection;
+    
     public function __construct()
     {
         global $connection;
