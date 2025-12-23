@@ -2,32 +2,32 @@
 
 class LoginLockout
 {
-    
+
     private $connection;
-    
+
     public function __construct()
     {
         global $connection;
         $this->connection = $connection;
     }
-    
+
     public function checkLockout($ip)
     {
         $stmt = $this->connection->prepare("SELECT * FROM login_lockouts WHERE ip_address = ? AND locked_until > NOW()");
         $stmt->execute([$ip]);
         $result = $stmt->fetch();
-        
+
         if ($result) {
             return [
-                'locked'=> true,
-                'locked_until'=> $result['locked_until'],
-                'fail_count'=> $result['fail_count'],
+                'locked' => true,
+                'locked_until' => $result['locked_until'],
+                'fail_count' => $result['fail_count'],
             ];
         } else {
-            return ['locked'=>false];
+            return ['locked' => false];
         }
     }
-    
+
     public function recordFail($ip)
     {
         $stmt = $this->connection->prepare("INSERT INTO login_lockouts (
@@ -51,11 +51,10 @@ class LoginLockout
             ");
         $stmt->execute([$ip, 1]);
     }
-    
+
     public function clearLockout($ip)
     {
         $stmt = $this->connection->prepare("DELETE FROM login_lockouts WHERE ip_address = ?");
         $stmt->execute([$ip]);
     }
-    
 }

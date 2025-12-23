@@ -26,39 +26,37 @@
                         <?php endif; ?>
 
                         <form action="index.php?page=login" method="POST">
-                            
+
                             <!-- token gets compared on server side csrf token to prevent fake form submissions -->
                             <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($_SESSION['csrf_token'] ?? '') ?>">
-                            
+
                             <div class="mb-3">
                                 <label for="username_or_email" class="form-label">Username or Email</label>
-                                <input 
-                                    type="text" 
-                                    class="form-control <?= isset($errors['username_or_email']) ? 'is-invalid' : '' ?>" 
-                                    id="username_or_email" 
+                                <input
+                                    type="text"
+                                    class="form-control <?= isset($errors['username_or_email']) ? 'is-invalid' : '' ?>"
+                                    id="username_or_email"
                                     name="username_or_email"
                                     value="<?= htmlspecialchars($_POST['username_or_email'] ?? '') ?>"
-                                    placeholder="Enter username or email" 
-                                    required 
-                                    autofocus
-                                >
+                                    placeholder="Enter username or email"
+                                    required
+                                    autofocus>
                                 <?php if (isset($errors['username_or_email'])): ?>
                                     <div class="invalid-feedback">
-                                    <?= htmlspecialchars($errors['username_or_email']) ?>
+                                        <?= htmlspecialchars($errors['username_or_email']) ?>
                                     </div>
                                 <?php endif; ?>
                             </div>
 
                             <div class="mb-3">
                                 <label for="password" class="form-label">Password</label>
-                                <input 
-                                    type="password" 
-                                    class="form-control <?= isset($errors['password']) ? 'is-invalid' : '' ?>" 
-                                    id="password" 
-                                    name="password" 
-                                    placeholder="Enter your password" 
-                                    required
-                                >
+                                <input
+                                    type="password"
+                                    class="form-control <?= isset($errors['password']) ? 'is-invalid' : '' ?>"
+                                    id="password"
+                                    name="password"
+                                    placeholder="Enter your password"
+                                    required>
                                 <?php if (isset($errors['password'])): ?>
                                     <div class="invalid-feedback">
                                         <?= htmlspecialchars($errors['password']) ?>

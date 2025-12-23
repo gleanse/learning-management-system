@@ -5,7 +5,7 @@ require_once __DIR__ . '/../../config/db_connection.php';
 class User
 {
     private $connection;
-    
+
     public function __construct()
     {
         global $connection;
@@ -28,23 +28,23 @@ class User
     public function register(array $user_data)
     {
         $errors = [];
-        
+
         $check_username = $this->connection->prepare("SELECT id FROM users WHERE username = ?");
         $check_username->execute([$user_data['username']]);
-        
+
         if ($check_username->fetch()) {
             $errors[] = 'username_exists';
         }
-        
+
         if (!empty($user_data['email'])) {
             $check_email = $this->connection->prepare("SELECT id FROM users WHERE email = ?");
             $check_email->execute([$user_data['email']]);
-            
-            if ($check_email->fetch()){
+
+            if ($check_email->fetch()) {
                 $errors[] = 'email_exists';
             }
         }
-        
+
         // return if theres any validation error
         if (!empty($errors)) {
             return $errors;
@@ -53,7 +53,7 @@ class User
         $stmt = $this->connection->prepare("
             INSERT INTO users (username, email, password, role, first_name, middle_name, last_name, created_by)
             VALUES (?, ?, ?, ?, ?, ?, ?, ?)");
-        
+
         // if insert execution succeed return the id of created user
         if ($stmt->execute([
             $user_data['username'],
@@ -67,7 +67,7 @@ class User
         ])) {
             return $this->connection->lastInsertId();
         }
-        
+
         return false;
     }
 }
