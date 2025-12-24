@@ -13,7 +13,12 @@ class LoginLockout
 
     public function checkLockout($ip)
     {
-        $stmt = $this->connection->prepare("SELECT * FROM login_lockouts WHERE ip_address = ? AND locked_until > NOW()");
+        $stmt = $this->connection->prepare("
+            SELECT *, 
+            TIMESTAMPDIFF(SECOND, NOW(), locked_until) as seconds_remaining 
+            FROM login_lockouts 
+            WHERE ip_address = ? AND locked_until > NOW()
+        ");
         $stmt->execute([$ip]);
         $result = $stmt->fetch();
 
@@ -22,6 +27,7 @@ class LoginLockout
                 'locked' => true,
                 'locked_until' => $result['locked_until'],
                 'fail_count' => $result['fail_count'],
+                'seconds_remaining' => $result['seconds_remaining'],
             ];
         } else {
             return ['locked' => false];
@@ -34,7 +40,7 @@ class LoginLockout
                 ip_address,
                 fail_count,
                 locked_until
-            ) VALUES (?, ?, NULL) 
+            ) VALUES (?, 1, NULL) 
             ON DUPLICATE KEY UPDATE 
                 fail_count = fail_count + 1,
                 locked_until = CASE
@@ -45,16 +51,25 @@ class LoginLockout
                     WHEN fail_count + 1 >= 21 THEN DATE_ADD(NOW(), INTERVAL 30 MINUTE)
                     WHEN fail_count + 1 >= 16 THEN DATE_ADD(NOW(), INTERVAL 15 MINUTE)
                     WHEN fail_count + 1 >= 11 THEN DATE_ADD(NOW(), INTERVAL 5 MINUTE)
-                    WHEN fail_count + 1 >= 6 THEN DATE_ADD(NOW(), INTERVAL 1 MINUTE)
+                    WHEN fail_count + 1 >= 6 THEN DATE_ADD(NOW(), INTERVAL 3 MINUTE)
                     ELSE NULL
                 END
             ");
-        $stmt->execute([$ip, 1]);
+        $stmt->execute([$ip]);
     }
 
     public function clearLockout($ip)
     {
         $stmt = $this->connection->prepare("DELETE FROM login_lockouts WHERE ip_address = ?");
         $stmt->execute([$ip]);
+    }
+    
+    public function getFailCount($ip)
+    {
+        $stmt = $this->connection->prepare("SELECT fail_count FROM login_lockouts WHERE ip_address = ?");
+        $stmt->execute([$ip]);
+        $result = $stmt->fetch();
+        
+        return $result ? $result['fail_count'] : 0;
     }
 }
