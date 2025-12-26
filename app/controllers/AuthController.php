@@ -1,14 +1,18 @@
 <?php
 
 require_once __DIR__ . '/../models/User.php';
+require_once __DIR__ . '/../models/LoginLockout.php';
+require_once __DIR__ . '/../helpers/auth_helper.php';
 
 class AuthController
 {
-    private $userModel;
+    private $user_model;
+    private $lockout_model;
 
     public function __construct()
     {
-        $this->userModel = new User();
+        $this->user_model = new User();
+        $this->lockout_model = new LoginLockout();
     }
 
     public function showLoginForm()
@@ -26,6 +30,24 @@ class AuthController
 
     public function processLogin()
     {
+        $user_ip = getUserIp();
+        $ip_status = $this->lockout_model->checkLockout($user_ip);
+        
+        if ($ip_status['locked']) {
+            $seconds = $ip_status['seconds_remaining'];
+            $minutes = ceil($seconds / 60);
+            
+            if ($minutes < 1) {
+                $errors['general'] = "Too many failed attempts. Try again in a few seconds.";
+            } else {
+                $plural = $minutes > 1 ? 's' : '';
+                $errors['general'] = "Too many failed attempts. Try again in {$minutes} minute{$plural}.";
+            }
+    
+            require __DIR__ . '/../views/login.php';
+            return;
+        }
+
         // check if csrf token exists stop script if missing
         if (!isset($_POST['csrf_token']) || !isset($_SESSION['csrf_token'])) {
             die('CSRF token missing. Possible attack detected.');
@@ -54,9 +76,11 @@ class AuthController
             return;
         }
 
-        $user = $this->userModel->authenticate($username_or_email, $password);
+        $user = $this->user_model->authenticate($username_or_email, $password);
 
         if ($user) {
+            // on sucessful login
+            $this->lockout_model->clearLockout($user_ip);
             // for session fixation security
             session_regenerate_id(true);
 
@@ -73,10 +97,20 @@ class AuthController
             header('Location: index.php?page=dashboard');
             exit();
         } else {
-            if (filter_var($username_or_email, FILTER_VALIDATE_EMAIL)) {
-                $errors['general'] = 'Invalid email or password.';
+            $this->lockout_model->recordFail($user_ip);
+            // get fail count and show warning if close to lockout
+            $fail_count = $this->lockout_model->getFailCount($user_ip);
+            
+            if ($fail_count >= 4 && $fail_count < 6) {
+                // warning message for attempts 4-5
+                $remaining = 6 - $fail_count;
+                $errors['general'] = "Invalid credentials. Warning: {$remaining} attempts remaining before lockout.";
             } else {
-                $errors['general'] = 'Invalid username or password.';
+                if (filter_var($username_or_email, FILTER_VALIDATE_EMAIL)) {
+                    $errors['general'] = 'Invalid email or password.';
+                } else {
+                    $errors['general'] = 'Invalid username or password.';
+                }
             }
             require __DIR__ . '/../views/login.php';
         }
@@ -154,7 +188,7 @@ class AuthController
             return;
         }
 
-        $result = $this->userModel->register($user_data);
+        $result = $this->user_model->register($user_data);
 
         if (is_array($result)) {
             if (in_array('username_exists', $result)) {
