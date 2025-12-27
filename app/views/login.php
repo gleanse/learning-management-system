@@ -18,10 +18,14 @@
                 <div class="card shadow login-card">
                     <div class="card-body p-4">
                         <h4 class="mb-4 text-center">Sign In</h4>
-
+                        
                         <?php if (isset($errors['general'])): ?>
-                            <div class="alert alert-danger" role="alert">
-                                <?= htmlspecialchars($errors['general']) ?>
+                            <div class="alert alert-danger" role="alert" id="lockout-message">
+                                <?php if (isset($ip_status['locked']) && $ip_status['locked']): ?>
+                                    Too many failed attempts. Try again in <span id="countdown"></span>.
+                                <?php else: ?>
+                                    <?= htmlspecialchars($errors['general']) ?>
+                                <?php endif; ?>
                             </div>
                         <?php endif; ?>
 
@@ -75,7 +79,14 @@
             </div>
         </div>
     </div>
-
+    
+    <?php if (isset($ip_status['locked']) && $ip_status['locked']): ?>
+        <script src="js/lockout-countdown.js"></script>
+        <script>
+            initLockoutCountdown(<?php echo $ip_status['seconds_remaining']; ?>);
+        </script>
+    <?php endif; ?>
+    
 </body>
 
 </html>

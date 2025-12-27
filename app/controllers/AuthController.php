@@ -27,7 +27,7 @@ class AuthController
 
         require __DIR__ . '/../views/login.php';
     }
-
+    
     public function processLogin()
     {
         $user_ip = getUserIp();
