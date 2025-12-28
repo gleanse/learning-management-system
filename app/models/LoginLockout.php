@@ -63,13 +63,13 @@ class LoginLockout
         $stmt = $this->connection->prepare("DELETE FROM login_lockouts WHERE ip_address = ?");
         $stmt->execute([$ip]);
     }
-    
+
     public function getFailCount($ip)
     {
         $stmt = $this->connection->prepare("SELECT fail_count FROM login_lockouts WHERE ip_address = ?");
         $stmt->execute([$ip]);
         $result = $stmt->fetch();
-        
+
         return $result ? $result['fail_count'] : 0;
     }
 }

@@ -33,7 +33,7 @@ if ($page === 'logout' && $method === 'GET') {
     exit();
 }
 
-if($page === 'register' && $method === 'GET'){
+if ($page === 'register' && $method === 'GET') {
     $controller = new AuthController();
     $controller->showRegisterForm();
     exit();
