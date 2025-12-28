@@ -18,11 +18,11 @@
                 <div class="card shadow login-card">
                     <div class="card-body p-4">
                         <h4 class="mb-4 text-center">Sign In</h4>
-                        
+
                         <?php if (isset($errors['general'])): ?>
                             <div class="alert alert-danger" role="alert" id="lockout-message">
                                 <?php if (isset($ip_status['locked']) && $ip_status['locked']): ?>
-                                    Too many failed attempts. Try again in <span id="countdown"></span>.
+                                    <?= htmlspecialchars($errors['general']) ?> <span id="countdown"></span>.
                                 <?php else: ?>
                                     <?= htmlspecialchars($errors['general']) ?>
                                 <?php endif; ?>
@@ -41,7 +41,7 @@
                                     class="form-control <?= isset($errors['username_or_email']) ? 'is-invalid' : '' ?>"
                                     id="username_or_email"
                                     name="username_or_email"
-                                    value="<?= htmlspecialchars($_POST['username_or_email'] ?? '') ?>"
+                                    value="<?= htmlspecialchars($old_input['username_or_email'] ?? '') ?>"
                                     placeholder="Enter username or email"
                                     required
                                     autofocus>
@@ -79,14 +79,14 @@
             </div>
         </div>
     </div>
-    
+
     <?php if (isset($ip_status['locked']) && $ip_status['locked']): ?>
         <script src="js/lockout-countdown.js"></script>
         <script>
             initLockoutCountdown(<?php echo $ip_status['seconds_remaining']; ?>);
         </script>
     <?php endif; ?>
-    
+
 </body>
 
 </html>

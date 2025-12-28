@@ -22,30 +22,24 @@ class AuthController
             $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
         }
 
-        $errors = [];
-        $username_or_email = '';
+        $errors = $_SESSION['login_errors'] ?? [];
+        $old_input = $_SESSION['old_input'] ?? [];
+        $ip_status = $_SESSION['ip_status'] ?? null;
+        unset($_SESSION['login_errors'], $_SESSION['old_input'], $_SESSION['ip_status']);
 
         require __DIR__ . '/../views/login.php';
     }
-    
+
     public function processLogin()
     {
         $user_ip = getUserIp();
         $ip_status = $this->lockout_model->checkLockout($user_ip);
-        
+
         if ($ip_status['locked']) {
-            $seconds = $ip_status['seconds_remaining'];
-            $minutes = ceil($seconds / 60);
-            
-            if ($minutes < 1) {
-                $errors['general'] = "Too many failed attempts. Try again in a few seconds.";
-            } else {
-                $plural = $minutes > 1 ? 's' : '';
-                $errors['general'] = "Too many failed attempts. Try again in {$minutes} minute{$plural}.";
-            }
-    
-            require __DIR__ . '/../views/login.php';
-            return;
+            $_SESSION['login_errors'] = ['general' => "Too many failed attempts. Try again in"];
+            $_SESSION['ip_status'] = $ip_status;
+            header('Location: index.php?page=login');
+            exit();
         }
 
         // check if csrf token exists stop script if missing
@@ -60,7 +54,6 @@ class AuthController
 
         $username_or_email = trim($_POST['username_or_email'] ?? '');
         $password = $_POST['password'] ?? '';
-
         $errors = [];
 
         if (empty($username_or_email)) {
@@ -72,8 +65,10 @@ class AuthController
         }
 
         if (!empty($errors)) {
-            require __DIR__ . '/../views/login.php';
-            return;
+            $_SESSION['login_errors'] = $errors;
+            $_SESSION['old_input'] = ['username_or_email' => $username_or_email];
+            header('Location: index.php?page=login');
+            exit();
         }
 
         $user = $this->user_model->authenticate($username_or_email, $password);
@@ -98,21 +93,40 @@ class AuthController
             exit();
         } else {
             $this->lockout_model->recordFail($user_ip);
-            // get fail count and show warning if close to lockout
             $fail_count = $this->lockout_model->getFailCount($user_ip);
-            
-            if ($fail_count >= 4 && $fail_count < 6) {
-                // warning message for attempts 4-5
-                $remaining = 6 - $fail_count;
-                $errors['general'] = "Invalid credentials. Warning: {$remaining} attempts remaining before lockout.";
+
+            // build base invalid message (dynamic based on email or username enter on input)
+            if (filter_var($username_or_email, FILTER_VALIDATE_EMAIL)) {
+                $base_message = 'Invalid email or password.';
             } else {
-                if (filter_var($username_or_email, FILTER_VALIDATE_EMAIL)) {
-                    $errors['general'] = 'Invalid email or password.';
-                } else {
-                    $errors['general'] = 'Invalid username or password.';
-                }
+                $base_message = 'Invalid username or password.';
             }
-            require __DIR__ . '/../views/login.php';
+
+            if ($fail_count == 3) {
+                $errors['general'] = $base_message . ' Warning: 2 attempts remaining before lockout.';
+            } elseif ($fail_count == 4) {
+                $errors['general'] = $base_message . ' Warning: 1 last attempt before lockout.';
+            } elseif ($fail_count >= 5) {
+                // 5th+ failed attempt lockout triggered, check status and show message
+                $ip_status_after_fail = $this->lockout_model->checkLockout($user_ip);
+                if ($ip_status_after_fail['locked']) {
+                    $errors['general'] = $base_message . ' Too many failed attempts. Try again in';
+                    // pass ip_status to view for countdown
+                    $ip_status = $ip_status_after_fail;
+                } else {
+                    $errors['general'] = $base_message;
+                }
+            } else {
+                $errors['general'] = $base_message;
+            }
+
+            $_SESSION['login_errors'] = $errors;
+            $_SESSION['old_input'] = ['username_or_email' => $username_or_email];
+            if (isset($ip_status)) {
+                $_SESSION['ip_status'] = $ip_status;
+            }
+            header('Location: index.php?page=login');
+            exit();
         }
     }
 
