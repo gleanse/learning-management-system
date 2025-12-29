@@ -70,4 +70,34 @@ class User
 
         return false;
     }
+
+    // REMEMBER ME FEATURE MODEL METHODS
+    public function saveRememberToken($userId, $tokenHash, $expiresAt)
+    {
+        $stmt = $this->connection->prepare("INSERT INTO remember_tokens (user_id, token_hash, expires_at) 
+                VALUES (?, ?, ?)");
+
+        return $stmt->execute([
+            $userId,
+            $tokenHash,
+            $expiresAt,
+        ]);
+    }
+
+    public function getUserByRememberToken($tokenHash)
+    {
+        $stmt = $this->connection->prepare("SELECT users.* FROM users
+            INNER JOIN remember_tokens ON users.id = remember_tokens.user_id
+            WHERE remember_tokens.token_hash = ? AND remember_tokens.expires_at > NOW()");
+
+        $stmt->execute([$tokenHash]);
+
+        return $stmt->fetch();
+    }
+    
+    public function deleteRememberToken($tokenHash)
+    {
+        $stmt = $this->connection->prepare("DELETE FROM remember_tokens WHERE token_hash = ?");
+        return $stmt->execute([$tokenHash]);
+    }
 }

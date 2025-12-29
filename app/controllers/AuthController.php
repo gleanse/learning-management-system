@@ -88,7 +88,12 @@ class AuthController
             $_SESSION['user_lastname'] = $user['last_name'];
             // regenerate new csrf token after login
             $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
-
+            
+            // set remember me cookie, pass model via dependency injection for helper function
+            if (isset($_POST['remember_me'])) {
+                setRememberMeCookie($user['id'], $this->user_model);
+            }
+            
             header('Location: index.php?page=dashboard');
             exit();
         } else {
@@ -132,10 +137,25 @@ class AuthController
 
     public function logout()
     {
+        // delete remember token
+        if (isset($_COOKIE['remember_token'])) {
+        $tokenHash = hash('sha256', $_COOKIE['remember_token']);
+        $this->user_model->deleteRememberToken($tokenHash);
+        setcookie('remember_token', '', time() - 3600, '/', '', false, true);
+        }
+        // clear session data
+        $_SESSION = [];
+        
+        // delete session cookie
+        if (isset($_COOKIE[session_name()])) {
+            setcookie(session_name(), '', time() - 3600, '/');
+        }
+
         session_destroy();
         header('Location: index.php?page=login');
         exit();
     }
+    
 
     public function showRegisterForm()
     {

@@ -6,6 +6,12 @@ $page = $_GET['page'] ?? 'login';
 $method = $_SERVER['REQUEST_METHOD'];
 
 if ($page === 'login' && $method === 'GET') {
+    // redirect to dashboard if already logged in
+    if (isset($_SESSION['user_id'])) {
+        header('Location: index.php?page=dashboard');
+        exit();
+    }
+
     $controller = new AuthController();
     $controller->showLoginForm();
     exit();
