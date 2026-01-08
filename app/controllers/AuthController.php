@@ -43,13 +43,13 @@ class AuthController
         }
 
         // check if csrf token exists stop script if missing
-        if (!isset($_POST['csrf_token']) || !isset($_SESSION['csrf_token'])) {
-            die('CSRF token missing. Possible attack detected.');
-        }
-
-        // compare csrf token from session and form submission
-        if (!hash_equals($_SESSION['csrf_token'], $_POST['csrf_token'])) {
-            die('CSRF token validation failed. Possible attack detected.');
+        if (!isset($_POST['csrf_token']) || !isset($_SESSION['csrf_token']) || !hash_equals($_SESSION['csrf_token'], $_POST['csrf_token'])) {
+        // regenerate token for next attempt
+        $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
+        $_SESSION['login_errors'] = ['general' => 'Your session expired. Please try again.'];
+        $_SESSION['old_input'] = ['username_or_email' => trim($_POST['username_or_email'] ?? '')];
+        header('Location: index.php?page=login');
+        exit();
         }
 
         $username_or_email = trim($_POST['username_or_email'] ?? '');
@@ -159,6 +159,9 @@ class AuthController
 
     public function showRegisterForm()
     {
+        if (empty($_SESSION['csrf_token'])) {
+            $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
+        }
         $errors = [];
 
         require __DIR__ . '/../views/register.php';
@@ -170,6 +173,13 @@ class AuthController
         if (!isset($_SESSION['user_id'])) {
             header('Location: index.php?page=login');
             exit();
+        }
+        
+        if (!isset($_POST['csrf_token']) || !isset($_SESSION['csrf_token']) || !hash_equals($_SESSION['csrf_token'], $_POST['csrf_token'])) {
+        $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
+        $errors = ['general' => 'Your session expired. Please refresh and try again.'];
+        require __DIR__ . '/../views/register.php';
+        return;
         }
 
         $user_data = [
