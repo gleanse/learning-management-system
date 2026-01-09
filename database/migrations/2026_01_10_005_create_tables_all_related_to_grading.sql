@@ -40,13 +40,14 @@ CREATE TABLE teacher_subject_assignments (
     assignment_id INT AUTO_INCREMENT PRIMARY KEY,
     teacher_id INT NOT NULL,
     subject_id INT NOT NULL,
+    year_level VARCHAR(50) NOT NULL,
     school_year VARCHAR(20) NOT NULL,
     assigned_date DATE NOT NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     FOREIGN KEY (teacher_id) REFERENCES users(id) ON DELETE CASCADE,
     FOREIGN KEY (subject_id) REFERENCES subjects(subject_id) ON DELETE CASCADE,
-    UNIQUE KEY unique_teacher_subject (teacher_id, subject_id, school_year)
+    UNIQUE KEY unique_teacher_subject (teacher_id, subject_id, year_level, school_year)
 );
 
 -- this table stores which students are enrolled in which subjects
