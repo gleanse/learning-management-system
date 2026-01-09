@@ -34,14 +34,14 @@ class AuthController
     {
         $user_ip = getUserIp();
         $ip_status = $this->lockout_model->checkLockout($user_ip);
-
+    
         if ($ip_status['locked']) {
             $_SESSION['login_errors'] = ['general' => "Too many failed attempts. Try again in"];
             $_SESSION['ip_status'] = $ip_status;
             header('Location: index.php?page=login');
             exit();
         }
-
+    
         // check if csrf token exists stop script if missing
         if (!isset($_POST['csrf_token']) || !isset($_SESSION['csrf_token']) || !hash_equals($_SESSION['csrf_token'], $_POST['csrf_token'])) {
         // regenerate token for next attempt
@@ -51,34 +51,34 @@ class AuthController
         header('Location: index.php?page=login');
         exit();
         }
-
+    
         $username_or_email = trim($_POST['username_or_email'] ?? '');
         $password = $_POST['password'] ?? '';
         $errors = [];
-
+    
         if (empty($username_or_email)) {
             $errors['username_or_email'] = 'Please enter your username or email.';
         }
-
+    
         if (empty($password)) {
             $errors['password'] = 'Please enter your password.';
         }
-
+    
         if (!empty($errors)) {
             $_SESSION['login_errors'] = $errors;
             $_SESSION['old_input'] = ['username_or_email' => $username_or_email];
             header('Location: index.php?page=login');
             exit();
         }
-
+    
         $user = $this->user_model->authenticate($username_or_email, $password);
-
+    
         if ($user) {
             // on sucessful login
             $this->lockout_model->clearLockout($user_ip);
             // for session fixation security
             session_regenerate_id(true);
-
+    
             $_SESSION['user_id'] = $user['id'];
             $_SESSION['user_username'] = $user['username'];
             $_SESSION['user_email'] = $user['email'];
@@ -94,19 +94,28 @@ class AuthController
                 setRememberMeCookie($user['id'], $this->user_model);
             }
             
-            header('Location: index.php?page=dashboard');
+            // redirect based on role
+            if ($user['role'] === 'teacher') {
+                header('Location: index.php?page=teacher_dashboard');
+            } elseif ($user['role'] === 'student') {
+                header('Location: index.php?page=student_dashboard');
+            } elseif ($user['role'] === 'admin' || $user['role'] === 'superadmin') {
+                header('Location: index.php?page=admin_dashboard');
+            } else {
+                header('Location: index.php?page=dashboard');
+            }
             exit();
         } else {
             $this->lockout_model->recordFail($user_ip);
             $fail_count = $this->lockout_model->getFailCount($user_ip);
-
+    
             // build base invalid message (dynamic based on email or username enter on input)
             if (filter_var($username_or_email, FILTER_VALIDATE_EMAIL)) {
                 $base_message = 'Invalid email or password.';
             } else {
                 $base_message = 'Invalid username or password.';
             }
-
+    
             if ($fail_count == 3) {
                 $errors['general'] = $base_message . ' Warning: 2 attempts remaining before lockout.';
             } elseif ($fail_count == 4) {
@@ -124,7 +133,7 @@ class AuthController
             } else {
                 $errors['general'] = $base_message;
             }
-
+    
             $_SESSION['login_errors'] = $errors;
             $_SESSION['old_input'] = ['username_or_email' => $username_or_email];
             if (isset($ip_status)) {
