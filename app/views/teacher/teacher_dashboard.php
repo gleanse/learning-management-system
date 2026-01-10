@@ -50,13 +50,38 @@
                     </ol>
                 </nav>
 
-                <!-- schedule section (empty for now) -->
+                <!-- schedule section now displays todays schedule -->
                 <div class="card mb-4">
                     <div class="card-header">
-                        <h5 class="mb-0">My Schedule</h5>
+                        <h5 class="mb-0">My Schedule - <?php echo htmlspecialchars($current_date); ?></h5>
                     </div>
                     <div class="card-body">
-                        <p class="text-muted">Schedule will be displayed here.</p>
+                        <?php if (empty($today_schedule)): ?>
+                            <p class="text-muted">No classes scheduled for today.</p>
+                        <?php else: ?>
+                            <div class="table-responsive">
+                                <table class="table table-hover">
+                                    <thead>
+                                        <tr>
+                                            <th>Time</th>
+                                            <th>Subject</th>
+                                            <th>Section</th>
+                                            <th>Room</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <?php foreach ($today_schedule as $schedule): ?>
+                                            <tr>
+                                                <td><?php echo htmlspecialchars($schedule['time_range']); ?></td>
+                                                <td><?php echo htmlspecialchars($schedule['subject_code']) . ' - ' . htmlspecialchars($schedule['subject_name']); ?></td>
+                                                <td><?php echo htmlspecialchars($schedule['section_name']) . ' (' . htmlspecialchars($schedule['year_level']) . ')'; ?></td>
+                                                <td><?php echo htmlspecialchars($schedule['room_display']); ?></td>
+                                            </tr>
+                                        <?php endforeach; ?>
+                                    </tbody>
+                                </table>
+                            </div>
+                        <?php endif; ?>
                     </div>
                 </div>
 

@@ -27,12 +27,27 @@ class GradeController
             header('Location: index.php?page=login');
             exit();
         }
-
+    
         $teacher_id = $_SESSION['user_id'];
         
         // get year levels for quick links
         $year_levels = $this->teacher_model->getAssignedYearLevels($teacher_id);
-
+    
+        // get todays schedule
+        require_once __DIR__ . '/../models/Schedule.php';
+        $schedule_model = new Schedule();
+        $school_year = '2025-2026'; // TODO: can be made dynamic later
+        $semester = 'First'; // TODO: can be made dynamic later
+        $current_date = date('l, F j, Y'); // example output "Monday, January 1, 2026"
+        $today_schedule = $schedule_model->getTodaySchedule($teacher_id, $school_year, $semester);
+    
+        // format schedule data for display
+        foreach ($today_schedule as &$schedule) {
+            $schedule['time_range'] = date('g:i A', strtotime($schedule['start_time'])) . ' - ' . 
+                                      date('g:i A', strtotime($schedule['end_time']));
+            $schedule['room_display'] = !empty($schedule['room']) ? $schedule['room'] : 'TBA';
+        }
+    
         require __DIR__ . '/../views/teacher/teacher_dashboard.php';
     }
 
