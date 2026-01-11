@@ -1,0 +1,13 @@
+:root {
+  --primary: #85120F;
+  --secondary: #2E275D;
+  --accent: #F59E0B;
+  
+  --danger: #EF4444;
+  --gray-500: #6B7280;
+  --gray-900: #111827;
+  
+  /* BOOTSTRAP overrides */
+  --bs-primary: var(--primary);
+  --bs-danger: var(--danger);
+}
