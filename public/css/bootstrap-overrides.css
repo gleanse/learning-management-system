@@ -1,0 +1,120 @@
+/* BOOTSTRAP OVERRIDES */
+
+/* PRIMARY color override */
+.btn-primary {
+  --bs-btn-bg: var(--primary);
+  --bs-btn-border-color: var(--primary);
+  --bs-btn-hover-bg: #6d0f0c;
+  --bs-btn-hover-border-color: #6d0f0c;
+  --bs-btn-active-bg: #5a0c0a;
+  --bs-btn-active-border-color: #5a0c0a;
+  --bs-btn-disabled-bg: var(--primary);
+  --bs-btn-disabled-border-color: var(--primary);
+}
+
+/* ALERT override for danger/error messages */
+.alert-danger {
+  --bs-alert-bg: #fef2f2;
+  --bs-alert-color: var(--danger);
+  --bs-alert-border-color: transparent;
+}
+
+/* FORM control (inputs) */
+.form-control {
+  --bs-body-color: var(--gray-900);
+}
+
+.form-control:focus {
+  --bs-border-color: var(--primary);
+  box-shadow: 0 0 0 0.25rem rgba(133, 18, 15, 0.15);
+}
+
+/* FORM check input (checkbox/radio) */
+.form-check-input {
+  --bs-form-check-bg: #ffffff;
+  border: 2px solid #d1d5db;
+}
+
+.form-check-input:checked {
+  background-color: var(--primary);
+  border-color: var(--primary);
+}
+
+.form-check-input:focus {
+  border-color: var(--primary);
+  box-shadow: 0 0 0 0.25rem rgba(133, 18, 15, 0.15);
+}
+
+/* NAVBAR customization */
+.navbar {
+  --bs-navbar-padding-y: 1rem;
+  background-color: var(--primary) !important;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.1);
+  position: sticky;
+  top: 0;
+  z-index: 1000;
+  transition: all 0.3s ease;
+}
+
+.navbar.shadow-sm {
+  box-shadow: 0 4px 12px rgba(133, 18, 15, 0.3) !important;
+}
+
+.navbar-brand {
+  --bs-navbar-brand-padding-y: 0;
+  --bs-navbar-brand-margin-end: 0;
+  transition: transform 0.3s ease;
+}
+
+.navbar-brand:hover {
+  transform: translateY(-2px);
+}
+
+/* CONTAINER */
+.container {
+  --bs-gutter-x: 1.5rem;
+}
+
+/* GRID system */
+.row {
+  --bs-gutter-x: 1.5rem;
+  --bs-gutter-y: 1.5rem;
+}
+
+/* CARD component */
+.card {
+  --bs-card-border-color: transparent;
+  --bs-card-border-radius: 1rem;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1),
+    0 2px 4px -1px rgba(0, 0, 0, 0.06);
+}
+
+/* FORM label */
+.form-label {
+  --bs-body-color: var(--gray-900);
+  font-weight: 600;
+}
+
+/* INVALID feedback styling */
+.invalid-feedback {
+  --bs-form-invalid-color: var(--danger);
+}
+
+.form-control.is-invalid,
+.form-control.is-invalid:focus {
+  --bs-border-color: var(--danger);
+}
+
+/* SPACING utilities enhancement */
+.mb-3 {
+  margin-bottom: 1rem !important;
+}
+
+.mb-4 {
+  margin-bottom: 1.5rem !important;
+}
+
+/* SHADOW utility */
+.shadow-sm {
+  box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px -1px rgba(0, 0, 0, 0.1) !important;
+}

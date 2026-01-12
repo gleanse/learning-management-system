@@ -1,6 +1,7 @@
 # composer dependencies
 vendor/
-composer.lock
+
+public/assets/*
 
 # environment
 .env
