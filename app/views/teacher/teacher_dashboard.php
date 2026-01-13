@@ -9,6 +9,7 @@
     <link rel="stylesheet" href="bootstrap/css/bootstrap-icons.css">
     <link rel="stylesheet" href="css/main.css">
     <link rel="stylesheet" href="css/shared/sidenav.css">
+    <link rel="stylesheet" href="css/pages/teacher_dashboard.css">
 </head>
 
 <body>
@@ -56,7 +57,7 @@
                 <div class="container-fluid">
                     <div class="navbar-brand mb-0">
                         <div class="page-icon">
-                            <i class="bi bi-grid-fill"></i>
+                            <i class="bi bi-easel-fill"></i>
                         </div>
                         <span>Teacher Dashboard</span>
                     </div>
@@ -87,36 +88,76 @@
                 <!-- breadcrumbs -->
                 <nav aria-label="breadcrumb">
                     <ol class="breadcrumb">
-                        <li class="breadcrumb-item active" aria-current="page">Dashboard</li>
+                        <li class="breadcrumb-item active" aria-current="page">
+                            <i class="bi bi-house-door-fill"></i> Dashboard
+                        </li>
                     </ol>
                 </nav>
 
+                <!-- welcome banner -->
+                <div class="welcome-banner mb-4">
+                    <div class="welcome-content">
+                        <div class="welcome-text">
+                            <h2 class="welcome-title">Good <?php echo (date('H') < 12) ? 'Morning' : ((date('H') < 18) ? 'Afternoon' : 'Evening'); ?>, <?php echo htmlspecialchars($_SESSION['user_firstname']) . ' ' . htmlspecialchars($_SESSION['user_lastname']); ?></h2>
+                            <p class="welcome-subtitle"><?php echo ucfirst(htmlspecialchars($_SESSION['user_role'])); ?> • <?php echo htmlspecialchars($current_date); ?></p>
+                        </div>
+                    </div>
+                </div>
+
                 <!-- schedule section now displays todays schedule -->
-                <div class="card mb-4">
+                <div class="card schedule-card mb-4">
                     <div class="card-header">
-                        <h5 class="mb-0">My Schedule - <?php echo htmlspecialchars($current_date); ?></h5>
+                        <h5 class="mb-0">
+                            <i class="bi bi-calendar-event"></i>
+                            My Schedule - <?php echo htmlspecialchars($current_date); ?>
+                        </h5>
                     </div>
                     <div class="card-body">
                         <?php if (empty($today_schedule)): ?>
-                            <p class="text-muted">No classes scheduled for today.</p>
+                            <div class="empty-state">
+                                <div class="empty-state-icon">
+                                    <i class="bi bi-calendar-x"></i>
+                                </div>
+                                <p class="empty-state-text">No classes scheduled for today.</p>
+                            </div>
                         <?php else: ?>
                             <div class="table-responsive">
                                 <table class="table table-hover">
                                     <thead>
                                         <tr>
-                                            <th>Time</th>
-                                            <th>Subject</th>
-                                            <th>Section</th>
-                                            <th>Room</th>
+                                            <th><i class="bi bi-clock"></i> Time</th>
+                                            <th><i class="bi bi-book"></i> Subject</th>
+                                            <th><i class="bi bi-people"></i> Section</th>
+                                            <th><i class="bi bi-geo-alt"></i> Room</th>
                                         </tr>
                                     </thead>
                                     <tbody>
                                         <?php foreach ($today_schedule as $schedule): ?>
                                             <tr>
-                                                <td><?php echo htmlspecialchars($schedule['time_range']); ?></td>
-                                                <td><?php echo htmlspecialchars($schedule['subject_code']) . ' - ' . htmlspecialchars($schedule['subject_name']); ?></td>
-                                                <td><?php echo htmlspecialchars($schedule['section_name']) . ' (' . htmlspecialchars($schedule['year_level']) . ')'; ?></td>
-                                                <td><?php echo htmlspecialchars($schedule['room_display']); ?></td>
+                                                <td>
+                                                    <span class="time-badge">
+                                                        <i class="bi bi-clock-fill"></i>
+                                                        <?php echo htmlspecialchars($schedule['time_range']); ?>
+                                                    </span>
+                                                </td>
+                                                <td>
+                                                    <div class="subject-info">
+                                                        <span class="subject-code"><?php echo htmlspecialchars($schedule['subject_code']); ?></span>
+                                                        <span class="subject-name"><?php echo htmlspecialchars($schedule['subject_name']); ?></span>
+                                                    </div>
+                                                </td>
+                                                <td>
+                                                    <span class="section-badge">
+                                                        <i class="bi bi-diagram-3"></i>
+                                                        <?php echo htmlspecialchars($schedule['section_name']) . ' (' . htmlspecialchars($schedule['year_level']) . ')'; ?>
+                                                    </span>
+                                                </td>
+                                                <td>
+                                                    <span class="room-badge">
+                                                        <i class="bi bi-door-open"></i>
+                                                        <?php echo htmlspecialchars($schedule['room_display']); ?>
+                                                    </span>
+                                                </td>
                                             </tr>
                                         <?php endforeach; ?>
                                     </tbody>
@@ -129,16 +170,25 @@
                 <!-- quick links section -->
                 <div class="card">
                     <div class="card-header">
-                        <h5 class="mb-0">Quick Links - Grading</h5>
+                        <h5 class="mb-0">
+                            <i class="bi bi-journal-bookmark"></i>
+                            Quick Links - Grading
+                        </h5>
                     </div>
                     <div class="card-body">
                         <?php if (empty($year_levels)): ?>
-                            <p class="text-muted">No year levels assigned yet.</p>
+                            <div class="empty-state">
+                                <div class="empty-state-icon">
+                                    <i class="bi bi-inbox"></i>
+                                </div>
+                                <p class="empty-state-text">No year levels assigned yet.</p>
+                            </div>
                         <?php else: ?>
                             <div class="list-group">
                                 <?php foreach ($year_levels as $level): ?>
                                     <a href="index.php?page=grading_subjects&year_level=<?php echo urlencode($level['year_level']); ?>"
                                         class="list-group-item list-group-item-action">
+                                        <i class="bi bi-bookmark-star-fill"></i>
                                         <?php echo htmlspecialchars($level['year_level']); ?>
                                     </a>
                                 <?php endforeach; ?>
