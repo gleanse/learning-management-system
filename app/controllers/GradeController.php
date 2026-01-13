@@ -27,12 +27,12 @@ class GradeController
             header('Location: index.php?page=login');
             exit();
         }
-    
+
         $teacher_id = $_SESSION['user_id'];
-        
+
         // get year levels for quick links
         $year_levels = $this->teacher_model->getAssignedYearLevels($teacher_id);
-    
+
         // get todays schedule
         require_once __DIR__ . '/../models/Schedule.php';
         $schedule_model = new Schedule();
@@ -40,14 +40,14 @@ class GradeController
         $semester = 'First'; // TODO: can be made dynamic later
         $current_date = date('l, F j, Y'); // example output "Monday, January 1, 2026"
         $today_schedule = $schedule_model->getTodaySchedule($teacher_id, $school_year, $semester);
-    
+
         // format schedule data for display
-        foreach ($today_schedule as &$schedule) {
-            $schedule['time_range'] = date('g:i A', strtotime($schedule['start_time'])) . ' - ' . 
-                                      date('g:i A', strtotime($schedule['end_time']));
-            $schedule['room_display'] = !empty($schedule['room']) ? $schedule['room'] : 'TBA';
+        foreach ($today_schedule as $key => $schedule) {
+            $today_schedule[$key]['time_range'] = date('g:i A', strtotime($schedule['start_time'])) . ' - ' .
+                date('g:i A', strtotime($schedule['end_time']));
+            $today_schedule[$key]['room_display'] = !empty($schedule['room']) ? $schedule['room'] : 'Not Assigned';
         }
-    
+
         require __DIR__ . '/../views/teacher/teacher_dashboard.php';
     }
 
@@ -85,7 +85,7 @@ class GradeController
 
         require __DIR__ . '/../views/teacher/subjects.php';
     }
-    
+
     public function showSections()
     {
         // check if teacher is logged in
@@ -93,27 +93,27 @@ class GradeController
             header('Location: index.php?page=login');
             exit();
         }
-    
+
         $year_level = $_GET['year_level'] ?? null;
         $subject_id = $_GET['subject_id'] ?? null;
         $school_year = $_GET['school_year'] ?? '2025-2026';
         $semester = $_GET['semester'] ?? 'First';
-    
+
         if (empty($year_level) || empty($subject_id)) {
             header('Location: index.php?page=teacher_dashboard');
             exit();
         }
-    
+
         // get subject details for breadcrumb
         require_once __DIR__ . '/../models/Subject.php';
         $subject_model = new Subject();
         $subject = $subject_model->getById($subject_id);
-    
+
         $sections = $this->student_model->getSectionsBySubjectAndYearLevel($subject_id, $year_level, $school_year, $semester);
-    
+
         require __DIR__ . '/../views/teacher/sections.php';
     }
-    
+
 
     public function showStudentList()
     {
@@ -122,53 +122,53 @@ class GradeController
             header('Location: index.php?page=login');
             exit();
         }
-    
+
         $year_level = $_GET['year_level'] ?? null;
         $subject_id = $_GET['subject_id'] ?? null;
         $section_id = $_GET['section_id'] ?? null;
         $school_year = $_GET['school_year'] ?? '2025-2026';
         $semester = $_GET['semester'] ?? 'First';
         $grading_period = $_GET['grading_period'] ?? 'Prelim';
-    
+
         $errors = [];
-    
+
         // validate required parameters
         if (empty($year_level)) {
             $errors['year_level'] = 'Year level is required.';
         }
-    
+
         if (empty($subject_id)) {
             $errors['subject'] = 'Please select a subject.';
         }
-    
+
         if (empty($section_id)) {
             $errors['section'] = 'Please select a section.';
         }
-    
+
         if (empty($school_year)) {
             $errors['school_year'] = 'Please select a school year.';
         }
-    
+
         if (empty($semester)) {
             $errors['semester'] = 'Please select a semester.';
         }
-    
+
         if (empty($grading_period)) {
             $errors['grading_period'] = 'Please select a grading period.';
         }
-    
+
         if (!empty($errors)) {
             $_SESSION['grading_errors'] = $errors;
             header('Location: index.php?page=teacher_dashboard');
             exit();
         }
-    
+
         // check if grading period is locked
         $is_locked = $this->grading_period_model->isLocked($school_year, $semester, $grading_period);
-    
+
         // get enrolled students
         $students = $this->student_model->getEnrolledStudentsInSubject($subject_id, $section_id, $school_year, $semester);
-    
+
         // get existing grades for each student
         foreach ($students as &$student) {
             $existing_grade = $this->grade_model->getGrade(
@@ -178,10 +178,10 @@ class GradeController
                 $semester,
                 $school_year
             );
-    
+
             $student['grade_value'] = $existing_grade['grade_value'] ?? '';
             $student['remarks'] = $existing_grade['remarks'] ?? '';
-            
+
             // calculate display values in controller
             if (!empty($student['grade_value'])) {
                 $student['percentage_display'] = number_format($student['grade_value'], 2);
@@ -191,10 +191,10 @@ class GradeController
                 $student['gpa_display'] = null;
             }
         }
-    
+
         $success_message = $_SESSION['success_message'] ?? null;
         unset($_SESSION['success_message']);
-    
+
         require __DIR__ . '/../views/teacher/student_list.php';
     }
 
@@ -262,7 +262,7 @@ class GradeController
         $percentage_value = $grade_value;
         if ($grade_format === 'gpa' && !empty($grade_value) && is_numeric($grade_value)) {
             $gpa_value = floatval($grade_value);
-            
+
             // validate GPA range first
             if ($gpa_value < 1.0 || $gpa_value > 5.0) {
                 $errors['grade_value'] = 'GPA must be between 1.0 and 5.0.';
@@ -336,10 +336,10 @@ class GradeController
             '3.00' => 75,
             '5.00' => 50
         ];
-    
+
         // convert the input GPA to string with 2 decimal places for lookup
         $gpa_key = number_format((float)$gpa, 2, '.', '');
-        
+
         return $conversion[$gpa_key] ?? false;
     }
 
@@ -374,10 +374,10 @@ class GradeController
             '3.00' => '75',
             '5.00' => '0-74'
         ];
-    
+
         // convert the input GPA to string with 2 decimal places for lookup
         $gpa_key = number_format((float)$gpa, 2, '.', '');
-    
+
         return $ranges[$gpa_key] ?? 'N/A';
     }
 }
