@@ -98,7 +98,8 @@
                 <div class="welcome-banner mb-4">
                     <div class="welcome-content">
                         <div class="welcome-text">
-                            <h2 class="welcome-title">Good <?php echo (date('H') < 12) ? 'Morning' : ((date('H') < 18) ? 'Afternoon' : 'Evening'); ?>, <?php echo htmlspecialchars($_SESSION['user_firstname']) . ' ' . htmlspecialchars($_SESSION['user_lastname']); ?></h2>
+                            <h2 class="welcome-title">Good <?php date_default_timezone_set('Asia/Manila');
+                                                            echo (date('H') < 12) ? 'Morning' : ((date('H') < 18) ? 'Afternoon' : 'Evening'); ?>, <?php echo htmlspecialchars($_SESSION['user_firstname']) . ' ' . htmlspecialchars($_SESSION['user_lastname']); ?></h2>
                             <p class="welcome-subtitle"><?php echo ucfirst(htmlspecialchars($_SESSION['user_role'])); ?> • <?php echo htmlspecialchars($current_date); ?></p>
                         </div>
                     </div>
@@ -188,7 +189,7 @@
                                 <?php foreach ($year_levels as $level): ?>
                                     <a href="index.php?page=grading_subjects&year_level=<?php echo urlencode($level['year_level']); ?>"
                                         class="list-group-item list-group-item-action">
-                                        <i class="bi bi-bookmark-star-fill"></i>
+                                        <i class="bi bi-mortarboard-fill"></i>
                                         <?php echo htmlspecialchars($level['year_level']); ?>
                                     </a>
                                 <?php endforeach; ?>
