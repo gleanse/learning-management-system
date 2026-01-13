@@ -106,8 +106,12 @@ if ($page === 'login' && $method === 'GET') {
     if (isLoggedIn()) {
         if (isTeacher()) {
             header('Location: index.php?page=teacher_dashboard');
-        } else {
-            header('Location: index.php?page=dashboard');
+        } elseif (isStudent()) {
+            header('Location: index.php?page=student_dashboard');
+        } elseif (isAdmin()) {
+            header('Location: index.php?page=admin_dashboard');
+        } elseif (isSuperAdmin()) {
+            header('Location: index.php?page=superadmin_dashboard');
         }
         exit();
     }
@@ -129,13 +133,19 @@ if ($page === 'dashboard' && $method === 'GET') {
         exit();
     }
 
-    // redirect teacher to their dashboard
+    // redirect to role-specific dashboard
     if (isTeacher()) {
         header('Location: index.php?page=teacher_dashboard');
-        exit();
+    } elseif (isStudent()) {
+        header('Location: index.php?page=student_dashboard');
+    } elseif (isAdmin()) {
+        header('Location: index.php?page=admin_dashboard');
+    } elseif (isSuperAdmin()) {
+        header('Location: index.php?page=superadmin_dashboard');
+    } else {
+        // fallback if role is not recognized
+        header('Location: index.php?page=login');
     }
-
-    require __DIR__ . '/views/dashboard.php';
     exit();
 }
 
@@ -161,8 +171,14 @@ if ($page === 'register' && $method === 'POST') {
 if (isLoggedIn()) {
     if (isTeacher()) {
         header('Location: index.php?page=teacher_dashboard');
+    } elseif (isStudent()) {
+        header('Location: index.php?page=student_dashboard');
+    } elseif (isAdmin()) {
+        header('Location: index.php?page=admin_dashboard');
+    } elseif (isSuperAdmin()) {
+        header('Location: index.php?page=superadmin_dashboard');
     } else {
-        header('Location: index.php?page=dashboard');
+        header('Location: index.php?page=login');
     }
 } else {
     header('Location: index.php?page=login');
