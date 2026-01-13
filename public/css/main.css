@@ -1,6 +1,3 @@
-/* MAIN.CSS  import all shared styles */
-
+/* MAIN.CSS SHARED STYLES */
 @import url('variables.css');
 @import url('bootstrap-overrides.css');
-/* landing page navbar styles */
-@import url('shared/navbar.css');

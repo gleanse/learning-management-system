@@ -45,31 +45,6 @@
   box-shadow: 0 0 0 0.25rem rgba(133, 18, 15, 0.15);
 }
 
-/* NAVBAR customization */
-.navbar {
-  --bs-navbar-padding-y: 1rem;
-  background-color: var(--primary) !important;
-  border-bottom: 1px solid rgba(0, 0, 0, 0.1);
-  position: sticky;
-  top: 0;
-  z-index: 1000;
-  transition: all 0.3s ease;
-}
-
-.navbar.shadow-sm {
-  box-shadow: 0 4px 12px rgba(133, 18, 15, 0.3) !important;
-}
-
-.navbar-brand {
-  --bs-navbar-brand-padding-y: 0;
-  --bs-navbar-brand-margin-end: 0;
-  transition: transform 0.3s ease;
-}
-
-.navbar-brand:hover {
-  transform: translateY(-2px);
-}
-
 /* CONTAINER */
 .container {
   --bs-gutter-x: 1.5rem;

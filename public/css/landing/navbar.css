@@ -1,0 +1,60 @@
+/* LANDING PAGE navbar styles */
+
+/* BOOTSTRAP overrides for landing navbar */
+.navbar {
+  --bs-navbar-padding-y: 1rem;
+  background-color: var(--primary) !important;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.1);
+  position: sticky;
+  top: 0;
+  z-index: 1000;
+  transition: all 0.3s ease;
+}
+
+.navbar.shadow-sm {
+  box-shadow: 0 4px 12px rgba(133, 18, 15, 0.3) !important;
+}
+
+.navbar-brand {
+  --bs-navbar-brand-padding-y: 0;
+  --bs-navbar-brand-margin-end: 0;
+  transition: transform 0.3s ease;
+}
+
+.navbar-brand:hover {
+  transform: translateY(-2px);
+}
+
+/* CUSTOM navbar components */
+.navbar-logo {
+  height: 35px;
+  width: auto;
+  object-fit: contain;
+  transition: filter 0.3s ease;
+  background: white;
+  padding: 0.25rem 0.5rem;
+  border-radius: 0.5rem;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.navbar-logo:hover {
+  filter: brightness(1.05);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+}
+
+/* RESPONSIVE adjustments */
+@media (max-width: 576px) {
+  .navbar {
+    padding: 0.75rem 0 !important;
+  }
+
+  .navbar-logo {
+    height: 30px;
+  }
+}
+
+@media (min-width: 768px) {
+  .navbar-logo {
+    height: 40px;
+  }
+}

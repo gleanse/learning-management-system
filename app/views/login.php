@@ -7,6 +7,7 @@
     <link rel="stylesheet" href="bootstrap/css/bootstrap.min.css">
     <link rel="stylesheet" href="bootstrap/css/bootstrap-icons.css">
     <link rel="stylesheet" href="css/main.css">
+    <link rel="stylesheet" href="css/landing/navbar.css">
     <link rel="stylesheet" href="css/pages/login.css">
     <title>Sign In - LMS</title>
 </head>

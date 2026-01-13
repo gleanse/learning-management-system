@@ -1,42 +1,83 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Teacher Dashboard - LMS</title>
     <link rel="stylesheet" href="bootstrap/css/bootstrap.min.css">
+    <link rel="stylesheet" href="bootstrap/css/bootstrap-icons.css">
+    <link rel="stylesheet" href="css/main.css">
+    <link rel="stylesheet" href="css/shared/sidenav.css">
 </head>
+
 <body>
     <div class="d-flex">
         <!-- sidebar -->
-        <div class="bg-dark text-white p-3" style="width: 250px; min-height: 100vh;">
-            <h5>School Name</h5>
-            <p class="text-muted small">Learning Management System</p>
-            <hr>
-            <ul class="nav flex-column">
+        <div class="sidenav">
+            <div class="sidenav-header">
+                <div class="school-brand">
+                    <div class="school-logo">
+                        <img src="assets/DCSA-LOGO.png" alt="School Logo"
+                            style="width: 100%; height: 100%; object-fit: contain; border-radius: 0.75rem;">
+                    </div>
+                    <div class="school-info">
+                        <h5>Datamex College of Saint Adeline</h5>
+                        <p class="subtitle">Learning Management System</p>
+                    </div>
+                </div>
+            </div>
+            <ul class="sidenav-menu">
                 <li class="nav-item">
-                    <a class="nav-link text-white active" href="index.php?page=teacher_dashboard">Dashboard</a>
+                    <a class="nav-link active" href="index.php?page=teacher_dashboard">
+                        <i class="bi bi-house-door-fill"></i>
+                        <span>Dashboard</span>
+                    </a>
                 </li>
                 <li class="nav-item">
-                    <a class="nav-link text-white" href="index.php?page=grading">Grading Management</a>
+                    <a class="nav-link" href="index.php?page=grading">
+                        <i class="bi bi-journal-text"></i>
+                        <span>Grading Management</span>
+                    </a>
                 </li>
                 <li class="nav-item">
-                    <a class="nav-link text-white" href="index.php?page=logout">Logout</a>
+                    <a class="nav-link" href="index.php?page=logout">
+                        <i class="bi bi-box-arrow-right"></i>
+                        <span>Logout</span>
+                    </a>
                 </li>
             </ul>
         </div>
 
         <!-- main content -->
-        <div class="flex-grow-1">
+        <div class="main-content flex-grow-1">
             <!-- top navbar -->
-            <nav class="navbar navbar-light bg-light border-bottom">
+            <nav class="navbar top-navbar">
                 <div class="container-fluid">
-                    <span class="navbar-brand mb-0 h1">Teacher Dashboard</span>
-                    <div class="d-flex align-items-center">
-                        <span class="me-2">
-                            <strong><?php echo htmlspecialchars($_SESSION['user_firstname'] . ' ' . $_SESSION['user_lastname']); ?></strong>
-                            <small class="text-muted d-block"><?php echo ucfirst(htmlspecialchars($_SESSION['user_role'])); ?></small>
-                        </span>
+                    <div class="navbar-brand mb-0">
+                        <div class="page-icon">
+                            <i class="bi bi-grid-fill"></i>
+                        </div>
+                        <span>Teacher Dashboard</span>
+                    </div>
+                    <div class="user-info-wrapper">
+                        <div class="user-details">
+                            <span class="user-name">
+                                <?php echo htmlspecialchars($_SESSION['user_firstname'] . ' ' . $_SESSION['user_lastname']); ?>
+                            </span>
+                            <span class="user-role">
+                                <i class="bi bi-person-badge-fill"></i>
+                                <?php echo ucfirst(htmlspecialchars($_SESSION['user_role'])); ?>
+                            </span>
+                        </div>
+                        <div class="user-avatar">
+                            <!-- user avatar placeholder first letters of name -->
+                            <?php
+                            $firstname = $_SESSION['user_firstname'] ?? 'T';
+                            $lastname = $_SESSION['user_lastname'] ?? 'U';
+                            echo strtoupper(substr($firstname, 0, 1) . substr($lastname, 0, 1));
+                            ?>
+                        </div>
                     </div>
                 </div>
             </nav>
@@ -96,8 +137,8 @@
                         <?php else: ?>
                             <div class="list-group">
                                 <?php foreach ($year_levels as $level): ?>
-                                    <a href="index.php?page=grading_subjects&year_level=<?php echo urlencode($level['year_level']); ?>" 
-                                       class="list-group-item list-group-item-action">
+                                    <a href="index.php?page=grading_subjects&year_level=<?php echo urlencode($level['year_level']); ?>"
+                                        class="list-group-item list-group-item-action">
                                         <?php echo htmlspecialchars($level['year_level']); ?>
                                     </a>
                                 <?php endforeach; ?>
@@ -111,4 +152,5 @@
 
     <script src="bootstrap/js/bootstrap.bundle.min.js"></script>
 </body>
+
 </html>

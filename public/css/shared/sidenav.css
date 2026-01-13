@@ -1,0 +1,229 @@
+/* SIDE NAVIGATION styles */
+
+/* BOOTSTRAP overrides for side navigation */
+.sidenav-menu .nav-item {
+  margin-bottom: 0.25rem;
+}
+
+.sidenav-menu .nav-link {
+  display: flex;
+  align-items: center;
+  padding: 0.75rem 1rem;
+  color: rgba(255, 255, 255, 0.8);
+  text-decoration: none;
+  border-radius: 0.5rem;
+  transition: all 0.2s ease;
+  font-size: 0.95rem;
+  font-weight: 500;
+}
+
+.sidenav-menu .nav-link:hover {
+  background-color: rgba(255, 255, 255, 0.1);
+  color: #ffffff;
+  transform: translateX(4px);
+}
+
+.sidenav-menu .nav-link.active {
+  background-color: var(--primary);
+  color: #ffffff;
+  box-shadow: 0 2px 8px rgba(133, 18, 15, 0.3);
+}
+
+/* CUSTOM side navigation components */
+.sidenav {
+  width: 280px;
+  min-height: 100vh;
+  background: linear-gradient(180deg, var(--secondary) 0%, #1f1a47 100%);
+  color: #ffffff;
+  padding: 0;
+  position: fixed;
+  top: 0;
+  left: 0;
+  overflow-y: auto;
+  transition: all 0.3s ease;
+  z-index: 1050;
+  box-shadow: 4px 0 12px rgba(0, 0, 0, 0.1);
+}
+
+.sidenav-header {
+  padding: 2rem 1.5rem 1.5rem;
+  margin-bottom: 1rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgba(0, 0, 0, 0.1);
+}
+
+.school-brand {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  margin-bottom: 0.75rem;
+}
+
+.school-logo {
+  width: 50px;
+  height: 50px;
+  background: linear-gradient(135deg, var(--primary) 0%, var(--accent) 100%);
+  border-radius: 0.75rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.5rem;
+  color: #ffffff;
+  font-weight: 700;
+  box-shadow: 0 4px 8px rgba(133, 18, 15, 0.3);
+  flex-shrink: 0;
+}
+
+.school-info h5 {
+  margin: 0 0 0.25rem 0;
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: #ffffff;
+  line-height: 1.3;
+}
+
+.school-info .subtitle {
+  font-size: 0.7rem;
+  color: rgba(255, 255, 255, 0.6);
+  margin: 0;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  font-weight: 500;
+}
+
+.sidenav-menu {
+  list-style: none;
+  padding: 1rem 1.25rem;
+  margin: 0;
+}
+
+.sidenav-menu .nav-link i {
+  margin-right: 0.75rem;
+  font-size: 1.1rem;
+  width: 20px;
+  text-align: center;
+}
+
+.main-content {
+  margin-left: 280px;
+  min-height: 100vh;
+  transition: margin-left 0.3s ease;
+  background-color: #f8f9fa;
+}
+
+/* TOP navbar enhancement */
+.top-navbar {
+  background: var(--secondary) !important;
+  box-shadow: 0 4px 12px rgba(46, 39, 93, 0.15);
+  padding: 0.75rem 0;
+  position: sticky;
+  top: 0;
+  z-index: 1040;
+  border-bottom: 3px solid var(--primary);
+}
+
+.top-navbar .navbar-brand {
+  font-size: 1.35rem;
+  font-weight: 700;
+  color: #ffffff;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.page-icon {
+  width: 40px;
+  height: 40px;
+  background: var(--primary);
+  border-radius: 0.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #ffffff;
+  font-size: 1.25rem;
+  box-shadow: 0 2px 8px rgba(133, 18, 15, 0.3);
+}
+
+.user-info-wrapper {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 0.5rem 1.25rem;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 2rem;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  transition: all 0.2s ease;
+  backdrop-filter: blur(10px);
+}
+
+.user-info-wrapper:hover {
+  background: rgba(255, 255, 255, 0.15);
+  border-color: rgba(255, 255, 255, 0.3);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  transform: translateY(-2px);
+}
+
+.user-avatar {
+  width: 38px;
+  height: 38px;
+  background: var(--primary);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #ffffff;
+  font-weight: 700;
+  font-size: 0.9rem;
+  flex-shrink: 0;
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
+}
+
+.user-details {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+}
+
+.user-name {
+  font-weight: 600;
+  color: #ffffff;
+  font-size: 0.95rem;
+  line-height: 1.2;
+}
+
+.user-role {
+  font-size: 0.75rem;
+  color: rgba(255, 255, 255, 0.7);
+  text-transform: capitalize;
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.user-role i {
+  font-size: 0.7rem;
+}
+
+/* RESPONSIVE behavior */
+@media (max-width: 768px) {
+  .sidenav {
+    transform: translateX(-100%);
+  }
+
+  .sidenav.show {
+    transform: translateX(0);
+  }
+
+  .main-content {
+    margin-left: 0;
+  }
+
+  .user-info-wrapper {
+    padding: 0.5rem;
+  }
+
+  .user-details {
+    display: none;
+  }
+}
