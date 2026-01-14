@@ -4,6 +4,7 @@ require_once __DIR__ . '/../models/Teacher.php';
 require_once __DIR__ . '/../models/Student.php';
 require_once __DIR__ . '/../models/Grade.php';
 require_once __DIR__ . '/../models/GradingPeriod.php';
+require_once __DIR__ . '/../models/Subject.php';
 
 class GradeController
 {
@@ -11,6 +12,7 @@ class GradeController
     private $student_model;
     private $grade_model;
     private $grading_period_model;
+    private $subject_model;
 
     public function __construct()
     {
@@ -18,6 +20,7 @@ class GradeController
         $this->student_model = new Student();
         $this->grade_model = new Grade();
         $this->grading_period_model = new GradingPeriod();
+        $this->subject_model = new Subject();
     }
 
     public function showTeacherDashboard()
@@ -159,6 +162,22 @@ class GradeController
 
         if (!empty($errors)) {
             $_SESSION['grading_errors'] = $errors;
+            header('Location: index.php?page=teacher_dashboard');
+            exit();
+        }
+
+        // fetch subject details for breadcrumb
+        $subject = $this->subject_model->getById($subject_id);
+        if (!$subject) {
+            $_SESSION['grading_errors'] = ['subject' => 'Subject not found.'];
+            header('Location: index.php?page=teacher_dashboard');
+            exit();
+        }
+
+        // fetch section details for breadcrumb - use student_model instead
+        $section = $this->student_model->getSectionById($section_id);
+        if (!$section) {
+            $_SESSION['grading_errors'] = ['section' => 'Section not found.'];
             header('Location: index.php?page=teacher_dashboard');
             exit();
         }

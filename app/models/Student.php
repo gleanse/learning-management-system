@@ -34,12 +34,12 @@ class Student
                 AND sse.semester = ?
             ORDER BY u.last_name ASC, u.first_name ASC
         ");
-        
+
         $stmt->execute([$subject_id, $section_id, $school_year, $semester]);
-        
+
         return $stmt->fetchAll();
     }
-    
+
     // get all sections for a specific subject and year level
     public function getSectionsBySubjectAndYearLevel($subject_id, $year_level, $school_year, $semester)
     {
@@ -59,9 +59,25 @@ class Student
             GROUP BY sec.section_id, sec.section_name, sec.year_level
             ORDER BY sec.section_name ASC
         ");
-        
+
         $stmt->execute([$subject_id, $year_level, $school_year, $semester]);
-        
+
         return $stmt->fetchAll();
+    }
+
+    public function getSectionById($section_id)
+    {
+        $stmt = $this->connection->prepare("
+            SELECT 
+                section_id,
+                section_name,
+                year_level
+            FROM sections
+            WHERE section_id = ?
+        ");
+
+        $stmt->execute([$section_id]);
+
+        return $stmt->fetch();
     }
 }

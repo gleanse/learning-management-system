@@ -1,42 +1,84 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Grade Students - LMS</title>
     <link rel="stylesheet" href="bootstrap/css/bootstrap.min.css">
+    <link rel="stylesheet" href="bootstrap/css/bootstrap-icons.css">
+    <link rel="stylesheet" href="css/main.css">
+    <link rel="stylesheet" href="css/shared/sidenav.css">
+    <link rel="stylesheet" href="css/pages/student_list.css">
 </head>
+
 <body>
     <div class="d-flex">
         <!-- sidebar -->
-        <div class="bg-dark text-white p-3" style="width: 250px; min-height: 100vh;">
-            <h5>School Name</h5>
-            <p class="text-muted small">Learning Management System</p>
-            <hr>
-            <ul class="nav flex-column">
+        <div class="sidenav">
+            <div class="sidenav-header">
+                <div class="school-brand">
+                    <div class="school-logo">
+                        <img src="assets/DCSA-LOGO.png" alt="School Logo"
+                            style="width: 100%; height: 100%; object-fit: contain; border-radius: 0.75rem;">
+                    </div>
+                    <div class="school-info">
+                        <h5>Datamex College of Saint Adeline</h5>
+                        <p class="subtitle">Learning Management System</p>
+                    </div>
+                </div>
+            </div>
+            <ul class="sidenav-menu">
                 <li class="nav-item">
-                    <a class="nav-link text-white" href="index.php?page=teacher_dashboard">Dashboard</a>
+                    <a class="nav-link" href="index.php?page=teacher_dashboard">
+                        <i class="bi bi-house-door-fill"></i>
+                        <span>Dashboard</span>
+                    </a>
                 </li>
                 <li class="nav-item">
-                    <a class="nav-link text-white active" href="index.php?page=grading">Grading Management</a>
+                    <a class="nav-link active" href="index.php?page=grading">
+                        <i class="bi bi-journal-text"></i>
+                        <span>Grading Management</span>
+                    </a>
                 </li>
                 <li class="nav-item">
-                    <a class="nav-link text-white" href="index.php?page=logout">Logout</a>
+                    <a class="nav-link" href="index.php?page=logout">
+                        <i class="bi bi-box-arrow-right"></i>
+                        <span>Logout</span>
+                    </a>
                 </li>
             </ul>
         </div>
 
         <!-- main content -->
-        <div class="flex-grow-1">
+        <div class="main-content flex-grow-1">
             <!-- top navbar -->
-            <nav class="navbar navbar-light bg-light border-bottom">
+            <nav class="navbar top-navbar">
                 <div class="container-fluid">
-                    <span class="navbar-brand mb-0 h1">Grading Management</span>
-                    <div class="d-flex align-items-center">
-                        <span class="me-2">
-                            <strong><?php echo htmlspecialchars($_SESSION['user_firstname'] . ' ' . $_SESSION['user_lastname']); ?></strong>
-                            <small class="text-muted d-block"><?php echo ucfirst(htmlspecialchars($_SESSION['user_role'])); ?></small>
-                        </span>
+                    <div class="navbar-brand mb-0">
+                        <div class="page-icon">
+                            <i class="bi bi-journal-text"></i>
+                        </div>
+                        <span>Grading Management</span>
+                    </div>
+                    <div class="user-info-wrapper">
+                        <div class="user-details">
+                            <span class="user-name">
+                                <?php echo htmlspecialchars($_SESSION['user_firstname'] . ' ' . $_SESSION['user_lastname']); ?>
+                            </span>
+                            <span class="user-role">
+                                <i class="bi bi-person-badge-fill"></i>
+                                <?php echo ucfirst(htmlspecialchars($_SESSION['user_role'])); ?>
+                            </span>
+                        </div>
+                        <div class="user-avatar">
+                            <!-- user avatar placeholder first letters of name -->
+                            <?php
+                            $firstname = $_SESSION['user_firstname'] ?? 'T';
+                            $lastname = $_SESSION['user_lastname'] ?? 'U';
+                            echo strtoupper(substr($firstname, 0, 1) . substr($lastname, 0, 1));
+                            ?>
+                        </div>
                     </div>
                 </div>
             </nav>
@@ -46,49 +88,102 @@
                 <!-- breadcrumbs -->
                 <nav aria-label="breadcrumb">
                     <ol class="breadcrumb">
-                        <li class="breadcrumb-item"><a href="index.php?page=grading">Grading</a></li>
-                        <li class="breadcrumb-item"><a href="index.php?page=grading_subjects&year_level=<?php echo urlencode($year_level); ?>"><?php echo htmlspecialchars($year_level); ?></a></li>
-                        <li class="breadcrumb-item"><a href="index.php?page=grading_sections&year_level=<?php echo urlencode($year_level); ?>&subject_id=<?php echo urlencode($subject_id); ?>&school_year=<?php echo urlencode($school_year); ?>">Subject</a></li>
-                        <li class="breadcrumb-item active" aria-current="page">Section</li>
+                        <li class="breadcrumb-item">
+                            <a href="index.php?page=teacher_dashboard">
+                                <i class="bi bi-house-door-fill"></i> Dashboard
+                            </a>
+                        </li>
+                        <li class="breadcrumb-item">
+                            <a href="index.php?page=grading">Grading</a>
+                        </li>
+                        <li class="breadcrumb-item">
+                            <a href="index.php?page=grading_subjects&year_level=<?php echo urlencode($year_level); ?>">
+                                <?php echo htmlspecialchars($year_level); ?>
+                            </a>
+                        </li>
+                        <li class="breadcrumb-item">
+                            <a href="index.php?page=grading_sections&year_level=<?php echo urlencode($year_level); ?>&subject_id=<?php echo urlencode($subject_id); ?>&school_year=<?php echo urlencode($school_year); ?>">
+                                <?php echo htmlspecialchars($subject['subject_name']); ?>
+                            </a>
+                        </li>
+                        <li class="breadcrumb-item active" aria-current="page">
+                            <?php echo htmlspecialchars($section['section_name']); ?>
+                        </li>
                     </ol>
                 </nav>
 
-                <h2>Grade Students</h2>
+                <!-- page header -->
+                <div class="page-header">
+                    <div class="header-content">
+                        <div class="header-icon">
+                            <i class="bi bi-clipboard2-check-fill"></i>
+                        </div>
+                        <div class="header-text">
+                            <h1 class="header-title">Grade Students</h1>
+                            <p class="header-subtitle">
+                                <span class="info-badge">
+                                    <i class="bi bi-book-fill"></i>
+                                    <?php echo htmlspecialchars($subject['subject_name']); ?>
+                                </span>
+                                <span class="info-badge">
+                                    <i class="bi bi-people-fill"></i>
+                                    <?php echo htmlspecialchars($section['section_name']); ?>
+                                </span>
+                            </p>
+                        </div>
+                    </div>
+                </div>
 
                 <!-- success message -->
                 <?php if (isset($success_message)): ?>
                     <div class="alert alert-success alert-dismissible fade show" role="alert">
+                        <i class="bi bi-check-circle-fill"></i>
                         <?php echo htmlspecialchars($success_message); ?>
                         <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
                     </div>
                 <?php endif; ?>
 
                 <!-- grading period selector -->
-                <div class="card mb-3">
+                <div class="card grading-selector-card mb-3">
+                    <div class="card-header">
+                        <h5 class="mb-0">
+                            <i class="bi bi-sliders"></i>
+                            Grading Period Settings
+                        </h5>
+                    </div>
                     <div class="card-body">
                         <form method="GET" action="index.php">
                             <input type="hidden" name="page" value="grading_students">
                             <input type="hidden" name="year_level" value="<?php echo htmlspecialchars($year_level); ?>">
                             <input type="hidden" name="subject_id" value="<?php echo htmlspecialchars($subject_id); ?>">
                             <input type="hidden" name="section_id" value="<?php echo htmlspecialchars($section_id); ?>">
-                            
+
                             <div class="row">
                                 <div class="col-md-3">
-                                    <label class="form-label">School Year</label>
+                                    <label class="form-label">
+                                        <i class="bi bi-calendar-range"></i>
+                                        School Year
+                                    </label>
                                     <select name="school_year" class="form-select" onchange="this.form.submit()">
                                         <option value="2025-2026" <?php echo $school_year === '2025-2026' ? 'selected' : ''; ?>>2025-2026</option>
                                         <option value="2024-2025" <?php echo $school_year === '2024-2025' ? 'selected' : ''; ?>>2024-2025</option>
                                     </select>
                                 </div>
                                 <div class="col-md-3">
-                                    <label class="form-label">Semester</label>
+                                    <label class="form-label">
+                                        <i class="bi bi-calendar3"></i>
+                                        Semester
+                                    </label>
                                     <select name="semester" class="form-select" onchange="this.form.submit()">
                                         <option value="First" <?php echo $semester === 'First' ? 'selected' : ''; ?>>First Semester</option>
                                         <option value="Second" <?php echo $semester === 'Second' ? 'selected' : ''; ?>>Second Semester</option>
                                     </select>
                                 </div>
                                 <div class="col-md-3">
-                                    <label class="form-label">Grading Period</label>
+                                    <label class="form-label">
+                                        <i class="bi bi-calendar-check"></i>
+                                        Grading Period
+                                    </label>
                                     <select name="grading_period" class="form-select" onchange="this.form.submit()">
                                         <option value="Prelim" <?php echo $grading_period === 'Prelim' ? 'selected' : ''; ?>>Prelim</option>
                                         <option value="Midterm" <?php echo $grading_period === 'Midterm' ? 'selected' : ''; ?>>Midterm</option>
@@ -97,12 +192,19 @@
                                     </select>
                                 </div>
                                 <div class="col-md-3">
-                                    <label class="form-label">Status</label>
-                                    <div>
+                                    <label class="form-label">
+                                        <i class="bi bi-shield-lock"></i>
+                                        Status
+                                    </label>
+                                    <div class="status-badge-wrapper">
                                         <?php if ($is_locked): ?>
-                                            <span class="badge bg-danger">Locked</span>
+                                            <span class="badge bg-danger">
+                                                <i class="bi bi-lock-fill"></i> Locked
+                                            </span>
                                         <?php else: ?>
-                                            <span class="badge bg-success">Open</span>
+                                            <span class="badge bg-success">
+                                                <i class="bi bi-unlock-fill"></i> Open
+                                            </span>
                                         <?php endif; ?>
                                     </div>
                                 </div>
@@ -112,21 +214,36 @@
                 </div>
 
                 <!-- student list -->
-                <div class="card">
+                <div class="card student-list-card">
+                    <div class="card-header">
+                        <h5 class="mb-0">
+                            <i class="bi bi-people-fill"></i>
+                            Student List
+                        </h5>
+                    </div>
                     <div class="card-body">
                         <?php if (empty($students)): ?>
-                            <p class="text-muted">No students enrolled in this section.</p>
+                            <div class="empty-state">
+                                <div class="empty-state-icon">
+                                    <i class="bi bi-inbox"></i>
+                                </div>
+                                <p class="empty-state-text">No students enrolled for this period.</p>
+                                <p class="empty-state-subtext">
+                                    There are no students enrolled in <strong><?php echo htmlspecialchars($section['section_name']); ?></strong>
+                                    for <strong><?php echo htmlspecialchars($semester); ?> Semester, <?php echo htmlspecialchars($school_year); ?></strong>
+                                </p>
+                            </div>
                         <?php else: ?>
                             <div class="table-responsive">
                                 <table class="table table-hover">
                                     <thead>
                                         <tr>
-                                            <th>Student Number</th>
-                                            <th>Name</th>
-                                            <th>Section</th>
-                                            <th>Grade</th>
-                                            <th>Remarks</th>
-                                            <th>Action</th>
+                                            <th><i class="bi bi-hash"></i> Student Number</th>
+                                            <th><i class="bi bi-person-fill"></i> Name</th>
+                                            <th><i class="bi bi-diagram-3-fill"></i> Section</th>
+                                            <th><i class="bi bi-award-fill"></i> Grade</th>
+                                            <th><i class="bi bi-chat-left-text-fill"></i> Remarks</th>
+                                            <th><i class="bi bi-gear-fill"></i> Action</th>
                                         </tr>
                                     </thead>
                                     <tbody>
@@ -134,7 +251,7 @@
                                             <tr>
                                                 <td><?php echo htmlspecialchars($student['student_number']); ?></td>
                                                 <td>
-                                                    <?php 
+                                                    <?php
                                                     $full_name = $student['first_name'] . ' ';
                                                     if (!empty($student['middle_name'])) {
                                                         $full_name .= $student['middle_name'] . ' ';
@@ -147,25 +264,38 @@
                                                 <!-- displays percentage and GPA using data from controller -->
                                                 <td>
                                                     <?php if (!empty($student['percentage_display'])): ?>
-                                                        <span class="badge bg-primary"><?php echo htmlspecialchars($student['percentage_display']); ?> (<?php echo htmlspecialchars($student['gpa_display']); ?>)</span>
+                                                        <span class="badge bg-primary">
+                                                            <i class="bi bi-graph-up"></i>
+                                                            <?php echo htmlspecialchars($student['percentage_display']); ?>%
+                                                            <span class="gpa-separator">•</span>
+                                                            <?php echo htmlspecialchars($student['gpa_display']); ?> GPA
+                                                        </span>
                                                     <?php else: ?>
-                                                        <span class="text-muted">Not graded</span>
+                                                        <span class="text-muted">
+                                                            <i class="bi bi-dash-circle"></i> Not graded
+                                                        </span>
                                                     <?php endif; ?>
                                                 </td>
                                                 <td><?php echo htmlspecialchars($student['remarks'] ?? ''); ?></td>
                                                 <td>
-                                                    <button type="button" class="btn btn-sm btn-primary" 
-                                                            data-bs-toggle="modal" 
-                                                            data-bs-target="#gradeModal<?php echo $student['student_id']; ?>"
-                                                            <?php echo $is_locked ? 'disabled' : ''; ?>>
-                                                        <?php echo !empty($student['grade_value']) ? 'Edit' : 'Add'; ?> Grade
-                                                    </button>
+                                                    <?php if ($is_locked): ?>
+                                                        <span class="badge badge-locked">
+                                                            <i class="bi bi-lock-fill"></i> Period Locked
+                                                        </span>
+                                                    <?php else: ?>
+                                                        <button type="button" class="btn btn-sm btn-primary"
+                                                            data-bs-toggle="modal"
+                                                            data-bs-target="#gradeModal<?php echo $student['student_id']; ?>">
+                                                            <i class="bi bi-<?php echo !empty($student['grade_value']) ? 'pencil-square' : 'plus-circle'; ?>"></i>
+                                                            <?php echo !empty($student['grade_value']) ? 'Edit' : 'Add'; ?> Grade
+                                                        </button>
+                                                    <?php endif; ?>
                                                 </td>
                                             </tr>
 
                                             <!-- grade modal -->
                                             <div class="modal fade" id="gradeModal<?php echo $student['student_id']; ?>" tabindex="-1">
-                                                <div class="modal-dialog">
+                                                <div class="modal-dialog modal-dialog-centered">
                                                     <div class="modal-content">
                                                         <form method="POST" action="index.php?page=save_grade">
                                                             <input type="hidden" name="csrf_token" value="<?php echo $_SESSION['csrf_token']; ?>">
@@ -177,32 +307,55 @@
                                                             <input type="hidden" name="semester" value="<?php echo $semester; ?>">
                                                             <input type="hidden" name="grading_period" value="<?php echo $grading_period; ?>">
                                                             <input type="hidden" name="grade_format" id="gradeFormatHidden<?php echo $student['student_id']; ?>" value="percentage">
-                                            
+
                                                             <div class="modal-header">
-                                                                <h5 class="modal-title">Grade Student</h5>
+                                                                <h5 class="modal-title">
+                                                                    <i class="bi bi-clipboard2-check-fill"></i>
+                                                                    Grade Student
+                                                                </h5>
                                                                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                                                             </div>
                                                             <div class="modal-body">
-                                                                <p><strong>Student:</strong> <?php echo htmlspecialchars($full_name); ?></p>
-                                                                <p><strong>Student Number:</strong> <?php echo htmlspecialchars($student['student_number']); ?></p>
+                                                                <div class="student-info-card">
+                                                                    <div class="student-info-row">
+                                                                        <span class="info-label">
+                                                                            <i class="bi bi-person-circle"></i> Student:
+                                                                        </span>
+                                                                        <span class="info-value"><?php echo htmlspecialchars($full_name); ?></span>
+                                                                    </div>
+                                                                    <div class="student-info-row">
+                                                                        <span class="info-label">
+                                                                            <i class="bi bi-hash"></i> Student Number:
+                                                                        </span>
+                                                                        <span class="info-value"><?php echo htmlspecialchars($student['student_number']); ?></span>
+                                                                    </div>
+                                                                </div>
+
                                                                 <hr>
-                                                                
+
                                                                 <div class="row">
                                                                     <div class="col-md-6">
                                                                         <div class="mb-3">
-                                                                            <label class="form-label">Percentage (0-100)</label>
-                                                                            <input type="number" 
-                                                                                   id="percentage<?php echo $student['student_id']; ?>"
-                                                                                   class="form-control" 
-                                                                                   step="0.01"
-                                                                                   min="0"
-                                                                                   max="100"
-                                                                                   value="<?php echo htmlspecialchars($student['grade_value'] ?? ''); ?>">
+                                                                            <label class="form-label">
+                                                                                <i class="bi bi-percent"></i>
+                                                                                Percentage (0-100)
+                                                                            </label>
+                                                                            <input type="number"
+                                                                                id="percentage<?php echo $student['student_id']; ?>"
+                                                                                class="form-control"
+                                                                                step="0.01"
+                                                                                min="0"
+                                                                                max="100"
+                                                                                placeholder="Enter percentage"
+                                                                                value="<?php echo htmlspecialchars($student['grade_value'] ?? ''); ?>">
                                                                         </div>
                                                                     </div>
                                                                     <div class="col-md-6">
                                                                         <div class="mb-3">
-                                                                            <label class="form-label">GPA (1.0-5.0)</label>
+                                                                            <label class="form-label">
+                                                                                <i class="bi bi-award-fill"></i>
+                                                                                GPA (1.0-5.0)
+                                                                            </label>
                                                                             <select id="gpa<?php echo $student['student_id']; ?>" class="form-select">
                                                                                 <option value="">Select GPA</option>
                                                                                 <option value="1.0">1.0 (97-100)</option>
@@ -219,19 +372,27 @@
                                                                         </div>
                                                                     </div>
                                                                 </div>
-                                            
+
                                                                 <input type="hidden" name="grade_value" id="gradeValue<?php echo $student['student_id']; ?>" value="<?php echo htmlspecialchars($student['grade_value'] ?? ''); ?>">
-                                            
+
                                                                 <div class="mb-3">
-                                                                    <label class="form-label">Remarks (Optional)</label>
-                                                                    <textarea name="remarks" 
-                                                                              class="form-control" 
-                                                                              rows="3"><?php echo htmlspecialchars($student['remarks'] ?? ''); ?></textarea>
+                                                                    <label class="form-label">
+                                                                        <i class="bi bi-chat-left-text-fill"></i>
+                                                                        Remarks (Optional)
+                                                                    </label>
+                                                                    <textarea name="remarks"
+                                                                        class="form-control"
+                                                                        rows="3"
+                                                                        placeholder="Add any remarks or comments..."><?php echo htmlspecialchars($student['remarks'] ?? ''); ?></textarea>
                                                                 </div>
                                                             </div>
                                                             <div class="modal-footer">
-                                                                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                                                                <button type="submit" class="btn btn-primary">Save Grade</button>
+                                                                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                                                                    <i class="bi bi-x-circle"></i> Cancel
+                                                                </button>
+                                                                <button type="submit" class="btn btn-primary">
+                                                                    <i class="bi bi-check-circle-fill"></i> Save Grade
+                                                                </button>
                                                             </div>
                                                         </form>
                                                     </div>
@@ -250,74 +411,76 @@
 
     <script src="bootstrap/js/bootstrap.bundle.min.js"></script>
     <script>
+        // TODO: might put this externally later
         document.addEventListener('DOMContentLoaded', function() {
             <?php foreach ($students as $student): ?>
-            (function() {
-                const studentId = <?php echo $student['student_id']; ?>;
-                const percentageInput = document.getElementById('percentage' + studentId);
-                const gpaSelect = document.getElementById('gpa' + studentId);
-                const gradeValueHidden = document.getElementById('gradeValue' + studentId);
-                const gradeFormatHidden = document.getElementById('gradeFormatHidden' + studentId);
-            
-                // GPA to percentage conversion
-                const gpaToPercentage = {
-                    '1.0': 98,
-                    '1.25': 95.5,
-                    '1.5': 92.5,
-                    '1.75': 90.5,
-                    '2.0': 87.5,
-                    '2.25': 84.5,
-                    '2.5': 81.5,
-                    '2.75': 78.5,
-                    '3.0': 75,
-                    '5.0': 50
-                };
-            
-                // percentage to GPA conversion
-                function percentageToGPA(percentage) {
-                    const p = parseFloat(percentage);
-                    if (p >= 97) return '1.0';
-                    if (p >= 94) return '1.25';
-                    if (p >= 91) return '1.5';
-                    if (p >= 88) return '1.75';
-                    if (p >= 85) return '2.0';
-                    if (p >= 82) return '2.25';
-                    if (p >= 79) return '2.5';
-                    if (p >= 76) return '2.75';
-                    if (p >= 75) return '3.0';
-                    return '5.0';
-                }
-            
-                // when percentage changes, update GPA
-                percentageInput.addEventListener('input', function() {
-                    const percentage = this.value;
-                    if (percentage !== '') {
-                        const gpa = percentageToGPA(percentage);
-                        gpaSelect.value = gpa;
-                        gradeValueHidden.value = percentage;
-                        gradeFormatHidden.value = 'percentage';
-                    }
-                });
-            
-                // When GPA changes, update percentage
-                gpaSelect.addEventListener('change', function() {
-                    const gpa = this.value;
-                    if (gpa !== '') {
-                        const percentage = gpaToPercentage[gpa];
-                        percentageInput.value = percentage;
-                        gradeValueHidden.value = percentage;
-                        gradeFormatHidden.value = 'gpa';
-                    }
-                });
-            
-                // initialize GPA select if grade exists
-                <?php if (!empty($student['grade_value'])): ?>
-                const initialGPA = percentageToGPA(<?php echo $student['grade_value']; ?>);
-                gpaSelect.value = initialGPA;
-                <?php endif; ?>
-            })();
+                    (function() {
+                        const studentId = <?php echo $student['student_id']; ?>;
+                        const percentageInput = document.getElementById('percentage' + studentId);
+                        const gpaSelect = document.getElementById('gpa' + studentId);
+                        const gradeValueHidden = document.getElementById('gradeValue' + studentId);
+                        const gradeFormatHidden = document.getElementById('gradeFormatHidden' + studentId);
+
+                        // GPA to percentage conversion
+                        const gpaToPercentage = {
+                            '1.0': 98,
+                            '1.25': 95.5,
+                            '1.5': 92.5,
+                            '1.75': 90.5,
+                            '2.0': 87.5,
+                            '2.25': 84.5,
+                            '2.5': 81.5,
+                            '2.75': 78.5,
+                            '3.0': 75,
+                            '5.0': 50
+                        };
+
+                        // percentage to GPA conversion
+                        function percentageToGPA(percentage) {
+                            const p = parseFloat(percentage);
+                            if (p >= 97) return '1.0';
+                            if (p >= 94) return '1.25';
+                            if (p >= 91) return '1.5';
+                            if (p >= 88) return '1.75';
+                            if (p >= 85) return '2.0';
+                            if (p >= 82) return '2.25';
+                            if (p >= 79) return '2.5';
+                            if (p >= 76) return '2.75';
+                            if (p >= 75) return '3.0';
+                            return '5.0';
+                        }
+
+                        // when percentage changes, update GPA
+                        percentageInput.addEventListener('input', function() {
+                            const percentage = this.value;
+                            if (percentage !== '') {
+                                const gpa = percentageToGPA(percentage);
+                                gpaSelect.value = gpa;
+                                gradeValueHidden.value = percentage;
+                                gradeFormatHidden.value = 'percentage';
+                            }
+                        });
+
+                        // When GPA changes, update percentage
+                        gpaSelect.addEventListener('change', function() {
+                            const gpa = this.value;
+                            if (gpa !== '') {
+                                const percentage = gpaToPercentage[gpa];
+                                percentageInput.value = percentage;
+                                gradeValueHidden.value = percentage;
+                                gradeFormatHidden.value = 'percentage';
+                            }
+                        });
+
+                        // initialize GPA select if grade exists
+                        <?php if (!empty($student['grade_value'])): ?>
+                            const initialGPA = percentageToGPA(<?php echo $student['grade_value']; ?>);
+                            gpaSelect.value = initialGPA;
+                        <?php endif; ?>
+                    })();
             <?php endforeach; ?>
         });
     </script>
 </body>
+
 </html>
