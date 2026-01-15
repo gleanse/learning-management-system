@@ -5,7 +5,7 @@ require_once __DIR__ . '/../vendor/autoload.php';
 $dotenv = Dotenv\Dotenv::createImmutable(dirname(__DIR__));
 $dotenv->load();
 
-// runtime error handling based on app env variablw prod for deployed and dev for local ongoing development
+// runtime error handling based on app env variablw prod for deployed and dev for local ongoing development.
 $prod = ($_SERVER['ENV_APP'] ?? 'dev') === 'prod';
 
 // if on production turn off the error logs
