@@ -34,7 +34,7 @@
                         <div class="login-brand">
                             <div class="brand-content">
                                 <div class="brand-logo">
-                                    <img src="assets/DCSA-LOGO.PNG" alt="LMS Brand Logo">
+                                    <img src="assets/DCSA-LOGO.png" alt="LMS Brand Logo">
                                 </div>
                                 <div class="brand-text-wrapper">
                                     <h2 class="brand-title">Learning Management System</h2>
