@@ -2,6 +2,7 @@
 
 require_once __DIR__ . '/controllers/AuthController.php';
 require_once __DIR__ . '/controllers/GradeController.php';
+require_once __DIR__ . '/controllers/StudentController.php';
 
 $page = $_GET['page'] ?? 'login';
 $method = $_SERVER['REQUEST_METHOD'];
@@ -97,6 +98,62 @@ if ($page === 'save_grade' && $method === 'POST') {
 
     $controller = new GradeController();
     $controller->processSaveGrade();
+    exit();
+}
+
+// STUDENT DASHBOARD ROUTES (student only)
+if ($page === 'student_dashboard' && $method === 'GET') {
+    if (!isLoggedIn() || !isStudent()) {
+        header('Location: index.php?page=login');
+        exit();
+    }
+
+    $controller = new StudentController();
+    $controller->showStudentDashboard();
+    exit();
+}
+
+if ($page === 'student_grades' && $method === 'GET') {
+    if (!isLoggedIn() || !isStudent()) {
+        header('Location: index.php?page=login');
+        exit();
+    }
+
+    $controller = new StudentController();
+    $controller->showYearLevels();
+    exit();
+}
+
+if ($page === 'student_semesters' && $method === 'GET') {
+    if (!isLoggedIn() || !isStudent()) {
+        header('Location: index.php?page=login');
+        exit();
+    }
+
+    $controller = new StudentController();
+    $controller->showSemesters();
+    exit();
+}
+
+if ($page === 'student_subjects' && $method === 'GET') {
+    if (!isLoggedIn() || !isStudent()) {
+        header('Location: index.php?page=login');
+        exit();
+    }
+
+    $controller = new StudentController();
+    $controller->showSubjects();
+    exit();
+}
+
+if ($page === 'student_grades_view' && $method === 'GET') {
+    if (!isLoggedIn() || !isStudent()) {
+        header('Location: index.php?page=login');
+        exit();
+    }
+
+    $controller = new StudentController();
+    $controller->showGrades();
     exit();
 }
 
