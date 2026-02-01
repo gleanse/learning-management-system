@@ -33,6 +33,15 @@ function isSuperAdmin()
     return isset($_SESSION['user_role']) && $_SESSION['user_role'] === 'superadmin';
 }
 
+// TODO: test routes refactor later
+if (isset($_GET['page']) && $_GET['page'] === 'admin_dashboard') {
+    require_once __DIR__ . '/controllers/DashboardController.php';
+    $controller = new DashboardController();
+    $controller->showDashboard();
+    exit();
+}
+
+
 // TEACHER DASHBOARD ROUTES (teacher only)
 if ($page === 'teacher_dashboard' && $method === 'GET') {
     if (!isLoggedIn() || !isTeacher()) {

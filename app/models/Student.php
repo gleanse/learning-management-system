@@ -80,7 +80,7 @@ class Student
 
         return $stmt->fetch();
     }
-    
+
     // get student_id by user_id
     public function getStudentIdByUserId($user_id)
     {
@@ -227,5 +227,69 @@ class Student
         $stmt->execute([$user_id]);
 
         return $stmt->fetch();
+    }
+
+    public function getTotalActiveStudents()
+    {
+        $stmt = $this->connection->prepare("
+            SELECT COUNT(*) as total 
+            FROM students 
+            WHERE enrollment_status = 'active'
+        ");
+        $stmt->execute();
+        $result = $stmt->fetch();
+        return $result['total'] ?? 0;
+    }
+
+    public function getStudentsEnrolledThisMonth()
+    {
+        $stmt = $this->connection->prepare("
+            SELECT COUNT(*) as total 
+            FROM students 
+            WHERE MONTH(created_at) = MONTH(CURRENT_DATE()) 
+            AND YEAR(created_at) = YEAR(CURRENT_DATE())
+            AND enrollment_status = 'active'
+        ");
+        $stmt->execute();
+        $result = $stmt->fetch();
+        return $result['total'] ?? 0;
+    }
+
+    public function getRecentEnrollments($limit = 5)
+    {
+        $stmt = $this->connection->prepare("
+            SELECT 
+                s.student_number,
+                u.first_name,
+                u.middle_name,
+                u.last_name,
+                sec.section_name,
+                s.year_level,
+                s.created_at
+            FROM students s
+            JOIN users u ON s.user_id = u.id
+            JOIN sections sec ON s.section_id = sec.section_id
+            WHERE s.enrollment_status = 'active'
+            ORDER BY s.created_at DESC
+            LIMIT :limit
+        ");
+
+        $stmt->bindValue(':limit', $limit, PDO::PARAM_INT);
+        $stmt->execute();
+
+        return $stmt->fetchAll();
+    }
+
+    public function getStudentCountByStatus()
+    {
+        $stmt = $this->connection->prepare("
+            SELECT 
+                enrollment_status,
+                COUNT(*) as count
+            FROM students
+            GROUP BY enrollment_status
+        ");
+        $stmt->execute();
+        return $stmt->fetchAll();
     }
 }

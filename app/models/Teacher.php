@@ -26,12 +26,12 @@ class Teacher
             WHERE tsa.teacher_id = ? AND tsa.year_level = ?
             ORDER BY s.subject_name ASC
         ");
-        
+
         $stmt->execute([$teacher_id, $year_level]);
-        
+
         return $stmt->fetchAll();
     }
-    
+
     // get all year levels where teacher has assigned subjects
     public function getAssignedYearLevels($teacher_id)
     {
@@ -41,9 +41,34 @@ class Teacher
             WHERE teacher_id = ?
             ORDER BY year_level ASC
         ");
-        
+
         $stmt->execute([$teacher_id]);
-        
+
         return $stmt->fetchAll();
+    }
+
+    public function getTotalActiveTeachers()
+    {
+        $stmt = $this->connection->prepare("
+            SELECT COUNT(*) as total 
+            FROM users 
+            WHERE role = 'teacher' 
+            AND status = 'active'
+        ");
+        $stmt->execute();
+        $result = $stmt->fetch();
+        return $result['total'] ?? 0;
+    }
+
+    // get count of teachers with subject assignments
+    public function getAssignedTeachersCount()
+    {
+        $stmt = $this->connection->prepare("
+            SELECT COUNT(DISTINCT teacher_id) as total 
+            FROM teacher_subject_assignments
+        ");
+        $stmt->execute();
+        $result = $stmt->fetch();
+        return $result['total'] ?? 0;
     }
 }
