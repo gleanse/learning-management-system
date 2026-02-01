@@ -7,22 +7,11 @@
     <link rel="stylesheet" href="bootstrap/css/bootstrap.min.css">
     <link rel="stylesheet" href="bootstrap/css/bootstrap-icons.css">
     <link rel="stylesheet" href="css/main.css">
-    <link rel="stylesheet" href="css/landing/navbar.css">
     <link rel="stylesheet" href="css/pages/login.css">
     <title>Sign In - LMS</title>
 </head>
 
 <body>
-
-    <!-- NAVBAR -->
-    <nav class="navbar navbar-light bg-white shadow-sm">
-        <div class="container">
-            <a class="navbar-brand" href="index.php">
-                <img src="assets/DCSA-LOGO.png" alt="LMS Logo" class="navbar-logo">
-            </a>
-        </div>
-    </nav>
-
     <div class="login-wrapper">
         <div class="container">
             <div class="row justify-content-center align-items-center">

@@ -204,6 +204,7 @@ body {
 
 /* TITLE styling */
 .login-title {
+  text-align: center;
   font-size: 2rem;
   font-weight: 700;
   color: var(--gray-900);
@@ -212,6 +213,7 @@ body {
 
 /* SUBTITLE styling */
 .login-subtitle {
+  text-align: center;
   color: var(--gray-500);
   font-size: 0.95rem;
   margin-bottom: 0;
