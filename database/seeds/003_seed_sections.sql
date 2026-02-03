@@ -1,8 +1,15 @@
--- seed sample section
+-- seed sample sections
 INSERT INTO sections (section_name, year_level, school_year, created_at, updated_at)
 VALUES
 (
     'BSIT 2A',
+    '2nd Year',
+    '2025-2026',
+    NOW(),
+    NOW()
+),
+(
+    'BSIT 2B',
     '2nd Year',
     '2025-2026',
     NOW(),

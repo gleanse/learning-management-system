@@ -84,7 +84,7 @@ class GradeController
             exit();
         }
 
-        $subjects = $this->teacher_model->getAssignedSubjects($teacher_id, $year_level);
+        $subjects = $this->teacher_model->getAssignedSubjectsGrouped($teacher_id, $year_level);
 
         require __DIR__ . '/../views/teacher/subjects.php';
     }
@@ -112,7 +112,8 @@ class GradeController
         $subject_model = new Subject();
         $subject = $subject_model->getById($subject_id);
 
-        $sections = $this->student_model->getSectionsBySubjectAndYearLevel($subject_id, $year_level, $school_year, $semester);
+        $teacher_id = $_SESSION['user_id'];
+        $sections = $this->teacher_model->getSectionsBySubject($teacher_id, $subject_id, $year_level, $school_year);
 
         require __DIR__ . '/../views/teacher/sections.php';
     }
