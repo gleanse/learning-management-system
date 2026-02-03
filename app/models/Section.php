@@ -56,4 +56,22 @@ class Section
         $stmt->execute([$year_level]);
         return $stmt->fetchAll();
     }
+
+    // get section by id
+    public function getSectionById($section_id)
+    {
+        $stmt = $this->connection->prepare("
+            SELECT 
+                section_id,
+                section_name,
+                year_level,
+                school_year
+            FROM sections
+            WHERE section_id = ?
+        ");
+
+        $stmt->execute([$section_id]);
+
+        return $stmt->fetch();
+    }
 }

@@ -26,7 +26,9 @@ class Teacher
             FROM teacher_subject_assignments tsa
             INNER JOIN subjects s ON tsa.subject_id = s.subject_id
             INNER JOIN sections sec ON tsa.section_id = sec.section_id
-            WHERE tsa.teacher_id = ? AND tsa.year_level = ?
+            WHERE tsa.teacher_id = ? 
+            AND tsa.year_level = ?
+            AND tsa.status = 'active'
             ORDER BY s.subject_name ASC, sec.section_name ASC
         ");
 
@@ -47,7 +49,9 @@ class Teacher
                 COUNT(DISTINCT tsa.section_id) as section_count
             FROM teacher_subject_assignments tsa
             INNER JOIN subjects s ON tsa.subject_id = s.subject_id
-            WHERE tsa.teacher_id = ? AND tsa.year_level = ?
+            WHERE tsa.teacher_id = ? 
+            AND tsa.year_level = ?
+            AND tsa.status = 'active'
             GROUP BY s.subject_id, s.subject_code, s.subject_name, tsa.school_year
             ORDER BY s.subject_name ASC
         ");
@@ -71,9 +75,10 @@ class Teacher
             INNER JOIN sections sec ON tsa.section_id = sec.section_id
             LEFT JOIN students st ON st.section_id = sec.section_id AND st.enrollment_status = 'active'
             WHERE tsa.teacher_id = ? 
-              AND tsa.subject_id = ? 
-              AND tsa.year_level = ? 
-              AND tsa.school_year = ?
+            AND tsa.subject_id = ? 
+            AND tsa.year_level = ? 
+            AND tsa.school_year = ?
+            AND tsa.status = 'active'
             GROUP BY sec.section_id, sec.section_name, sec.year_level, sec.school_year
             ORDER BY sec.section_name ASC
         ");
@@ -89,7 +94,8 @@ class Teacher
         $stmt = $this->connection->prepare("
             SELECT DISTINCT year_level
             FROM teacher_subject_assignments
-            WHERE teacher_id = ?
+            WHERE teacher_id = ? 
+            AND status = 'active'
             ORDER BY year_level ASC
         ");
 

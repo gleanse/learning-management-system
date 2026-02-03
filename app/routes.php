@@ -3,6 +3,8 @@
 require_once __DIR__ . '/controllers/AuthController.php';
 require_once __DIR__ . '/controllers/GradeController.php';
 require_once __DIR__ . '/controllers/StudentController.php';
+require_once __DIR__ . '/controllers/TeacherAssignmentController.php';
+require_once __DIR__ . '/controllers/DashboardController.php';
 
 $page = $_GET['page'] ?? 'login';
 $method = $_SERVER['REQUEST_METHOD'];
@@ -33,14 +35,85 @@ function isSuperAdmin()
     return isset($_SESSION['user_role']) && $_SESSION['user_role'] === 'superadmin';
 }
 
-// TODO: test routes refactor later
-if (isset($_GET['page']) && $_GET['page'] === 'admin_dashboard') {
-    require_once __DIR__ . '/controllers/DashboardController.php';
+// ADMIN dashboard
+if ($page === 'admin_dashboard' && $method === 'GET') {
+    if (!isLoggedIn() || (!isAdmin() && !isSuperAdmin())) {
+        header('Location: index.php?page=login');
+        exit();
+    }
+
     $controller = new DashboardController();
     $controller->showDashboard();
     exit();
 }
 
+// TEACHER ASSIGNMENT ROUTES (admin only)
+if ($page === 'teacher_assignments' && $method === 'GET') {
+    if (!isLoggedIn() || (!isAdmin() && !isSuperAdmin())) {
+        header('Location: index.php?page=login');
+        exit();
+    }
+
+    $controller = new TeacherAssignmentController();
+    $controller->showAssignmentPage();
+    exit();
+}
+
+if ($page === 'assign_teacher' && $method === 'POST') {
+    if (!isLoggedIn() || (!isAdmin() && !isSuperAdmin())) {
+        header('Location: index.php?page=login');
+        exit();
+    }
+
+    $controller = new TeacherAssignmentController();
+    $controller->processAssignment();
+    exit();
+}
+
+if ($page === 'show_reassign' && $method === 'GET') {
+    if (!isLoggedIn() || (!isAdmin() && !isSuperAdmin())) {
+        header('Location: index.php?page=login');
+        exit();
+    }
+
+    $controller = new TeacherAssignmentController();
+    $controller->showReassignForm();
+    exit();
+}
+
+if ($page === 'reassign_teacher' && $method === 'POST') {
+    if (!isLoggedIn() || (!isAdmin() && !isSuperAdmin())) {
+        header('Location: index.php?page=login');
+        exit();
+    }
+
+    $controller = new TeacherAssignmentController();
+    $controller->processReassignment();
+    exit();
+}
+
+if ($page === 'remove_teacher_assignment' && $method === 'POST') {
+    if (!isLoggedIn() || (!isAdmin() && !isSuperAdmin())) {
+        header('Location: index.php?page=login');
+        exit();
+    }
+
+    $controller = new TeacherAssignmentController();
+    $controller->processRemoveAssignment();
+    exit();
+}
+
+// restores a previously removed assignment back to active
+if ($page === 'restore_teacher_assignment' && $method === 'POST') {
+    if (!isLoggedIn() || (!isAdmin() && !isSuperAdmin())) {
+        header('Location: index.php?page=login');
+        exit();
+    }
+
+    $controller = new TeacherAssignmentController();
+    $controller->processRestoreAssignment();
+    exit();
+}
 
 // TEACHER DASHBOARD ROUTES (teacher only)
 if ($page === 'teacher_dashboard' && $method === 'GET') {

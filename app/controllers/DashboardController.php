@@ -32,6 +32,6 @@ class DashboardController
         $total_sections = $this->section_model->getTotalSections();
         $recent_enrollments = $this->student_model->getRecentEnrollments(5);
 
-        require __DIR__ . '/../views/admin/dashboard.php';
+        require __DIR__ . '/../views/admin/admin_dashboard.php';
     }
 }
