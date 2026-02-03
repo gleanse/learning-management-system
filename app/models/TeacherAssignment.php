@@ -13,15 +13,15 @@ class TeacherAssignment
     }
 
     // assign teacher to multiple subjects for one section
-    public function assignTeacherToSection($teacher_id, $subject_ids, $section_id, $year_level, $school_year)
+    public function assignTeacherToSection($teacher_id, $subject_ids, $section_id, $year_level, $school_year, $semester)
     {
         try {
             $this->connection->beginTransaction();
 
             $stmt = $this->connection->prepare("
                 INSERT INTO teacher_subject_assignments 
-                (teacher_id, subject_id, section_id, year_level, school_year, assigned_date, status)
-                VALUES (?, ?, ?, ?, ?, CURDATE(), 'active')
+                (teacher_id, subject_id, section_id, year_level, school_year, semester, assigned_date, status)
+                VALUES (?, ?, ?, ?, ?, ?, CURDATE(), 'active')
             ");
 
             $inserted = 0;
@@ -29,11 +29,11 @@ class TeacherAssignment
             foreach ($subject_ids as $subject_id) {
                 $subject_id = (int) $subject_id;
 
-                if ($this->inactiveAssignmentExists($teacher_id, $subject_id, $section_id, $school_year)) {
-                    $this->reactivateSingleAssignment($teacher_id, $subject_id, $section_id, $school_year);
+                if ($this->inactiveAssignmentExists($teacher_id, $subject_id, $section_id, $school_year, $semester)) {
+                    $this->reactivateSingleAssignment($teacher_id, $subject_id, $section_id, $school_year, $semester);
                     $inserted++;
-                } elseif (!$this->assignmentExists($teacher_id, $subject_id, $section_id, $school_year)) {
-                    $stmt->execute([$teacher_id, $subject_id, $section_id, $year_level, $school_year]);
+                } elseif (!$this->assignmentExists($teacher_id, $subject_id, $section_id, $school_year, $semester)) {
+                    $stmt->execute([$teacher_id, $subject_id, $section_id, $year_level, $school_year, $semester]);
                     $inserted++;
                 }
             }
@@ -48,16 +48,16 @@ class TeacherAssignment
     }
 
     // reassign: diffs current vs new, deactivates removed, inserts/reactivates added
-    public function reassignTeacherSubjects($teacher_id, $section_id, $new_subject_ids, $year_level, $school_year)
+    public function reassignTeacherSubjects($teacher_id, $section_id, $new_subject_ids, $year_level, $school_year, $semester)
     {
         try {
             $this->connection->beginTransaction();
 
             $stmt = $this->connection->prepare("
                 SELECT subject_id FROM teacher_subject_assignments
-                WHERE teacher_id = ? AND section_id = ? AND school_year = ? AND status = 'active'
+                WHERE teacher_id = ? AND section_id = ? AND school_year = ? AND semester = ? AND status = 'active'
             ");
-            $stmt->execute([$teacher_id, $section_id, $school_year]);
+            $stmt->execute([$teacher_id, $section_id, $school_year, $semester]);
             $current_rows = $stmt->fetchAll();
             $current_subject_ids = array_column($current_rows, 'subject_id');
 
@@ -71,24 +71,24 @@ class TeacherAssignment
                 $deactivate_stmt = $this->connection->prepare("
                     UPDATE teacher_subject_assignments
                     SET status = 'inactive'
-                    WHERE teacher_id = ? AND section_id = ? AND school_year = ? AND subject_id IN ($placeholders)
+                    WHERE teacher_id = ? AND section_id = ? AND school_year = ? AND semester = ? AND subject_id IN ($placeholders)
                 ");
-                $params = array_merge([$teacher_id, $section_id, $school_year], array_values($to_remove));
+                $params = array_merge([$teacher_id, $section_id, $school_year, $semester], array_values($to_remove));
                 $deactivate_stmt->execute($params);
             }
 
             if (!empty($to_add)) {
                 $insert_stmt = $this->connection->prepare("
                     INSERT INTO teacher_subject_assignments 
-                    (teacher_id, subject_id, section_id, year_level, school_year, assigned_date, status)
-                    VALUES (?, ?, ?, ?, ?, CURDATE(), 'active')
+                    (teacher_id, subject_id, section_id, year_level, school_year, semester, assigned_date, status)
+                    VALUES (?, ?, ?, ?, ?, ?, CURDATE(), 'active')
                 ");
 
                 foreach ($to_add as $subject_id) {
-                    if ($this->inactiveAssignmentExists($teacher_id, $subject_id, $section_id, $school_year)) {
-                        $this->reactivateSingleAssignment($teacher_id, $subject_id, $section_id, $school_year);
+                    if ($this->inactiveAssignmentExists($teacher_id, $subject_id, $section_id, $school_year, $semester)) {
+                        $this->reactivateSingleAssignment($teacher_id, $subject_id, $section_id, $school_year, $semester);
                     } else {
-                        $insert_stmt->execute([$teacher_id, $subject_id, $section_id, $year_level, $school_year]);
+                        $insert_stmt->execute([$teacher_id, $subject_id, $section_id, $year_level, $school_year, $semester]);
                     }
                 }
             }
@@ -112,6 +112,7 @@ class TeacherAssignment
                 tsa.section_id,
                 tsa.year_level,
                 tsa.school_year,
+                tsa.semester,
                 tsa.status,
                 CONCAT(u.first_name, ' ', IF(u.middle_name IS NOT NULL, CONCAT(u.middle_name, ' '), ''), u.last_name) as teacher_name,
                 sec.section_name,
@@ -123,7 +124,7 @@ class TeacherAssignment
             INNER JOIN subjects s ON tsa.subject_id = s.subject_id
             INNER JOIN sections sec ON tsa.section_id = sec.section_id
             WHERE tsa.status = ?
-            GROUP BY tsa.teacher_id, tsa.section_id, tsa.year_level, tsa.school_year, tsa.status
+            GROUP BY tsa.teacher_id, tsa.section_id, tsa.year_level, tsa.school_year, tsa.semester, tsa.status
             ORDER BY u.last_name ASC, sec.section_name ASC
         ");
 
@@ -132,72 +133,72 @@ class TeacherAssignment
     }
 
     // check if an ACTIVE assignment already exists
-    public function assignmentExists($teacher_id, $subject_id, $section_id, $school_year)
+    public function assignmentExists($teacher_id, $subject_id, $section_id, $school_year, $semester)
     {
         $stmt = $this->connection->prepare("
             SELECT COUNT(*) as count
             FROM teacher_subject_assignments
-            WHERE teacher_id = ? AND subject_id = ? AND section_id = ? AND school_year = ? AND status = 'active'
+            WHERE teacher_id = ? AND subject_id = ? AND section_id = ? AND school_year = ? AND semester = ? AND status = 'active'
         ");
 
-        $stmt->execute([$teacher_id, $subject_id, $section_id, $school_year]);
+        $stmt->execute([$teacher_id, $subject_id, $section_id, $school_year, $semester]);
         $result = $stmt->fetch();
 
         return $result['count'] > 0;
     }
 
     // check if an INACTIVE assignment exists (blocks INSERT due to unique key)
-    public function inactiveAssignmentExists($teacher_id, $subject_id, $section_id, $school_year)
+    public function inactiveAssignmentExists($teacher_id, $subject_id, $section_id, $school_year, $semester)
     {
         $stmt = $this->connection->prepare("
             SELECT COUNT(*) as count
             FROM teacher_subject_assignments
-            WHERE teacher_id = ? AND subject_id = ? AND section_id = ? AND school_year = ? AND status = 'inactive'
+            WHERE teacher_id = ? AND subject_id = ? AND section_id = ? AND school_year = ? AND semester = ? AND status = 'inactive'
         ");
 
-        $stmt->execute([$teacher_id, $subject_id, $section_id, $school_year]);
+        $stmt->execute([$teacher_id, $subject_id, $section_id, $school_year, $semester]);
         $result = $stmt->fetch();
 
         return $result['count'] > 0;
     }
 
     // reactivate a single specific assignment row
-    private function reactivateSingleAssignment($teacher_id, $subject_id, $section_id, $school_year)
+    private function reactivateSingleAssignment($teacher_id, $subject_id, $section_id, $school_year, $semester)
     {
         $stmt = $this->connection->prepare("
             UPDATE teacher_subject_assignments
             SET status = 'active', assigned_date = CURDATE()
-            WHERE teacher_id = ? AND subject_id = ? AND section_id = ? AND school_year = ? AND status = 'inactive'
+            WHERE teacher_id = ? AND subject_id = ? AND section_id = ? AND school_year = ? AND semester = ? AND status = 'inactive'
         ");
 
-        return $stmt->execute([$teacher_id, $subject_id, $section_id, $school_year]);
+        return $stmt->execute([$teacher_id, $subject_id, $section_id, $school_year, $semester]);
     }
 
     // soft delete- set all assignments for a teacher-section to inactive
-    public function removeTeacherSectionAssignments($teacher_id, $section_id, $school_year)
+    public function removeTeacherSectionAssignments($teacher_id, $section_id, $school_year, $semester)
     {
         $stmt = $this->connection->prepare("
             UPDATE teacher_subject_assignments
             SET status = 'inactive'
-            WHERE teacher_id = ? AND section_id = ? AND school_year = ?
+            WHERE teacher_id = ? AND section_id = ? AND school_year = ? AND semester = ?
         ");
 
-        return $stmt->execute([$teacher_id, $section_id, $school_year]);
+        return $stmt->execute([$teacher_id, $section_id, $school_year, $semester]);
     }
 
     // restore- set all assignments for a teacher-section back to active
-    public function reactivateAssignments($teacher_id, $section_id, $school_year)
+    public function reactivateAssignments($teacher_id, $section_id, $school_year, $semester)
     {
         $stmt = $this->connection->prepare("
             UPDATE teacher_subject_assignments
             SET status = 'active'
-            WHERE teacher_id = ? AND section_id = ? AND school_year = ?
+            WHERE teacher_id = ? AND section_id = ? AND school_year = ? AND semester = ?
         ");
 
-        return $stmt->execute([$teacher_id, $section_id, $school_year]);
+        return $stmt->execute([$teacher_id, $section_id, $school_year, $semester]);
     }
 
-    public function getGroupedAssignmentByTeacherSection($teacher_id, $section_id, $school_year, $status = 'active')
+    public function getGroupedAssignmentByTeacherSection($teacher_id, $section_id, $school_year, $semester, $status = 'active')
     {
         $stmt = $this->connection->prepare("
             SELECT 
@@ -205,6 +206,7 @@ class TeacherAssignment
                 tsa.section_id,
                 tsa.year_level,
                 tsa.school_year,
+                tsa.semester,
                 tsa.status,
                 CONCAT(u.first_name, ' ', IF(u.middle_name IS NOT NULL, CONCAT(u.middle_name, ' '), ''), u.last_name) as teacher_name,
                 sec.section_name,
@@ -218,11 +220,12 @@ class TeacherAssignment
             WHERE tsa.teacher_id = ? 
                 AND tsa.section_id = ? 
                 AND tsa.school_year = ?
+                AND tsa.semester = ?
                 AND tsa.status = ?
-            GROUP BY tsa.teacher_id, tsa.section_id, tsa.year_level, tsa.school_year, tsa.status
+            GROUP BY tsa.teacher_id, tsa.section_id, tsa.year_level, tsa.school_year, tsa.semester, tsa.status
         ");
 
-        $stmt->execute([$teacher_id, $section_id, $school_year, $status]);
+        $stmt->execute([$teacher_id, $section_id, $school_year, $semester, $status]);
         return $stmt->fetch(PDO::FETCH_ASSOC);
     }
 }
