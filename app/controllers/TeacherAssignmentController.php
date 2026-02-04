@@ -20,13 +20,11 @@ class TeacherAssignmentController
         $this->subject_model = new Subject();
     }
 
-    // checks if the request came from fetch/XMLHttpRequest
     private function isAjax()
     {
         return isset($_SERVER['HTTP_X_REQUESTED_WITH']) && $_SERVER['HTTP_X_REQUESTED_WITH'] === 'XMLHttpRequest';
     }
 
-    // sends JSON and stops
     private function jsonResponse($data, $status_code = 200)
     {
         http_response_code($status_code);
@@ -35,7 +33,6 @@ class TeacherAssignmentController
         exit();
     }
 
-    // checks admin access — AJAX gets JSON 403, normal gets redirect
     private function requireAdmin()
     {
         if (!isset($_SESSION['user_id']) || !in_array($_SESSION['user_role'], ['admin', 'superadmin'])) {
@@ -47,7 +44,6 @@ class TeacherAssignmentController
         }
     }
 
-    // validates CSRF — AJAX gets JSON 403, normal gets redirect
     private function validateCsrf()
     {
         if (!isset($_POST['csrf_token']) || !isset($_SESSION['csrf_token']) || !hash_equals($_SESSION['csrf_token'], $_POST['csrf_token'])) {
@@ -61,22 +57,6 @@ class TeacherAssignmentController
             header('Location: index.php?page=teacher_assignments');
             exit();
         }
-    }
-
-    // builds a sorted subject names string from an array of subject IDs
-    private function buildSubjectNames(array $subject_ids)
-    {
-        $all_subjects = $this->subject_model->getAll();
-        $id_to_name = array_column($all_subjects, 'subject_name', 'subject_id');
-
-        $names = [];
-        foreach ($subject_ids as $sid) {
-            if (isset($id_to_name[$sid])) {
-                $names[] = $id_to_name[$sid];
-            }
-        }
-        sort($names);
-        return $names;
     }
 
     public function showAssignmentPage()
@@ -114,7 +94,7 @@ class TeacherAssignmentController
         $subject_ids = isset($_POST['subject_ids']) && is_array($_POST['subject_ids'])
             ? array_map('intval', $_POST['subject_ids'])
             : [];
-        $school_year = $_POST['school_year'] ?? '2025-2026';
+        $school_year = $_POST['school_year'] ?? '';
         $semester = $_POST['semester'] ?? 'First';
 
         $errors = [];
@@ -164,31 +144,37 @@ class TeacherAssignmentController
 
         if ($result === true) {
             if ($this->isAjax()) {
-                $subject_names = $this->buildSubjectNames($subject_ids);
+                // fetch the full updated active state (merges new subjects with existing ones)
+                $activeData = $this->assignment_model->getGroupedAssignmentByTeacherSection(
+                    $teacher_id,
+                    $section_id,
+                    $school_year,
+                    $semester,
+                    'active'
+                );
 
-                // find teacher name from active teachers list
-                $teacher_name = '';
-                foreach ($this->teacher_model->getAllActiveTeachers() as $t) {
-                    if ((int) $t['id'] === $teacher_id) {
-                        $teacher_name = $t['full_name'];
-                        break;
-                    }
-                }
+                // fetch the full updated inactive state (in case some subjects remain removed)
+                $inactiveData = $this->assignment_model->getGroupedAssignmentByTeacherSection(
+                    $teacher_id,
+                    $section_id,
+                    $school_year,
+                    $semester,
+                    'inactive'
+                );
 
-                $this->jsonResponse([
+                $response = [
                     'success'       => true,
                     'message'       => 'Teacher assigned successfully.',
-                    'teacher_id'    => $teacher_id,
-                    'teacher_name'  => $teacher_name,
-                    'section_id'    => $section_id,
-                    'section_name'  => $section['section_name'],
-                    'year_level'    => $year_level,
-                    'school_year'   => $school_year,
-                    'semester'      => $semester,
-                    'subjects'      => implode(', ', $subject_names),
-                    'subject_ids'   => implode(',', $subject_ids),
-                    'subject_count' => count($subject_ids),
-                ]);
+                    'row_key'       => "{$teacher_id}_{$section_id}_{$school_year}_{$semester}",
+                    'inactive_data' => $inactiveData
+                ];
+
+                // merge active data into response so js has full subject list
+                if ($activeData) {
+                    $response = array_merge($response, $activeData);
+                }
+
+                $this->jsonResponse($response);
             }
             $_SESSION['assignment_success'] = 'Teacher assigned successfully.';
         } elseif ($result === null) {
@@ -379,7 +365,6 @@ class TeacherAssignmentController
 
         if ($result) {
             if ($this->isAjax()) {
-                // get removed grouped data (inactive status)
                 $removedAssignment = $this->assignment_model->getGroupedAssignmentByTeacherSection(
                     $teacher_id,
                     $section_id,
@@ -443,7 +428,6 @@ class TeacherAssignmentController
 
         if ($result) {
             if ($this->isAjax()) {
-                // get restored grouped data
                 $restoredAssignment = $this->assignment_model->getGroupedAssignmentByTeacherSection(
                     $teacher_id,
                     $section_id,

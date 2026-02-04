@@ -59,9 +59,6 @@
                         <h2 class="mb-1">Teacher Assignments</h2>
                         <p class="text-muted mb-0">Assign teachers to sections and subjects</p>
                     </div>
-                    <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#assignModal">
-                        <i class="bi bi-person-plus"></i> Assign Teacher
-                    </button>
                 </div>
 
                 <!-- alerts -->
@@ -78,6 +75,81 @@
                         <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
                     </div>
                 <?php endif; ?>
+
+                <!-- assign form (inline) -->
+                <div class="card mb-4">
+                    <div class="card-header bg-primary text-white">
+                        <h5 class="mb-0"><i class="bi bi-person-plus me-2"></i>New Assignment</h5>
+                    </div>
+                    <div class="card-body">
+                        <form id="assignForm">
+                            <input type="hidden" name="csrf_token" value="<?= $_SESSION['csrf_token'] ?>">
+
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label">Teacher <span class="text-danger">*</span></label>
+                                    <select class="form-select" name="teacher_id" required>
+                                        <option value="">Select a teacher...</option>
+                                        <?php foreach ($teachers as $teacher): ?>
+                                            <option value="<?= $teacher['id'] ?>"><?= htmlspecialchars($teacher['full_name']) ?></option>
+                                        <?php endforeach; ?>
+                                    </select>
+                                    <div class="invalid-feedback"></div>
+                                </div>
+
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label">Section <span class="text-danger">*</span></label>
+                                    <select class="form-select" name="section_id" required>
+                                        <option value="">Select a section...</option>
+                                        <?php foreach ($sections as $section): ?>
+                                            <option value="<?= $section['section_id'] ?>"><?= htmlspecialchars($section['section_name']) ?> (<?= htmlspecialchars($section['year_level']) ?>)</option>
+                                        <?php endforeach; ?>
+                                    </select>
+                                    <div class="invalid-feedback"></div>
+                                </div>
+                            </div>
+
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label">School Year <span class="text-danger">*</span></label>
+                                    <input type="text" class="form-control" name="school_year" value="2025-2026" required>
+                                    <div class="invalid-feedback"></div>
+                                </div>
+
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label">Semester <span class="text-danger">*</span></label>
+                                    <select class="form-select" name="semester" required>
+                                        <option value="First">First Semester</option>
+                                        <option value="Second">Second Semester</option>
+                                    </select>
+                                    <div class="invalid-feedback"></div>
+                                </div>
+                            </div>
+
+                            <div class="mb-3">
+                                <label class="form-label">Subjects <span class="text-danger">*</span></label>
+                                <div class="border rounded p-3" style="max-height: 200px; overflow-y: auto;" id="assignSubjectsContainer">
+                                    <?php foreach ($subjects as $subject): ?>
+                                        <div class="form-check">
+                                            <input class="form-check-input" type="checkbox" name="subject_ids[]" value="<?= $subject['subject_id'] ?>" id="subject_<?= $subject['subject_id'] ?>">
+                                            <label class="form-check-label" for="subject_<?= $subject['subject_id'] ?>">
+                                                <?= htmlspecialchars($subject['subject_name']) ?>
+                                            </label>
+                                        </div>
+                                    <?php endforeach; ?>
+                                </div>
+                                <div class="invalid-feedback d-block" id="subject_ids_error"></div>
+                            </div>
+
+                            <div class="text-end">
+                                <button type="submit" class="btn btn-primary">
+                                    <span class="spinner-border spinner-border-sm d-none me-1" role="status"></span>
+                                    Assign Teacher
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
 
                 <!-- active assignments table -->
                 <div class="card mb-4">
@@ -117,7 +189,7 @@
                                                     <span class="badge bg-info"><?= htmlspecialchars($assignment['semester']) ?></span>
                                                 </td>
                                                 <td>
-                                                    <?php if ($assignment['subject_count'] <= 2): ?>
+                                                    <?php if ($assignment['subject_count'] < 2): ?>
                                                         <span class="text-muted"><?= htmlspecialchars($assignment['subjects']) ?></span>
                                                     <?php else: ?>
                                                         <button class="btn btn-sm btn-outline-secondary" data-bs-toggle="modal" data-bs-target="#subjectsModal" data-subjects="<?= htmlspecialchars($assignment['subjects']) ?>">
@@ -191,7 +263,7 @@
                                                     <span class="badge bg-secondary"><?= htmlspecialchars($assignment['semester']) ?></span>
                                                 </td>
                                                 <td>
-                                                    <?php if ($assignment['subject_count'] <= 2): ?>
+                                                    <?php if ($assignment['subject_count'] < 2): ?>
                                                         <span class="text-muted"><?= htmlspecialchars($assignment['subjects']) ?></span>
                                                     <?php else: ?>
                                                         <button class="btn btn-sm btn-outline-secondary" data-bs-toggle="modal" data-bs-target="#subjectsModal" data-subjects="<?= htmlspecialchars($assignment['subjects']) ?>">
@@ -218,82 +290,6 @@
                         </div>
                     </div>
                 </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- assign modal -->
-    <div class="modal fade" id="assignModal" tabindex="-1">
-        <div class="modal-dialog">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title"><i class="bi bi-person-plus me-2"></i>Assign Teacher</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-                </div>
-                <form id="assignForm">
-                    <div class="modal-body">
-                        <input type="hidden" name="csrf_token" value="<?= $_SESSION['csrf_token'] ?>">
-
-                        <div class="mb-3">
-                            <label class="form-label">Teacher <span class="text-danger">*</span></label>
-                            <select class="form-select" name="teacher_id" required>
-                                <option value="">Select a teacher...</option>
-                                <?php foreach ($teachers as $teacher): ?>
-                                    <option value="<?= $teacher['id'] ?>"><?= htmlspecialchars($teacher['full_name']) ?></option>
-                                <?php endforeach; ?>
-                            </select>
-                            <div class="invalid-feedback"></div>
-                        </div>
-
-                        <div class="mb-3">
-                            <label class="form-label">Section <span class="text-danger">*</span></label>
-                            <select class="form-select" name="section_id" required>
-                                <option value="">Select a section...</option>
-                                <?php foreach ($sections as $section): ?>
-                                    <option value="<?= $section['section_id'] ?>"><?= htmlspecialchars($section['section_name']) ?> (<?= htmlspecialchars($section['year_level']) ?>)</option>
-                                <?php endforeach; ?>
-                            </select>
-                            <div class="invalid-feedback"></div>
-                        </div>
-
-                        <div class="mb-3">
-                            <label class="form-label">School Year <span class="text-danger">*</span></label>
-                            <input type="text" class="form-control" name="school_year" value="2025-2026" required>
-                            <div class="invalid-feedback"></div>
-                        </div>
-
-                        <div class="mb-3">
-                            <label class="form-label">Semester <span class="text-danger">*</span></label>
-                            <select class="form-select" name="semester" required>
-                                <option value="First">First Semester</option>
-                                <option value="Second">Second Semester</option>
-                            </select>
-                            <div class="invalid-feedback"></div>
-                        </div>
-
-                        <div class="mb-3">
-                            <label class="form-label">Subjects <span class="text-danger">*</span></label>
-                            <div class="border rounded p-3" style="max-height: 200px; overflow-y: auto;">
-                                <?php foreach ($subjects as $subject): ?>
-                                    <div class="form-check">
-                                        <input class="form-check-input" type="checkbox" name="subject_ids[]" value="<?= $subject['subject_id'] ?>" id="subject_<?= $subject['subject_id'] ?>">
-                                        <label class="form-check-label" for="subject_<?= $subject['subject_id'] ?>">
-                                            <?= htmlspecialchars($subject['subject_name']) ?>
-                                        </label>
-                                    </div>
-                                <?php endforeach; ?>
-                            </div>
-                            <div class="invalid-feedback"></div>
-                        </div>
-                    </div>
-                    <div class="modal-footer">
-                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                        <button type="submit" class="btn btn-primary">
-                            <span class="spinner-border spinner-border-sm d-none me-1" role="status"></span>
-                            Assign Teacher
-                        </button>
-                    </div>
-                </form>
             </div>
         </div>
     </div>
@@ -331,7 +327,7 @@
                                     </div>
                                 <?php endforeach; ?>
                             </div>
-                            <div class="invalid-feedback"></div>
+                            <div class="invalid-feedback d-block" id="reassign_subject_ids_error"></div>
                         </div>
                     </div>
                     <div class="modal-footer">
