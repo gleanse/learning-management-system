@@ -115,6 +115,7 @@ class TeacherAssignmentController
             ? array_map('intval', $_POST['subject_ids'])
             : [];
         $school_year = $_POST['school_year'] ?? '2025-2026';
+        $semester = $_POST['semester'] ?? 'First';
 
         $errors = [];
 
@@ -157,7 +158,8 @@ class TeacherAssignmentController
             $subject_ids,
             $section_id,
             $year_level,
-            $school_year
+            $school_year,
+            $semester
         );
 
         if ($result === true) {
@@ -182,6 +184,7 @@ class TeacherAssignmentController
                     'section_name'  => $section['section_name'],
                     'year_level'    => $year_level,
                     'school_year'   => $school_year,
+                    'semester'      => $semester,
                     'subjects'      => implode(', ', $subject_names),
                     'subject_ids'   => implode(',', $subject_ids),
                     'subject_count' => count($subject_ids),
@@ -215,6 +218,7 @@ class TeacherAssignmentController
             ? array_map('intval', $_POST['subject_ids'])
             : [];
         $school_year = $_POST['school_year'] ?? null;
+        $semester = $_POST['semester'] ?? 'First';
 
         $errors = [];
 
@@ -255,7 +259,8 @@ class TeacherAssignmentController
             $section_id,
             $subject_ids,
             $section['year_level'],
-            $school_year
+            $school_year,
+            $semester
         );
 
         if ($result) {
@@ -264,6 +269,7 @@ class TeacherAssignmentController
                     $teacher_id,
                     $section_id,
                     $school_year,
+                    $semester,
                     'active'
                 );
 
@@ -272,6 +278,7 @@ class TeacherAssignmentController
                         $teacher_id,
                         $section_id,
                         $school_year,
+                        $semester,
                         'inactive'
                     );
 
@@ -279,7 +286,7 @@ class TeacherAssignmentController
                         'success'       => true,
                         'message'       => 'Teacher assignment updated successfully.',
                         'action'        => 'update',
-                        'row_key'       => "{$teacher_id}_{$section_id}_{$school_year}",
+                        'row_key'       => "{$teacher_id}_{$section_id}_{$school_year}_{$semester}",
                         'data'          => $updatedAssignment,
                         'inactive_data' => $inactiveAssignment
                     ]);
@@ -288,6 +295,7 @@ class TeacherAssignmentController
                         $teacher_id,
                         $section_id,
                         $school_year,
+                        $semester,
                         'inactive'
                     );
 
@@ -295,7 +303,7 @@ class TeacherAssignmentController
                         'success'   => true,
                         'message'   => 'Teacher assignment updated successfully.',
                         'action'    => 'remove',
-                        'row_key'   => "{$teacher_id}_{$section_id}_{$school_year}",
+                        'row_key'   => "{$teacher_id}_{$section_id}_{$school_year}_{$semester}",
                         'inactive_data' => $inactiveAssignment
                     ]);
                 }
@@ -344,6 +352,7 @@ class TeacherAssignmentController
         $teacher_id = isset($_POST['teacher_id']) ? (int) $_POST['teacher_id'] : null;
         $section_id = isset($_POST['section_id']) ? (int) $_POST['section_id'] : null;
         $school_year = $_POST['school_year'] ?? null;
+        $semester = $_POST['semester'] ?? 'First';
 
         $errors = [];
 
@@ -366,7 +375,7 @@ class TeacherAssignmentController
             exit();
         }
 
-        $result = $this->assignment_model->removeTeacherSectionAssignments($teacher_id, $section_id, $school_year);
+        $result = $this->assignment_model->removeTeacherSectionAssignments($teacher_id, $section_id, $school_year, $semester);
 
         if ($result) {
             if ($this->isAjax()) {
@@ -375,6 +384,7 @@ class TeacherAssignmentController
                     $teacher_id,
                     $section_id,
                     $school_year,
+                    $semester,
                     'inactive'
                 );
 
@@ -382,7 +392,7 @@ class TeacherAssignmentController
                     'success'   => true,
                     'message'   => 'Teacher assignment removed. You can restore it from the Removed Assignments section.',
                     'action'    => 'move_to_removed',
-                    'row_key'   => "{$teacher_id}_{$section_id}_{$school_year}",
+                    'row_key'   => "{$teacher_id}_{$section_id}_{$school_year}_{$semester}",
                     'data'      => $removedAssignment
                 ]);
             }
@@ -406,6 +416,7 @@ class TeacherAssignmentController
         $teacher_id = isset($_POST['teacher_id']) ? (int) $_POST['teacher_id'] : null;
         $section_id = isset($_POST['section_id']) ? (int) $_POST['section_id'] : null;
         $school_year = $_POST['school_year'] ?? null;
+        $semester = $_POST['semester'] ?? 'First';
 
         $errors = [];
 
@@ -428,7 +439,7 @@ class TeacherAssignmentController
             exit();
         }
 
-        $result = $this->assignment_model->reactivateAssignments($teacher_id, $section_id, $school_year);
+        $result = $this->assignment_model->reactivateAssignments($teacher_id, $section_id, $school_year, $semester);
 
         if ($result) {
             if ($this->isAjax()) {
@@ -437,6 +448,7 @@ class TeacherAssignmentController
                     $teacher_id,
                     $section_id,
                     $school_year,
+                    $semester,
                     'active'
                 );
 

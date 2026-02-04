@@ -21,6 +21,7 @@ class Teacher
                 s.subject_code,
                 s.subject_name,
                 tsa.school_year,
+                tsa.semester,
                 sec.section_id,
                 sec.section_name
             FROM teacher_subject_assignments tsa
@@ -46,13 +47,14 @@ class Teacher
                 s.subject_code,
                 s.subject_name,
                 tsa.school_year,
+                tsa.semester,
                 COUNT(DISTINCT tsa.section_id) as section_count
             FROM teacher_subject_assignments tsa
             INNER JOIN subjects s ON tsa.subject_id = s.subject_id
             WHERE tsa.teacher_id = ? 
             AND tsa.year_level = ?
             AND tsa.status = 'active'
-            GROUP BY s.subject_id, s.subject_code, s.subject_name, tsa.school_year
+            GROUP BY s.subject_id, s.subject_code, s.subject_name, tsa.school_year, tsa.semester
             ORDER BY s.subject_name ASC
         ");
 
