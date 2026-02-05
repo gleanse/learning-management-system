@@ -58,6 +58,17 @@ document.addEventListener('DOMContentLoaded', function () {
             }
 
             assignForm.reset();
+            // reset select to default (current year)
+            const sySelect = assignForm.querySelector('[name="school_year"]');
+            if (sySelect) {
+              const options = sySelect.options;
+              for (let i = 0; i < options.length; i++) {
+                if (options[i].defaultSelected) {
+                  sySelect.selectedIndex = i;
+                  break;
+                }
+              }
+            }
           } else {
             if (data.errors) {
               displayFormErrors(assignForm, data.errors);
@@ -339,23 +350,46 @@ document.addEventListener('DOMContentLoaded', function () {
 // helper functions
 
 function showAlert(type, message) {
-  const alertDiv = document.createElement('div');
-  alertDiv.className = `alert alert-${type} alert-dismissible fade show`;
-  alertDiv.innerHTML = `<i class="bi bi-${
-    type === 'success' ? 'check-circle-fill' : 'exclamation-triangle-fill'
-  } me-2"></i>${message} <button type="button" class="btn-close" data-bs-dismiss="alert"></button>`;
+  const container = document.getElementById('toastContainer');
+  if (!container) return;
 
-  const container = document.querySelector('.container-fluid');
-  const header = document.querySelector('.d-flex.justify-content-between');
-  if (header && header.nextSibling) {
-    header.parentNode.insertBefore(alertDiv, header.nextSibling);
-  } else {
-    container.prepend(alertDiv);
-  }
+  const iconClass =
+    type === 'success'
+      ? 'bi-check-circle-fill'
+      : 'bi-exclamation-triangle-fill';
 
-  setTimeout(() => {
-    alertDiv.remove();
-  }, 5000);
+  // this class determines the entire color theme (header + body)
+  const toastThemeClass = type === 'success' ? 'toast-success' : 'toast-danger';
+
+  const titleText = type === 'success' ? 'Success' : 'Warning';
+
+  const toastId = 'toast_' + Date.now();
+
+  const toastHtml = `
+    <div id="${toastId}" class="toast ${toastThemeClass}" role="alert" aria-live="assertive" aria-atomic="true">
+      <div class="toast-header">
+        <i class="bi ${iconClass} me-2"></i>
+        <strong class="me-auto">${titleText}</strong>
+        <small class="text-white-50"></small>
+        <button type="button" class="btn-close" data-bs-dismiss="toast" aria-label="Close"></button>
+      </div>
+      <div class="toast-body">
+        ${message}
+      </div>
+    </div>
+  `;
+
+  container.insertAdjacentHTML('beforeend', toastHtml);
+
+  const toastElement = document.getElementById(toastId);
+  const toast = new bootstrap.Toast(toastElement, { delay: 5000 });
+
+  toast.show();
+
+  // cleanup dom after toast hides
+  toastElement.addEventListener('hidden.bs.toast', function () {
+    toastElement.remove();
+  });
 }
 
 function clearFormErrors(form) {

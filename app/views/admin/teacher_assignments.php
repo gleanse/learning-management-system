@@ -13,6 +13,8 @@
 </head>
 
 <body>
+    <div class="toast-container position-fixed top-0 end-0 p-3" style="z-index: 1100;" id="toastContainer"></div>
+
     <div class="d-flex">
         <!-- sidebar -->
         <div class="sidenav">
@@ -52,34 +54,72 @@
 
         <!-- main content -->
         <div class="main-content flex-grow-1">
+            <!-- top navbar -->
+            <nav class="navbar top-navbar">
+                <div class="container-fluid">
+                    <div class="navbar-brand mb-0">
+                        <div class="page-icon">
+                            <i class="bi bi-person-plus-fill"></i>
+                        </div>
+                        <span>Teacher Assignments</span>
+                    </div>
+                    <div class="user-info-wrapper">
+                        <div class="user-details">
+                            <span class="user-name">
+                                <?php echo htmlspecialchars($_SESSION['user_firstname'] . ' ' . $_SESSION['user_lastname']); ?>
+                            </span>
+                            <span class="user-role">
+                                <i class="bi bi-person-badge-fill"></i>
+                                <?php echo ucfirst(htmlspecialchars($_SESSION['user_role'])); ?>
+                            </span>
+                        </div>
+                        <div class="user-avatar">
+                            <?php
+                            $firstname = $_SESSION['user_firstname'] ?? 'A';
+                            $lastname = $_SESSION['user_lastname'] ?? 'U';
+                            echo strtoupper(substr($firstname, 0, 1) . substr($lastname, 0, 1));
+                            ?>
+                        </div>
+                    </div>
+                </div>
+            </nav>
+
+            <!-- page content -->
             <div class="container-fluid p-4">
+                <!-- breadcrumbs -->
+                <nav aria-label="breadcrumb">
+                    <ol class="breadcrumb">
+                        <li class="breadcrumb-item">
+                            <a href="index.php?page=admin_dashboard">
+                                <i class="bi bi-house-door-fill"></i> Dashboard
+                            </a>
+                        </li>
+                        <li class="breadcrumb-item active" aria-current="page">
+                            Teacher Assignments
+                        </li>
+                    </ol>
+                </nav>
+
                 <!-- page header -->
-                <div class="d-flex justify-content-between align-items-center mb-4">
-                    <div>
-                        <h2 class="mb-1">Teacher Assignments</h2>
-                        <p class="text-muted mb-0">Assign teachers to sections and subjects</p>
+                <div class="page-header">
+                    <div class="header-content">
+                        <div class="header-icon">
+                            <i class="bi bi-people-fill"></i>
+                        </div>
+                        <div class="header-text">
+                            <h1 class="header-title">Teacher Assignments</h1>
+                            <p class="header-subtitle">Assign teachers to sections and subjects</p>
+                        </div>
                     </div>
                 </div>
 
-                <!-- alerts -->
-                <?php if (!empty($success_message)): ?>
-                    <div class="alert alert-success alert-dismissible fade show" role="alert">
-                        <i class="bi bi-check-circle-fill me-2"></i><?= htmlspecialchars($success_message) ?>
-                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-                    </div>
-                <?php endif; ?>
-
-                <?php if (!empty($errors['general'])): ?>
-                    <div class="alert alert-danger alert-dismissible fade show" role="alert">
-                        <i class="bi bi-exclamation-triangle-fill me-2"></i><?= htmlspecialchars($errors['general']) ?>
-                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-                    </div>
-                <?php endif; ?>
-
-                <!-- assign form (inline) -->
-                <div class="card mb-4">
-                    <div class="card-header bg-primary text-white">
-                        <h5 class="mb-0"><i class="bi bi-person-plus me-2"></i>New Assignment</h5>
+                <!-- assign form card -->
+                <div class="card assignment-form-card mb-4">
+                    <div class="card-header">
+                        <h5 class="mb-0">
+                            <i class="bi bi-person-plus"></i>
+                            New Assignment
+                        </h5>
                     </div>
                     <div class="card-body">
                         <form id="assignForm">
@@ -87,7 +127,11 @@
 
                             <div class="row">
                                 <div class="col-md-6 mb-3">
-                                    <label class="form-label">Teacher <span class="text-danger">*</span></label>
+                                    <label class="form-label">
+                                        <i class="bi bi-person-fill"></i>
+                                        Teacher
+                                        <span class="text-danger">*</span>
+                                    </label>
                                     <select class="form-select" name="teacher_id" required>
                                         <option value="">Select a teacher...</option>
                                         <?php foreach ($teachers as $teacher): ?>
@@ -98,7 +142,11 @@
                                 </div>
 
                                 <div class="col-md-6 mb-3">
-                                    <label class="form-label">Section <span class="text-danger">*</span></label>
+                                    <label class="form-label">
+                                        <i class="bi bi-diagram-3-fill"></i>
+                                        Section
+                                        <span class="text-danger">*</span>
+                                    </label>
                                     <select class="form-select" name="section_id" required>
                                         <option value="">Select a section...</option>
                                         <?php foreach ($sections as $section): ?>
@@ -111,13 +159,27 @@
 
                             <div class="row">
                                 <div class="col-md-6 mb-3">
-                                    <label class="form-label">School Year <span class="text-danger">*</span></label>
-                                    <input type="text" class="form-control" name="school_year" value="2025-2026" required>
+                                    <label class="form-label">
+                                        <i class="bi bi-calendar-range"></i>
+                                        School Year
+                                        <span class="text-danger">*</span>
+                                    </label>
+                                    <select class="form-select" name="school_year" required>
+                                        <?php foreach ($school_year_options as $index => $sy): ?>
+                                            <option value="<?= $sy ?>" <?= ($index === 1) ? 'selected' : '' ?>>
+                                                <?= $sy ?> <?= ($index === 0) ? '(Current)' : '(Next)' ?>
+                                            </option>
+                                        <?php endforeach; ?>
+                                    </select>
                                     <div class="invalid-feedback"></div>
                                 </div>
 
                                 <div class="col-md-6 mb-3">
-                                    <label class="form-label">Semester <span class="text-danger">*</span></label>
+                                    <label class="form-label">
+                                        <i class="bi bi-calendar3"></i>
+                                        Semester
+                                        <span class="text-danger">*</span>
+                                    </label>
                                     <select class="form-select" name="semester" required>
                                         <option value="First">First Semester</option>
                                         <option value="Second">Second Semester</option>
@@ -127,8 +189,12 @@
                             </div>
 
                             <div class="mb-3">
-                                <label class="form-label">Subjects <span class="text-danger">*</span></label>
-                                <div class="border rounded p-3" style="max-height: 200px; overflow-y: auto;" id="assignSubjectsContainer">
+                                <label class="form-label">
+                                    <i class="bi bi-book-fill"></i>
+                                    Subjects
+                                    <span class="text-danger">*</span>
+                                </label>
+                                <div class="subjects-container" id="assignSubjectsContainer">
                                     <?php foreach ($subjects as $subject): ?>
                                         <div class="form-check">
                                             <input class="form-check-input" type="checkbox" name="subject_ids[]" value="<?= $subject['subject_id'] ?>" id="subject_<?= $subject['subject_id'] ?>">
@@ -142,8 +208,9 @@
                             </div>
 
                             <div class="text-end">
-                                <button type="submit" class="btn btn-primary">
+                                <button type="submit" class="btn btn-primary btn-submit">
                                     <span class="spinner-border spinner-border-sm d-none me-1" role="status"></span>
+                                    <i class="bi bi-check-circle-fill"></i>
                                     Assign Teacher
                                 </button>
                             </div>
@@ -152,33 +219,36 @@
                 </div>
 
                 <!-- active assignments table -->
-                <div class="card mb-4">
-                    <div class="card-header bg-primary text-white">
-                        <h5 class="mb-0"><i class="bi bi-people-fill me-2"></i>Active Assignments</h5>
+                <div class="card assignments-table-card mb-4">
+                    <div class="card-header">
+                        <h5 class="mb-0">
+                            <i class="bi bi-people-fill"></i>
+                            Active Assignments
+                        </h5>
                     </div>
                     <div class="card-body">
-                        <div class="table-responsive">
-                            <table class="table table-hover" id="activeAssignmentsTable">
-                                <thead>
-                                    <tr>
-                                        <th>Teacher</th>
-                                        <th>Section</th>
-                                        <th>Year Level</th>
-                                        <th>School Year</th>
-                                        <th>Semester</th>
-                                        <th>Subjects</th>
-                                        <th>Actions</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    <?php if (empty($assignments)): ?>
+                        <?php if (empty($assignments)): ?>
+                            <div class="empty-state">
+                                <div class="empty-state-icon">
+                                    <i class="bi bi-inbox"></i>
+                                </div>
+                                <p class="empty-state-text">No active assignments yet</p>
+                            </div>
+                        <?php else: ?>
+                            <div class="table-responsive">
+                                <table class="table table-hover" id="activeAssignmentsTable">
+                                    <thead>
                                         <tr>
-                                            <td colspan="7" class="text-center text-muted py-4">
-                                                <i class="bi bi-inbox fs-1 d-block mb-2"></i>
-                                                No active assignments yet
-                                            </td>
+                                            <th><i class="bi bi-person-fill"></i> Teacher</th>
+                                            <th><i class="bi bi-diagram-3-fill"></i> Section</th>
+                                            <th><i class="bi bi-mortarboard-fill"></i> Year Level</th>
+                                            <th><i class="bi bi-calendar-range"></i> School Year</th>
+                                            <th><i class="bi bi-calendar3"></i> Semester</th>
+                                            <th><i class="bi bi-book-fill"></i> Subjects</th>
+                                            <th><i class="bi bi-gear-fill"></i> Actions</th>
                                         </tr>
-                                    <?php else: ?>
+                                    </thead>
+                                    <tbody>
                                         <?php foreach ($assignments as $assignment): ?>
                                             <tr data-row-key="<?= $assignment['teacher_id'] ?>_<?= $assignment['section_id'] ?>_<?= htmlspecialchars($assignment['school_year']) ?>_<?= htmlspecialchars($assignment['semester']) ?>">
                                                 <td><?= htmlspecialchars($assignment['teacher_name']) ?></td>
@@ -218,41 +288,44 @@
                                                 </td>
                                             </tr>
                                         <?php endforeach; ?>
-                                    <?php endif; ?>
-                                </tbody>
-                            </table>
-                        </div>
+                                    </tbody>
+                                </table>
+                            </div>
+                        <?php endif; ?>
                     </div>
                 </div>
 
                 <!-- removed assignments table -->
-                <div class="card">
-                    <div class="card-header bg-secondary text-white">
-                        <h5 class="mb-0"><i class="bi bi-archive-fill me-2"></i>Removed Assignments</h5>
+                <div class="card assignments-table-card">
+                    <div class="card-header bg-secondary">
+                        <h5 class="mb-0">
+                            <i class="bi bi-archive-fill"></i>
+                            Removed Assignments
+                        </h5>
                     </div>
                     <div class="card-body">
-                        <div class="table-responsive">
-                            <table class="table table-hover" id="inactiveAssignmentsTable">
-                                <thead>
-                                    <tr>
-                                        <th>Teacher</th>
-                                        <th>Section</th>
-                                        <th>Year Level</th>
-                                        <th>School Year</th>
-                                        <th>Semester</th>
-                                        <th>Subjects</th>
-                                        <th>Actions</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    <?php if (empty($inactive_assignments)): ?>
+                        <?php if (empty($inactive_assignments)): ?>
+                            <div class="empty-state">
+                                <div class="empty-state-icon">
+                                    <i class="bi bi-inbox"></i>
+                                </div>
+                                <p class="empty-state-text">No removed assignments</p>
+                            </div>
+                        <?php else: ?>
+                            <div class="table-responsive">
+                                <table class="table table-hover" id="inactiveAssignmentsTable">
+                                    <thead>
                                         <tr>
-                                            <td colspan="7" class="text-center text-muted py-4">
-                                                <i class="bi bi-inbox fs-1 d-block mb-2"></i>
-                                                No removed assignments
-                                            </td>
+                                            <th><i class="bi bi-person-fill"></i> Teacher</th>
+                                            <th><i class="bi bi-diagram-3-fill"></i> Section</th>
+                                            <th><i class="bi bi-mortarboard-fill"></i> Year Level</th>
+                                            <th><i class="bi bi-calendar-range"></i> School Year</th>
+                                            <th><i class="bi bi-calendar3"></i> Semester</th>
+                                            <th><i class="bi bi-book-fill"></i> Subjects</th>
+                                            <th><i class="bi bi-gear-fill"></i> Actions</th>
                                         </tr>
-                                    <?php else: ?>
+                                    </thead>
+                                    <tbody>
                                         <?php foreach ($inactive_assignments as $assignment): ?>
                                             <tr data-row-key="<?= $assignment['teacher_id'] ?>_<?= $assignment['section_id'] ?>_<?= htmlspecialchars($assignment['school_year']) ?>_<?= htmlspecialchars($assignment['semester']) ?>">
                                                 <td><?= htmlspecialchars($assignment['teacher_name']) ?></td>
@@ -284,10 +357,10 @@
                                                 </td>
                                             </tr>
                                         <?php endforeach; ?>
-                                    <?php endif; ?>
-                                </tbody>
-                            </table>
-                        </div>
+                                    </tbody>
+                                </table>
+                            </div>
+                        <?php endif; ?>
                     </div>
                 </div>
             </div>
@@ -296,10 +369,13 @@
 
     <!-- reassign modal -->
     <div class="modal fade" id="reassignModal" tabindex="-1">
-        <div class="modal-dialog">
+        <div class="modal-dialog modal-dialog-centered">
             <div class="modal-content">
                 <div class="modal-header">
-                    <h5 class="modal-title"><i class="bi bi-pencil me-2"></i>Reassign Teacher</h5>
+                    <h5 class="modal-title">
+                        <i class="bi bi-pencil"></i>
+                        Reassign Teacher
+                    </h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                 </div>
                 <form id="reassignForm">
@@ -311,13 +387,19 @@
                         <input type="hidden" name="semester" id="reassign_semester">
 
                         <div class="alert alert-info">
-                            <i class="bi bi-info-circle me-2"></i>
-                            <strong>Note:</strong> Unchecking subjects will soft-remove them. Checking removed subjects will restore them.
+                            <i class="bi bi-info-circle"></i>
+                            <div>
+                                <strong>Note:</strong> Unchecking subjects will soft-remove them. Checking removed subjects will restore them.
+                            </div>
                         </div>
 
                         <div class="mb-3">
-                            <label class="form-label">Subjects <span class="text-danger">*</span></label>
-                            <div class="border rounded p-3" style="max-height: 200px; overflow-y: auto;" id="reassignSubjectsContainer">
+                            <label class="form-label">
+                                <i class="bi bi-book-fill"></i>
+                                Subjects
+                                <span class="text-danger">*</span>
+                            </label>
+                            <div class="subjects-container" id="reassignSubjectsContainer">
                                 <?php foreach ($subjects as $subject): ?>
                                     <div class="form-check">
                                         <input class="form-check-input" type="checkbox" name="subject_ids[]" value="<?= $subject['subject_id'] ?>" id="reassign_subject_<?= $subject['subject_id'] ?>">
@@ -331,9 +413,13 @@
                         </div>
                     </div>
                     <div class="modal-footer">
-                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                            <i class="bi bi-x-circle"></i>
+                            Cancel
+                        </button>
                         <button type="submit" class="btn btn-primary">
                             <span class="spinner-border spinner-border-sm d-none me-1" role="status"></span>
+                            <i class="bi bi-check-circle-fill"></i>
                             Update Assignment
                         </button>
                     </div>
@@ -344,17 +430,23 @@
 
     <!-- subjects list modal -->
     <div class="modal fade" id="subjectsModal" tabindex="-1">
-        <div class="modal-dialog">
+        <div class="modal-dialog modal-dialog-centered">
             <div class="modal-content">
                 <div class="modal-header">
-                    <h5 class="modal-title"><i class="bi bi-book me-2"></i>Assigned Subjects</h5>
+                    <h5 class="modal-title">
+                        <i class="bi bi-book"></i>
+                        Assigned Subjects
+                    </h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                 </div>
                 <div class="modal-body">
-                    <ul class="list-group" id="subjectsList"></ul>
+                    <ul class="list-group list-group-flush" id="subjectsList"></ul>
                 </div>
                 <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                        <i class="bi bi-x-circle"></i>
+                        Close
+                    </button>
                 </div>
             </div>
         </div>
@@ -362,10 +454,21 @@
 
     <script src="bootstrap/js/bootstrap.bundle.min.js"></script>
     <script>
-        // store csrf token for ajax requests
         const csrfToken = '<?= $_SESSION['csrf_token'] ?>';
     </script>
     <script src="js/teacher-assignments-ajax.js"></script>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            <?php if (!empty($success_message)): ?>
+                showAlert('success', '<?= addslashes($success_message) ?>');
+            <?php endif; ?>
+
+            <?php if (!empty($errors['general'])): ?>
+                showAlert('danger', '<?= addslashes($errors['general']) ?>');
+            <?php endif; ?>
+        });
+    </script>
 
 </body>
 

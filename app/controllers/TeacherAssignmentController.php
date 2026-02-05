@@ -59,6 +59,36 @@ class TeacherAssignmentController
         }
     }
 
+    private function validateSchoolYear($school_year)
+    {
+        if (!preg_match('/^\d{4}-\d{4}$/', $school_year)) {
+            return false;
+        }
+        $parts = explode('-', $school_year);
+        $start = (int)$parts[0];
+        $end = (int)$parts[1];
+
+        if (($end - $start) !== 1) {
+            return false;
+        }
+
+        return true;
+    }
+
+    // generates valid school year options (current and next)
+    private function generateSchoolYearOptions()
+    {
+        // NOTE: adjust if necessary currently start of academic school year is june
+        $currentMonth = (int)date('m');
+        $startYear = ($currentMonth >= 6) ? (int)date('Y') : (int)date('Y') - 1;
+
+        $currentSY = $startYear . '-' . ($startYear + 1);
+        $nextSY = ($startYear + 1) . '-' . ($startYear + 2);
+
+        return [$currentSY, $nextSY];
+    }
+
+
     public function showAssignmentPage()
     {
         $this->requireAdmin();
@@ -73,6 +103,8 @@ class TeacherAssignmentController
 
         $assignments = $this->assignment_model->getAllAssignmentsGrouped('active');
         $inactive_assignments = $this->assignment_model->getAllAssignmentsGrouped('inactive');
+
+        $school_year_options = $this->generateSchoolYearOptions();
 
         $errors = $_SESSION['assignment_errors'] ?? [];
         $success_message = $_SESSION['assignment_success'] ?? null;
@@ -98,6 +130,7 @@ class TeacherAssignmentController
         $semester = $_POST['semester'] ?? 'First';
 
         $errors = [];
+        $valid_school_years = $this->generateSchoolYearOptions();
 
         if (empty($teacher_id)) {
             $errors['teacher_id']  = 'Please select a teacher.';
@@ -110,6 +143,8 @@ class TeacherAssignmentController
         }
         if (empty($school_year)) {
             $errors['school_year'] = 'School year is required.';
+        } elseif (!$this->validateSchoolYear($school_year) || !in_array($school_year, $valid_school_years)) {
+            $errors['school_year'] = 'Please select a valid school year.';
         }
 
         if (!empty($errors)) {
@@ -219,6 +254,8 @@ class TeacherAssignmentController
         }
         if (empty($school_year)) {
             $errors['school_year'] = 'School year is required.';
+        } elseif (!$this->validateSchoolYear($school_year)) {
+            $errors['school_year'] = 'Invalid format. Use YYYY-YYYY.';
         }
 
         if (!empty($errors)) {
