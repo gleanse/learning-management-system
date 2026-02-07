@@ -5,6 +5,7 @@ require_once __DIR__ . '/controllers/GradeController.php';
 require_once __DIR__ . '/controllers/StudentController.php';
 require_once __DIR__ . '/controllers/TeacherAssignmentController.php';
 require_once __DIR__ . '/controllers/DashboardController.php';
+require_once __DIR__ . '/controllers/SubjectController.php';
 
 $page = $_GET['page'] ?? 'login';
 $method = $_SERVER['REQUEST_METHOD'];
@@ -44,6 +45,85 @@ if ($page === 'admin_dashboard' && $method === 'GET') {
 
     $controller = new DashboardController();
     $controller->showDashboard();
+    exit();
+}
+
+// SUBJECT MANAGEMENT ROUTES (admin only)
+if ($page === 'subjects' && $method === 'GET') {
+    if (!isLoggedIn() || (!isAdmin() && !isSuperAdmin())) {
+        header('Location: index.php?page=login');
+        exit();
+    }
+
+    $controller = new SubjectController();
+    $controller->showSubjectList();
+    exit();
+}
+
+// AJAX search for subjects (admin only)
+if ($page === 'ajax_search_subjects' && $method === 'GET') {
+    if (!isLoggedIn() || (!isAdmin() && !isSuperAdmin())) {
+        header('Location: index.php?page=login');
+        exit();
+    }
+
+    $controller = new SubjectController();
+    $controller->ajaxSearchSubjects();
+    exit();
+}
+
+if ($page === 'create_subject' && $method === 'GET') {
+    if (!isLoggedIn() || (!isAdmin() && !isSuperAdmin())) {
+        header('Location: index.php?page=login');
+        exit();
+    }
+
+    $controller = new SubjectController();
+    $controller->showCreateSubject();
+    exit();
+}
+
+if ($page === 'create_subject_action' && $method === 'POST') {
+    if (!isLoggedIn() || (!isAdmin() && !isSuperAdmin())) {
+        header('Location: index.php?page=login');
+        exit();
+    }
+
+    $controller = new SubjectController();
+    $controller->createSubject();
+    exit();
+}
+
+if ($page === 'edit_subject' && $method === 'GET') {
+    if (!isLoggedIn() || (!isAdmin() && !isSuperAdmin())) {
+        header('Location: index.php?page=login');
+        exit();
+    }
+
+    $controller = new SubjectController();
+    $controller->showEditSubject();
+    exit();
+}
+
+if ($page === 'update_subject_action' && $method === 'POST') {
+    if (!isLoggedIn() || (!isAdmin() && !isSuperAdmin())) {
+        header('Location: index.php?page=login');
+        exit();
+    }
+
+    $controller = new SubjectController();
+    $controller->updateSubject();
+    exit();
+}
+
+if ($page === 'delete_subject_action' && $method === 'POST') {
+    if (!isLoggedIn() || (!isAdmin() && !isSuperAdmin())) {
+        header('Location: index.php?page=login');
+        exit();
+    }
+
+    $controller = new SubjectController();
+    $controller->deleteSubject();
     exit();
 }
 

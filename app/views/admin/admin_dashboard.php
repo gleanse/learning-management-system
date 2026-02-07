@@ -36,6 +36,12 @@
                     </a>
                 </li>
                 <li class="nav-item">
+                    <a class="nav-link" href="index.php?page=subjects">
+                        <i class="bi bi-book-fill"></i>
+                        <span>Subject Management</span>
+                    </a>
+                </li>
+                <li class="nav-item">
                     <a class="nav-link" href="index.php?page=teacher_assignments">
                         <i class="bi bi-person-plus-fill"></i>
                         <span>Teacher Assignments</span>
@@ -267,6 +273,19 @@
                             </div>
                             <div class="card-body">
                                 <div class="quick-links-list">
+                                    <a href="index.php?page=subjects" class="quick-link-item">
+                                        <div class="link-icon">
+                                            <i class="bi bi-book-fill"></i>
+                                        </div>
+                                        <div class="link-content">
+                                            <h6 class="link-title">Subject Management</h6>
+                                            <p class="link-desc">Create, view, edit, and manage all subjects</p>
+                                        </div>
+                                        <div class="link-arrow">
+                                            <i class="bi bi-arrow-right"></i>
+                                        </div>
+                                    </a>
+
                                     <a href="index.php?page=teacher_assignments" class="quick-link-item">
                                         <div class="link-icon">
                                             <i class="bi bi-person-plus-fill"></i>
