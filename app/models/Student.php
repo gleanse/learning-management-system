@@ -23,7 +23,9 @@ class Student
                 u.middle_name,
                 u.last_name,
                 s.year_level,
-                sec.section_name
+                sec.section_name,
+                sec.education_level,
+                sec.strand_course
             FROM student_subject_enrollments sse
             INNER JOIN students s ON sse.student_id = s.student_id
             INNER JOIN users u ON s.user_id = u.id
@@ -47,7 +49,10 @@ class Student
             SELECT DISTINCT
                 sec.section_id,
                 sec.section_name,
+                sec.education_level,
                 sec.year_level,
+                sec.strand_course,
+                sec.max_capacity,
                 COUNT(DISTINCT sse.student_id) as student_count
             FROM sections sec
             INNER JOIN students s ON sec.section_id = s.section_id
@@ -56,7 +61,7 @@ class Student
                 AND sec.year_level = ?
                 AND sse.school_year = ?
                 AND sse.semester = ?
-            GROUP BY sec.section_id, sec.section_name, sec.year_level
+            GROUP BY sec.section_id, sec.section_name, sec.education_level, sec.year_level, sec.strand_course, sec.max_capacity
             ORDER BY sec.section_name ASC
         ");
 
@@ -71,7 +76,10 @@ class Student
             SELECT 
                 section_id,
                 section_name,
-                year_level
+                education_level,
+                year_level,
+                strand_course,
+                max_capacity
             FROM sections
             WHERE section_id = ?
         ");
@@ -214,6 +222,8 @@ class Student
                 s.year_level,
                 s.section_id,
                 sec.section_name,
+                sec.education_level,
+                sec.strand_course,
                 u.first_name,
                 u.middle_name,
                 u.last_name,
@@ -264,6 +274,8 @@ class Student
                 u.middle_name,
                 u.last_name,
                 sec.section_name,
+                sec.education_level,
+                sec.strand_course,
                 s.year_level,
                 s.created_at
             FROM students s
@@ -290,6 +302,30 @@ class Student
             GROUP BY enrollment_status
         ");
         $stmt->execute();
+        return $stmt->fetchAll();
+    }
+
+    // get students by section id with enrollment count
+    public function getStudentsBySection($section_id)
+    {
+        $stmt = $this->connection->prepare("
+            SELECT 
+                s.student_id,
+                s.student_number,
+                s.year_level,
+                s.enrollment_status,
+                u.first_name,
+                u.middle_name,
+                u.last_name,
+                u.email
+            FROM students s
+            INNER JOIN users u ON s.user_id = u.id
+            WHERE s.section_id = ?
+            ORDER BY u.last_name ASC, u.first_name ASC
+        ");
+
+        $stmt->execute([$section_id]);
+
         return $stmt->fetchAll();
     }
 }

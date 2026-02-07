@@ -116,6 +116,8 @@ class TeacherAssignment
                 tsa.status,
                 CONCAT(u.first_name, ' ', IF(u.middle_name IS NOT NULL, CONCAT(u.middle_name, ' '), ''), u.last_name) as teacher_name,
                 sec.section_name,
+                sec.education_level,
+                sec.strand_course,
                 GROUP_CONCAT(s.subject_name ORDER BY s.subject_name SEPARATOR ', ') as subjects,
                 GROUP_CONCAT(s.subject_id ORDER BY s.subject_name SEPARATOR ',') as subject_ids,
                 COUNT(tsa.subject_id) as subject_count
@@ -210,6 +212,8 @@ class TeacherAssignment
                 tsa.status,
                 CONCAT(u.first_name, ' ', IF(u.middle_name IS NOT NULL, CONCAT(u.middle_name, ' '), ''), u.last_name) as teacher_name,
                 sec.section_name,
+                sec.education_level,
+                sec.strand_course,
                 GROUP_CONCAT(s.subject_name ORDER BY s.subject_name SEPARATOR ', ') as subjects,
                 GROUP_CONCAT(s.subject_id ORDER BY s.subject_name SEPARATOR ',') as subject_ids,
                 COUNT(tsa.subject_id) as subject_count

@@ -23,7 +23,9 @@ class Teacher
                 tsa.school_year,
                 tsa.semester,
                 sec.section_id,
-                sec.section_name
+                sec.section_name,
+                sec.education_level,
+                sec.strand_course
             FROM teacher_subject_assignments tsa
             INNER JOIN subjects s ON tsa.subject_id = s.subject_id
             INNER JOIN sections sec ON tsa.section_id = sec.section_id
@@ -70,7 +72,10 @@ class Teacher
             SELECT 
                 sec.section_id,
                 sec.section_name,
+                sec.education_level,
                 sec.year_level,
+                sec.strand_course,
+                sec.max_capacity,
                 sec.school_year,
                 COUNT(DISTINCT st.student_id) as student_count
             FROM teacher_subject_assignments tsa
@@ -81,7 +86,7 @@ class Teacher
             AND tsa.year_level = ? 
             AND tsa.school_year = ?
             AND tsa.status = 'active'
-            GROUP BY sec.section_id, sec.section_name, sec.year_level, sec.school_year
+            GROUP BY sec.section_id, sec.section_name, sec.education_level, sec.year_level, sec.strand_course, sec.max_capacity, sec.school_year
             ORDER BY sec.section_name ASC
         ");
 

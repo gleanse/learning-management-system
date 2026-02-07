@@ -1,6 +1,7 @@
--- seed sample teacher user (password: password)
+-- seed sample teacher users (password: password)
 INSERT INTO users (username, email, password, role, status, first_name, middle_name, last_name, created_at, updated_at) 
-VALUES (
+VALUES 
+(
     'teacher1',
     'teacher1@gmail.com',
     '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi',
@@ -11,11 +12,24 @@ VALUES (
     'Dela Cruz',
     NOW(),
     NOW()
+),
+(
+    'teacher2',
+    'teacher2@gmail.com',
+    '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi',
+    'teacher',
+    'active',
+    'Maria',
+    'Lopez',
+    'Santos',
+    NOW(),
+    NOW()
 );
 
--- seed sample student user (password: password)
+-- seed sample student users (password: password)
 INSERT INTO users (username, email, password, role, status, first_name, middle_name, last_name, created_at, updated_at) 
-VALUES (
+VALUES 
+(
     'student1',
     'student1@gmail.com',
     '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi',
@@ -24,6 +38,42 @@ VALUES (
     'Nicka',
     'Garcia',
     'Reyes',
+    NOW(),
+    NOW()
+),
+(
+    'student2',
+    'student2@gmail.com',
+    '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi',
+    'student',
+    'active',
+    'Pedro',
+    'Cruz',
+    'Ramos',
+    NOW(),
+    NOW()
+),
+(
+    'student3',
+    'student3@gmail.com',
+    '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi',
+    'student',
+    'active',
+    'Ana',
+    'Marie',
+    'Torres',
+    NOW(),
+    NOW()
+),
+(
+    'student4',
+    'student4@gmail.com',
+    '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi',
+    'student',
+    'active',
+    'Carlos',
+    'David',
+    'Gonzales',
     NOW(),
     NOW()
 );
