@@ -6,6 +6,7 @@ require_once __DIR__ . '/controllers/StudentController.php';
 require_once __DIR__ . '/controllers/TeacherAssignmentController.php';
 require_once __DIR__ . '/controllers/DashboardController.php';
 require_once __DIR__ . '/controllers/SubjectController.php';
+require_once __DIR__ . '/controllers/SectionController.php';
 
 $page = $_GET['page'] ?? 'login';
 $method = $_SERVER['REQUEST_METHOD'];
@@ -124,6 +125,84 @@ if ($page === 'delete_subject_action' && $method === 'POST') {
 
     $controller = new SubjectController();
     $controller->deleteSubject();
+    exit();
+}
+
+// SECTION MANAGEMENT ROUTES (admin only)
+if ($page === 'manage_sections' && $method === 'GET') {
+    if (!isLoggedIn() || (!isAdmin() && !isSuperAdmin())) {
+        header('Location: index.php?page=login');
+        exit();
+    }
+
+    $controller = new SectionController();
+    $controller->showManageSections();
+    exit();
+}
+
+if ($page === 'create_section' && $method === 'GET') {
+    if (!isLoggedIn() || (!isAdmin() && !isSuperAdmin())) {
+        header('Location: index.php?page=login');
+        exit();
+    }
+
+    $controller = new SectionController();
+    $controller->showCreateSection();
+    exit();
+}
+
+if ($page === 'create_section' && $method === 'POST') {
+    if (!isLoggedIn() || (!isAdmin() && !isSuperAdmin())) {
+        header('Location: index.php?page=login');
+        exit();
+    }
+
+    $controller = new SectionController();
+    $controller->processCreateSection();
+    exit();
+}
+
+if ($page === 'edit_section' && $method === 'GET') {
+    if (!isLoggedIn() || (!isAdmin() && !isSuperAdmin())) {
+        header('Location: index.php?page=login');
+        exit();
+    }
+
+    $controller = new SectionController();
+    $controller->showEditSection();
+    exit();
+}
+
+if ($page === 'update_section' && $method === 'POST') {
+    if (!isLoggedIn() || (!isAdmin() && !isSuperAdmin())) {
+        header('Location: index.php?page=login');
+        exit();
+    }
+
+    $controller = new SectionController();
+    $controller->processUpdateSection();
+    exit();
+}
+
+if ($page === 'delete_section' && $method === 'POST') {
+    if (!isLoggedIn() || (!isAdmin() && !isSuperAdmin())) {
+        header('Location: index.php?page=login');
+        exit();
+    }
+
+    $controller = new SectionController();
+    $controller->processDeleteSection();
+    exit();
+}
+
+if ($page === 'view_section' && $method === 'GET') {
+    if (!isLoggedIn() || (!isAdmin() && !isSuperAdmin())) {
+        header('Location: index.php?page=login');
+        exit();
+    }
+
+    $controller = new SectionController();
+    $controller->showViewSection();
     exit();
 }
 

@@ -36,6 +36,12 @@
                     </a>
                 </li>
                 <li class="nav-item">
+                    <a class="nav-link" href="index.php?page=manage_sections">
+                        <i class="bi bi-grid-3x3-gap-fill"></i>
+                        <span>Section Management</span>
+                    </a>
+                </li>
+                <li class="nav-item">
                     <a class="nav-link" href="index.php?page=subjects">
                         <i class="bi bi-book-fill"></i>
                         <span>Subject Management</span>

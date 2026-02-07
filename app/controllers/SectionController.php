@@ -71,6 +71,44 @@ class SectionController
         require __DIR__ . '/../views/admin/manage_sections.php';
     }
 
+    public function showCreateSection()
+    {
+        $this->requireAdmin();
+
+        if (empty($_SESSION['csrf_token'])) {
+            $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
+        }
+
+        require __DIR__ . '/../views/admin/create_section.php';
+    }
+    public function showEditSection()
+    {
+        $this->requireAdmin();
+
+        if (empty($_SESSION['csrf_token'])) {
+            $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
+        }
+
+        $section_id = isset($_GET['section_id']) ? intval($_GET['section_id']) : null;
+
+        if (empty($section_id)) {
+            $_SESSION['section_errors'] = ['general' => 'Invalid section.'];
+            header('Location: index.php?page=manage_sections');
+            exit();
+        }
+
+        // get section details
+        $section = $this->section_model->getSectionById($section_id);
+
+        if (!$section) {
+            $_SESSION['section_errors'] = ['general' => 'Section not found.'];
+            header('Location: index.php?page=manage_sections');
+            exit();
+        }
+
+        require __DIR__ . '/../views/admin/edit_section.php';
+    }
+
     public function processCreateSection()
     {
         $this->requireAdmin();
@@ -104,14 +142,14 @@ class SectionController
             $errors['strand_course'] = 'Strand/Course is required.';
         }
 
-        // validate max capacity (optional but must be numeric if provided)
+        // validate max capacity (REQUIRED)
         $capacity_value = null;
-        if (!empty($max_capacity)) {
-            if (!is_numeric($max_capacity) || intval($max_capacity) < 1) {
-                $errors['max_capacity'] = 'Maximum capacity must be a positive number.';
-            } else {
-                $capacity_value = intval($max_capacity);
-            }
+        if (empty($max_capacity)) {
+            $errors['max_capacity'] = 'Maximum capacity is required.';
+        } elseif (!is_numeric($max_capacity) || intval($max_capacity) < 1) {
+            $errors['max_capacity'] = 'Maximum capacity must be a positive number.';
+        } else {
+            $capacity_value = intval($max_capacity);
         }
 
         // check if section name already exists for this school year
