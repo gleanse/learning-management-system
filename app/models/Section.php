@@ -43,7 +43,7 @@ class Section
         return $stmt->fetchAll();
     }
 
-    // get all sections with student count
+    // get all sections with student count (kept for non-paginated needs)
     public function getAllSectionsWithStudentCount($school_year = '2025-2026')
     {
         $stmt = $this->connection->prepare("
@@ -224,5 +224,70 @@ class Section
 
         $result = $stmt->fetch();
         return $result['count'] > 0;
+    }
+
+    // get sections with pagination
+    public function getWithPagination($limit, $offset, $search = '', $school_year = '2025-2026')
+    {
+        $sql = "
+            SELECT 
+                sec.section_id,
+                sec.section_name,
+                sec.education_level,
+                sec.year_level,
+                sec.strand_course,
+                sec.max_capacity,
+                sec.school_year,
+                COUNT(s.student_id) as student_count
+            FROM sections sec
+            LEFT JOIN students s ON sec.section_id = s.section_id AND s.enrollment_status = 'active'
+            WHERE sec.school_year = :school_year
+        ";
+
+        if (!empty($search)) {
+            $sql .= " AND (sec.section_name LIKE :search OR sec.strand_course LIKE :search)";
+        }
+
+        $sql .= " GROUP BY sec.section_id, sec.section_name, sec.education_level, sec.year_level, sec.strand_course, sec.max_capacity, sec.school_year 
+                  ORDER BY sec.education_level DESC, sec.year_level ASC, sec.section_name ASC 
+                  LIMIT :limit OFFSET :offset";
+
+        $stmt = $this->connection->prepare($sql);
+
+        $stmt->bindValue(':school_year', $school_year);
+        $stmt->bindValue(':limit', (int)$limit, PDO::PARAM_INT);
+        $stmt->bindValue(':offset', (int)$offset, PDO::PARAM_INT);
+
+        if (!empty($search)) {
+            $search_term = "%{$search}%";
+            $stmt->bindValue(':search', $search_term);
+        }
+
+        $stmt->execute();
+        return $stmt->fetchAll();
+    }
+
+    // get total count for pagination
+    public function getTotalCount($search = '', $school_year = '2025-2026')
+    {
+        if (!empty($search)) {
+            $stmt = $this->connection->prepare("
+                SELECT COUNT(*) as count 
+                FROM sections 
+                WHERE school_year = ? AND (section_name LIKE ? OR strand_course LIKE ?)
+            ");
+            $search_term = "%{$search}%";
+            $stmt->execute([$school_year, $search_term, $search_term]);
+        } else {
+            $stmt = $this->connection->prepare("
+                SELECT COUNT(*) as count 
+                FROM sections 
+                WHERE school_year = ?
+            ");
+            $stmt->execute([$school_year]);
+        }
+
+        $result = $stmt->fetch();
+        return $result['count'];
     }
 }

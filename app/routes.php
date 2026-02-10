@@ -140,6 +140,30 @@ if ($page === 'manage_sections' && $method === 'GET') {
     exit();
 }
 
+// AJAX search for sections (admin only)
+if ($page === 'ajax_search_sections' && $method === 'GET') {
+    if (!isLoggedIn() || (!isAdmin() && !isSuperAdmin())) {
+        header('Location: index.php?page=login');
+        exit();
+    }
+
+    $controller = new SectionController();
+    $controller->ajaxSearchSections();
+    exit();
+}
+
+// AJAX get students for specific section (admin only)
+if ($page === 'ajax_section_students' && $method === 'GET') {
+    if (!isLoggedIn() || (!isAdmin() && !isSuperAdmin())) {
+        header('Location: index.php?page=login');
+        exit();
+    }
+
+    $controller = new SectionController();
+    $controller->ajaxSectionStudents();
+    exit();
+}
+
 if ($page === 'create_section' && $method === 'GET') {
     if (!isLoggedIn() || (!isAdmin() && !isSuperAdmin())) {
         header('Location: index.php?page=login');

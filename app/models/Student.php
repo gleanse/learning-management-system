@@ -328,4 +328,59 @@ class Student
 
         return $stmt->fetchAll();
     }
+
+    // get students by section with pagination
+    public function getStudentsBySectionWithPagination($section_id, $limit, $offset, $search = '')
+    {
+        $sql = "
+            SELECT 
+                s.student_id, s.student_number, s.year_level, s.enrollment_status,
+                u.first_name, u.middle_name, u.last_name, u.email
+            FROM students s
+            INNER JOIN users u ON s.user_id = u.id
+            WHERE s.section_id = :section_id
+        ";
+
+        if (!empty($search)) {
+            $sql .= " AND (s.student_number LIKE :search OR u.last_name LIKE :search OR u.first_name LIKE :search)";
+        }
+
+        $sql .= " ORDER BY u.last_name ASC, u.first_name ASC LIMIT :limit OFFSET :offset";
+
+        $stmt = $this->connection->prepare($sql);
+        $stmt->bindValue(':section_id', $section_id);
+        $stmt->bindValue(':limit', (int)$limit, PDO::PARAM_INT);
+        $stmt->bindValue(':offset', (int)$offset, PDO::PARAM_INT);
+
+        if (!empty($search)) {
+            $stmt->bindValue(':search', "%{$search}%");
+        }
+
+        $stmt->execute();
+        return $stmt->fetchAll();
+    }
+
+    // get total students in section count for pagination
+    public function getTotalStudentsInSectionCount($section_id, $search = '')
+    {
+        $sql = "
+            SELECT COUNT(*) as count
+            FROM students s
+            INNER JOIN users u ON s.user_id = u.id
+            WHERE s.section_id = ?
+        ";
+        $params = [$section_id];
+
+        if (!empty($search)) {
+            $sql .= " AND (s.student_number LIKE ? OR u.last_name LIKE ? OR u.first_name LIKE ?)";
+            $params[] = "%{$search}%";
+            $params[] = "%{$search}%";
+            $params[] = "%{$search}%";
+        }
+
+        $stmt = $this->connection->prepare($sql);
+        $stmt->execute($params);
+        $result = $stmt->fetch();
+        return $result['count'];
+    }
 }

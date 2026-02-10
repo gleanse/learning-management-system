@@ -202,11 +202,20 @@
 
                 <!-- enrolled students card -->
                 <div class="card">
-                    <div class="card-header">
+                    <div class="card-header d-flex justify-content-between align-items-center">
                         <h5 class="mb-0">
                             <i class="bi bi-people-fill"></i>
-                            Enrolled Students (<?= count($students) ?>)
+                            Enrolled Students (<span id="totalStudentsBadge"><?= $total_students ?></span>)
                         </h5>
+                        <!-- search form -->
+                        <div class="d-flex" style="width: 250px;">
+                            <div class="input-group input-group-sm">
+                                <input type="text" id="studentSearchInput" class="form-control" placeholder="Search student..." value="<?= htmlspecialchars($search) ?>">
+                                <button class="btn btn-outline-secondary" type="button">
+                                    <i class="bi bi-search"></i>
+                                </button>
+                            </div>
+                        </div>
                     </div>
                     <div class="card-body">
                         <div class="table-responsive">
@@ -220,7 +229,7 @@
                                         <th>Status</th>
                                     </tr>
                                 </thead>
-                                <tbody>
+                                <tbody id="studentsTableBody">
                                     <?php if (empty($students)): ?>
                                         <tr>
                                             <td colspan="5">
@@ -228,7 +237,7 @@
                                                     <div class="empty-state-icon">
                                                         <i class="bi bi-inbox"></i>
                                                     </div>
-                                                    <p class="empty-state-text">No students enrolled in this section</p>
+                                                    <p class="empty-state-text">No students found in this section</p>
                                                 </div>
                                             </td>
                                         </tr>
@@ -274,13 +283,128 @@
                                 </tbody>
                             </table>
                         </div>
+
+                        <!-- pagination container -->
+                        <div id="paginationContainer" class="pagination-wrapper mt-4">
+                            <?php if ($total_pages > 1): ?>
+                                <nav aria-label="Page navigation">
+                                    <ul class="pagination justify-content-center mb-0">
+                                        <!-- previous button -->
+                                        <li class="page-item <?= ($page <= 1) ? 'disabled' : '' ?>">
+                                            <a class="page-link" href="#" data-page="<?= $page - 1 ?>">
+                                                <i class="bi bi-chevron-left"></i>
+                                            </a>
+                                        </li>
+
+                                        <!-- page numbers -->
+                                        <?php
+                                        $start_page = max(1, $page - 2);
+                                        $end_page = min($total_pages, $page + 2);
+
+                                        for ($i = $start_page; $i <= $end_page; $i++):
+                                        ?>
+                                            <li class="page-item <?= ($i == $page) ? 'active' : '' ?>">
+                                                <a class="page-link" href="#" data-page="<?= $i ?>">
+                                                    <?= $i ?>
+                                                </a>
+                                            </li>
+                                        <?php endfor; ?>
+
+                                        <!-- next button -->
+                                        <li class="page-item <?= ($page >= $total_pages) ? 'disabled' : '' ?>">
+                                            <a class="page-link" href="#" data-page="<?= $page + 1 ?>">
+                                                <i class="bi bi-chevron-right"></i>
+                                            </a>
+                                        </li>
+                                    </ul>
+                                </nav>
+                                <div class="pagination-info text-center mt-2 text-muted small">
+                                    Showing page <?= $page ?> of <?= $total_pages ?> (<?= $total_students ?> total students)
+                                </div>
+                            <?php endif; ?>
+                        </div>
+
                     </div>
                 </div>
             </div>
         </div>
     </div>
 
+    <!-- hidden inputs for js -->
+    <input type="hidden" id="sectionId" value="<?= $section['section_id'] ?>">
+
     <script src="bootstrap/js/bootstrap.bundle.min.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const searchInput = document.getElementById('studentSearchInput');
+            const tableBody = document.getElementById('studentsTableBody');
+            const paginationContainer = document.getElementById('paginationContainer');
+            const totalBadge = document.getElementById('totalStudentsBadge');
+            const sectionId = document.getElementById('sectionId').value;
+
+            let debounceTimer;
+
+            // debounce function to limit api calls
+            function debounce(func, timeout = 300) {
+                return (...args) => {
+                    clearTimeout(debounceTimer);
+                    debounceTimer = setTimeout(() => {
+                        func.apply(this, args);
+                    }, timeout);
+                };
+            }
+
+            // fetch function
+            function loadStudents(page, search) {
+                const url = `index.php?page=ajax_section_students&section_id=${sectionId}&p=${page}&search=${encodeURIComponent(search)}`;
+
+                // add loading state
+                tableBody.style.opacity = '0.5';
+
+                fetch(url, {
+                        headers: {
+                            'X-Requested-With': 'XMLHttpRequest'
+                        }
+                    })
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.success) {
+                            tableBody.innerHTML = data.table_html;
+                            paginationContainer.innerHTML = data.pagination_html;
+                            totalBadge.textContent = data.total_students;
+                        }
+                        tableBody.style.opacity = '1';
+                    })
+                    .catch(error => {
+                        console.error('Error:', error);
+                        tableBody.style.opacity = '1';
+                    });
+            }
+
+            // search event listener
+            searchInput.addEventListener('input', debounce(() => {
+                loadStudents(1, searchInput.value);
+            }));
+
+            // pagination click delegation
+            paginationContainer.addEventListener('click', function(e) {
+                // handle icon clicks inside links
+                const link = e.target.closest('.page-link');
+
+                if (link) {
+                    e.preventDefault();
+
+                    const parentLi = link.closest('.page-item');
+                    if (parentLi && parentLi.classList.contains('disabled')) return;
+
+                    const page = link.getAttribute('data-page');
+                    if (page) {
+                        loadStudents(page, searchInput.value);
+                    }
+                }
+            });
+        });
+    </script>
 
 </body>
 

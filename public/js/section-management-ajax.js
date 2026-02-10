@@ -1,3 +1,131 @@
+document.addEventListener('DOMContentLoaded', function () {
+  const searchInput = document.getElementById('searchInput');
+  const schoolYearFilter = document.getElementById('schoolYearFilter');
+  const sectionsContainer = document.getElementById('sections-container');
+  const deleteSectionForm = document.getElementById('deleteSectionForm');
+  let searchTimeout;
+
+  // fetch sections with current filters
+  const fetchSections = async (page = 1) => {
+    const search = searchInput.value;
+    const schoolYear = schoolYearFilter.value;
+    const url = `index.php?page=ajax_search_sections&p=${page}&search=${encodeURIComponent(
+      search
+    )}&school_year=${schoolYear}`;
+
+    try {
+      const response = await fetch(url, {
+        headers: {
+          'X-Requested-With': 'XMLHttpRequest',
+        },
+      });
+      const data = await response.json();
+      if (data.success) {
+        sectionsContainer.innerHTML = data.html;
+        currentPage = data.current_page; // update global current page
+      } else {
+        showToast('Failed to load sections.', 'danger');
+      }
+    } catch (error) {
+      console.error('Fetch error:', error);
+      showToast('An error occurred while fetching data.', 'danger');
+    }
+  };
+
+  // debounce search input to avoid excessive requests
+  searchInput.addEventListener('input', () => {
+    clearTimeout(searchTimeout);
+    searchTimeout = setTimeout(() => {
+      fetchSections(1); // reset to page 1 for new search
+    }, 300);
+  });
+
+  // handle school year change
+  schoolYearFilter.addEventListener('change', () => {
+    fetchSections(1); // reset to page 1 for new filter
+  });
+
+  // event delegation for pagination and delete buttons
+  sectionsContainer.addEventListener('click', (e) => {
+    // pagination links
+    const pageLink = e.target.closest('.page-link');
+    if (pageLink && !pageLink.closest('.disabled')) {
+      e.preventDefault();
+      const page = pageLink.dataset.page;
+      fetchSections(page);
+    }
+
+    // delete buttons
+    const deleteButton = e.target.closest('.btn-delete');
+    if (deleteButton) {
+      const sectionId = deleteButton.dataset.sectionId;
+      const sectionName = deleteButton.dataset.sectionName;
+
+      // populate and show modal
+      document.getElementById('deleteSectionId').value = sectionId;
+      document.getElementById('deleteSectionName').textContent = sectionName;
+      const deleteModal = new bootstrap.Modal(
+        document.getElementById('deleteSectionModal')
+      );
+      deleteModal.show();
+    }
+  });
+
+  // handle delete form submission
+  deleteSectionForm.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const submitButton = e.target.querySelector('button[type="submit"]');
+    const formData = new FormData(e.target);
+
+    setButtonLoading(submitButton, true);
+
+    try {
+      const response = await fetch('index.php?page=delete_section', {
+        method: 'POST',
+        headers: { 'X-Requested-With': 'XMLHttpRequest' },
+        body: formData,
+      });
+
+      const data = await response.json();
+
+      if (data.success) {
+        showToast(data.message, 'success');
+        const modal = bootstrap.Modal.getInstance(
+          document.getElementById('deleteSectionModal')
+        );
+        modal.hide();
+
+        // remove the row from the table without reloading the page
+        const sectionId = formData.get('section_id');
+        const rowToRemove = document.querySelector(
+          `tr[data-section-id="${sectionId}"]`
+        );
+
+        if (rowToRemove) {
+          rowToRemove.style.transition = 'opacity 0.5s';
+          rowToRemove.style.opacity = '0';
+          setTimeout(() => {
+            rowToRemove.remove();
+            fetchSections(currentPage);
+          }, 500);
+        } else {
+          // if row not found, just refresh
+          fetchSections(currentPage);
+        }
+      } else {
+        showToast(data.message || 'Failed to delete section.', 'danger');
+      }
+    } catch (error) {
+      console.error('Delete error:', error);
+      showToast('An error occurred. Please try again.', 'danger');
+    } finally {
+      setButtonLoading(submitButton, false);
+    }
+  });
+});
+
+// utility functions
+
 function showToast(message, type = 'success') {
   const toastContainer = document.getElementById('toastContainer');
   const toastId = 'toast-' + Date.now();
@@ -7,17 +135,17 @@ function showToast(message, type = 'success') {
   const titleText = type === 'success' ? 'Success' : 'Error';
 
   const toastHTML = `
-    <div id="${toastId}" class="toast toast-${type}" role="alert" aria-live="assertive" aria-atomic="true">
-      <div class="toast-header">
-        <i class="bi ${iconClass} me-2"></i>
-        <strong class="me-auto">${titleText}</strong>
-        <button type="button" class="btn-close" data-bs-dismiss="toast" aria-label="Close"></button>
+      <div id="${toastId}" class="toast toast-${type}" role="alert" aria-live="assertive" aria-atomic="true">
+        <div class="toast-header">
+          <i class="bi ${iconClass} me-2"></i>
+          <strong class="me-auto">${titleText}</strong>
+          <button type="button" class="btn-close" data-bs-dismiss="toast" aria-label="Close"></button>
+        </div>
+        <div class="toast-body">
+          ${message}
+        </div>
       </div>
-      <div class="toast-body">
-        ${message}
-      </div>
-    </div>
-  `;
+    `;
 
   toastContainer.insertAdjacentHTML('beforeend', toastHTML);
 
@@ -34,174 +162,17 @@ function showToast(message, type = 'success') {
   });
 }
 
-function clearFormErrors(form) {
-  const invalidInputs = form.querySelectorAll('.is-invalid');
-  invalidInputs.forEach((input) => {
-    input.classList.remove('is-invalid');
-  });
-
-  const errorMessages = form.querySelectorAll('.invalid-feedback');
-  errorMessages.forEach((message) => {
-    message.textContent = '';
-  });
-}
-
-function displayFormErrors(form, errors) {
-  clearFormErrors(form);
-
-  Object.keys(errors).forEach((fieldName) => {
-    const input = form.querySelector(`[name="${fieldName}"]`);
-    if (input) {
-      input.classList.add('is-invalid');
-      const feedback = input.nextElementSibling;
-      if (feedback && feedback.classList.contains('invalid-feedback')) {
-        feedback.textContent = errors[fieldName];
-      }
-    }
-  });
-}
-
 function setButtonLoading(button, isLoading) {
   const spinner = button.querySelector('.spinner-border');
   const icon = button.querySelector('i:not(.spinner-border)');
 
   if (isLoading) {
-    spinner.classList.remove('d-none');
-    if (icon) icon.classList.add('d-none');
     button.disabled = true;
+    if (spinner) spinner.classList.remove('d-none');
+    if (icon) icon.classList.add('d-none');
   } else {
-    spinner.classList.add('d-none');
-    if (icon) icon.classList.remove('d-none');
     button.disabled = false;
+    if (spinner) spinner.classList.add('d-none');
+    if (icon) icon.classList.remove('d-none');
   }
 }
-
-/* DELETE section handlers */
-
-// populate delete modal when delete button is clicked
-document.querySelectorAll('.delete-section-btn').forEach((button) => {
-  button.addEventListener('click', function () {
-    const sectionId = this.dataset.sectionId;
-    const sectionName = this.dataset.sectionName;
-
-    // populate modal
-    document.getElementById('deleteSectionId').value = sectionId;
-    document.getElementById('deleteSectionName').textContent = sectionName;
-
-    // show modal
-    const modal = new bootstrap.Modal(
-      document.getElementById('deleteSectionModal')
-    );
-    modal.show();
-  });
-});
-
-// handle delete form submission
-document
-  .getElementById('deleteSectionForm')
-  ?.addEventListener('submit', async function (e) {
-    e.preventDefault();
-
-    const form = e.target;
-    const submitButton = form.querySelector('button[type="submit"]');
-    const formData = new FormData(form);
-
-    // set loading state
-    setButtonLoading(submitButton, true);
-
-    try {
-      const response = await fetch('index.php?page=delete_section', {
-        method: 'POST',
-        headers: {
-          'X-Requested-With': 'XMLHttpRequest',
-        },
-        body: formData,
-      });
-
-      const data = await response.json();
-
-      if (data.success) {
-        // show success message
-        showToast(data.message, 'success');
-
-        // close modal
-        const modal = bootstrap.Modal.getInstance(
-          document.getElementById('deleteSectionModal')
-        );
-        modal.hide();
-
-        // reload page to remove deleted section
-        setTimeout(() => {
-          window.location.reload();
-        }, 1000);
-      } else {
-        // show error message
-        showToast(data.message, 'danger');
-      }
-    } catch (error) {
-      console.error('Error:', error);
-      showToast('An error occurred. Please try again.', 'danger');
-    } finally {
-      setButtonLoading(submitButton, false);
-    }
-  });
-
-/* SEARCH functionality */
-document.getElementById('searchInput')?.addEventListener('input', function (e) {
-  const searchTerm = e.target.value.toLowerCase();
-  const tableRows = document.querySelectorAll('#sectionsTableBody tr');
-
-  tableRows.forEach((row) => {
-    // skip empty state row
-    if (row.querySelector('.empty-state')) {
-      return;
-    }
-
-    const sectionName =
-      row.querySelector('.section-name')?.textContent.toLowerCase() || '';
-    const educationLevel =
-      row.querySelector('.education-level-badge')?.textContent.toLowerCase() ||
-      '';
-    const yearLevel =
-      row.querySelector('.year-level')?.textContent.toLowerCase() || '';
-    const strandCourse =
-      row.querySelector('.strand-course')?.textContent.toLowerCase() || '';
-    const schoolYear =
-      row.querySelector('.school-year')?.textContent.toLowerCase() || '';
-
-    const matches =
-      sectionName.includes(searchTerm) ||
-      educationLevel.includes(searchTerm) ||
-      yearLevel.includes(searchTerm) ||
-      strandCourse.includes(searchTerm) ||
-      schoolYear.includes(searchTerm);
-
-    if (matches) {
-      row.style.display = '';
-    } else {
-      row.style.display = 'none';
-    }
-  });
-
-  // check if any rows are visible
-  const visibleRows = Array.from(tableRows).filter((row) => {
-    return row.style.display !== 'none' && !row.querySelector('.empty-state');
-  });
-
-  // show/hide empty state based on visible rows
-  const emptyStateRow = document
-    .querySelector('#sectionsTableBody .empty-state')
-    ?.closest('tr');
-  if (emptyStateRow) {
-    emptyStateRow.style.display = visibleRows.length === 0 ? '' : 'none';
-  }
-});
-
-/* SCHOOL year filter */
-document
-  .getElementById('schoolYearFilter')
-  ?.addEventListener('change', function (e) {
-    const selectedYear = e.target.value;
-    // reload page with selected school year
-    window.location.href = `index.php?page=manage_sections&school_year=${selectedYear}`;
-  });

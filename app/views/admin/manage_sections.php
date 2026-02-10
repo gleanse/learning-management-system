@@ -16,7 +16,6 @@
     <div class="toast-container position-fixed top-0 end-0 p-3" style="z-index: 1100;" id="toastContainer"></div>
 
     <div class="d-flex">
-        <!-- sidebar -->
         <div class="sidenav">
             <div class="sidenav-header">
                 <div class="school-brand">
@@ -64,9 +63,7 @@
             </ul>
         </div>
 
-        <!-- main content -->
         <div class="main-content flex-grow-1">
-            <!-- top navbar -->
             <nav class="navbar top-navbar">
                 <div class="container-fluid">
                     <div class="navbar-brand mb-0">
@@ -96,9 +93,7 @@
                 </div>
             </nav>
 
-            <!-- page content -->
             <div class="container-fluid p-4">
-                <!-- breadcrumbs -->
                 <nav aria-label="breadcrumb">
                     <ol class="breadcrumb">
                         <li class="breadcrumb-item">
@@ -112,7 +107,6 @@
                     </ol>
                 </nav>
 
-                <!-- page header -->
                 <div class="page-header">
                     <div class="header-content">
                         <div class="header-icon">
@@ -125,7 +119,6 @@
                     </div>
                 </div>
 
-                <!-- action bar card -->
                 <div class="card action-bar-card mb-3">
                     <div class="card-body">
                         <div class="action-bar">
@@ -134,7 +127,7 @@
                                     <span class="input-group-text">
                                         <i class="bi bi-search"></i>
                                     </span>
-                                    <input type="text" class="form-control" id="searchInput" placeholder="Search sections...">
+                                    <input type="text" class="form-control" id="searchInput" placeholder="Search sections..." value="<?= htmlspecialchars($search ?? '') ?>">
                                 </div>
                             </div>
                             <div class="action-buttons">
@@ -147,7 +140,6 @@
                     </div>
                 </div>
 
-                <!-- school year filter card -->
                 <div class="card filter-card mb-3">
                     <div class="card-body">
                         <div class="filter-bar">
@@ -156,15 +148,14 @@
                                 School Year:
                             </label>
                             <select class="form-select school-year-select" id="schoolYearFilter">
-                                <option value="2025-2026" selected>2025-2026</option>
-                                <option value="2024-2025">2024-2025</option>
-                                <option value="2023-2024">2023-2024</option>
+                                <option value="2025-2026" <?= ($school_year ?? '') === '2025-2026' ? 'selected' : '' ?>>2025-2026</option>
+                                <option value="2024-2025" <?= ($school_year ?? '') === '2024-2025' ? 'selected' : '' ?>>2024-2025</option>
+                                <option value="2023-2024" <?= ($school_year ?? '') === '2023-2024' ? 'selected' : '' ?>>2023-2024</option>
                             </select>
                         </div>
                     </div>
                 </div>
 
-                <!-- sections table card -->
                 <div class="card sections-table-card">
                     <div class="card-header">
                         <h5 class="mb-0">
@@ -172,33 +163,29 @@
                             Sections List
                         </h5>
                     </div>
-                    <div class="card-body">
-                        <div class="table-responsive">
-                            <table class="table">
-                                <thead>
-                                    <tr>
-                                        <th>Section Name</th>
-                                        <th>Education Level</th>
-                                        <th>Year Level</th>
-                                        <th>Strand/Course</th>
-                                        <th>Students</th>
-                                        <th>School Year</th>
-                                        <th>Actions</th>
-                                    </tr>
-                                </thead>
-                                <tbody id="sectionsTableBody">
-                                    <?php if (empty($sections)): ?>
+                    <div class="card-body" id="sections-container">
+                        <?php if (empty($sections)): ?>
+                            <div class="empty-state">
+                                <div class="empty-state-icon">
+                                    <i class="bi bi-inbox"></i>
+                                </div>
+                                <p class="empty-state-text">No sections found</p>
+                            </div>
+                        <?php else: ?>
+                            <div class="table-responsive">
+                                <table class="table table-hover" id="sectionsTable">
+                                    <thead>
                                         <tr>
-                                            <td colspan="7">
-                                                <div class="empty-state">
-                                                    <div class="empty-state-icon">
-                                                        <i class="bi bi-inbox"></i>
-                                                    </div>
-                                                    <p class="empty-state-text">No sections found</p>
-                                                </div>
-                                            </td>
+                                            <th>Section Name</th>
+                                            <th>Education Level</th>
+                                            <th>Year Level</th>
+                                            <th>Strand/Course</th>
+                                            <th>Students</th>
+                                            <th>School Year</th>
+                                            <th>Actions</th>
                                         </tr>
-                                    <?php else: ?>
+                                    </thead>
+                                    <tbody id="sectionsTableBody">
                                         <?php foreach ($sections as $section): ?>
                                             <tr data-section-id="<?= $section['section_id'] ?>">
                                                 <td>
@@ -225,38 +212,68 @@
                                                     <span class="school-year"><?= htmlspecialchars($section['school_year']) ?></span>
                                                 </td>
                                                 <td>
-                                                    <div class="btn-group" role="group">
-                                                        <a href="index.php?page=view_section&section_id=<?= $section['section_id'] ?>" 
-                                                           class="btn btn-sm btn-outline-primary">
-                                                            <i class="bi bi-eye-fill"></i>
-                                                            View
-                                                        </a>
-                                                        <a href="index.php?page=edit_section&section_id=<?= $section['section_id'] ?>" 
-                                                           class="btn btn-sm btn-outline-primary">
-                                                            <i class="bi bi-pencil-fill"></i>
-                                                            Edit
-                                                        </a>
-                                                        <button class="btn btn-sm btn-outline-danger delete-section-btn"
-                                                                data-section-id="<?= $section['section_id'] ?>"
-                                                                data-section-name="<?= htmlspecialchars($section['section_name']) ?>">
-                                                            <i class="bi bi-trash-fill"></i>
-                                                            Delete
-                                                        </button>
-                                                    </div>
+                                                    <a href="index.php?page=view_section&section_id=<?= $section['section_id'] ?>"
+                                                        class="btn btn-sm btn-outline-info me-1">
+                                                        <i class="bi bi-eye-fill"></i> View
+                                                    </a>
+                                                    <a href="index.php?page=edit_section&section_id=<?= $section['section_id'] ?>"
+                                                        class="btn btn-sm btn-outline-primary me-1">
+                                                        <i class="bi bi-pencil-fill"></i> Edit
+                                                    </a>
+                                                    <button class="btn btn-sm btn-outline-danger btn-delete"
+                                                        data-section-id="<?= $section['section_id'] ?>"
+                                                        data-section-name="<?= htmlspecialchars($section['section_name']) ?>">
+                                                        <i class="bi bi-trash-fill"></i> Delete
+                                                    </button>
                                                 </td>
                                             </tr>
                                         <?php endforeach; ?>
-                                    <?php endif; ?>
-                                </tbody>
-                            </table>
-                        </div>
+                                    </tbody>
+                                </table>
+                            </div>
+
+                            <?php if ($total_pages > 1): ?>
+                                <div class="pagination-wrapper mt-3">
+                                    <nav aria-label="Page navigation">
+                                        <ul class="pagination justify-content-center mb-0">
+                                            <li class="page-item <?= ($page <= 1) ? 'disabled' : '' ?>">
+                                                <a class="page-link" href="#" data-page="<?= $page - 1 ?>">
+                                                    <i class="bi bi-chevron-left"></i>
+                                                </a>
+                                            </li>
+
+                                            <?php
+                                            $start_page = max(1, $page - 2);
+                                            $end_page = min($total_pages, $page + 2);
+
+                                            for ($i = $start_page; $i <= $end_page; $i++):
+                                            ?>
+                                                <li class="page-item <?= ($i == $page) ? 'active' : '' ?>">
+                                                    <a class="page-link" href="#" data-page="<?= $i ?>">
+                                                        <?= $i ?>
+                                                    </a>
+                                                </li>
+                                            <?php endfor; ?>
+
+                                            <li class="page-item <?= ($page >= $total_pages) ? 'disabled' : '' ?>">
+                                                <a class="page-link" href="#" data-page="<?= $page + 1 ?>">
+                                                    <i class="bi bi-chevron-right"></i>
+                                                </a>
+                                            </li>
+                                        </ul>
+                                    </nav>
+                                    <div class="pagination-info text-center mt-2 text-muted small">
+                                        Showing page <?= $page ?> of <?= $total_pages ?> (<?= $total_sections ?> total sections)
+                                    </div>
+                                </div>
+                            <?php endif; ?>
+                        <?php endif; ?>
                     </div>
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- delete section modal -->
     <div class="modal fade" id="deleteSectionModal" tabindex="-1" aria-labelledby="deleteSectionModalLabel" aria-hidden="true">
         <div class="modal-dialog modal-dialog-centered">
             <div class="modal-content">
@@ -269,7 +286,7 @@
                 </div>
                 <form id="deleteSectionForm">
                     <div class="modal-body">
-                        <input type="hidden" name="csrf_token" value="<?= $_SESSION['csrf_token'] ?>">
+                        <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($_SESSION['csrf_token']) ?>">
                         <input type="hidden" name="section_id" id="deleteSectionId">
 
                         <div class="alert alert-danger">
@@ -303,7 +320,8 @@
 
     <script src="bootstrap/js/bootstrap.bundle.min.js"></script>
     <script>
-        const csrfToken = '<?= $_SESSION['csrf_token'] ?>';
+        const csrfToken = '<?= htmlspecialchars($_SESSION['csrf_token']) ?>';
+        let currentPage = <?= (int)($page ?? 1) ?>;
     </script>
     <script src="js/section-management-ajax.js"></script>
 

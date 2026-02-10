@@ -61,14 +61,159 @@ class SectionController
             $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
         }
 
+        $page = isset($_GET['p']) ? (int)$_GET['p'] : 1;
+        $limit = 10;
+        $offset = ($page - 1) * $limit;
+        $search = $_GET['search'] ?? '';
         $school_year = $_GET['school_year'] ?? '2025-2026';
-        $sections = $this->section_model->getAllSectionsWithStudentCount($school_year);
+
+        $sections = $this->section_model->getWithPagination($limit, $offset, $search, $school_year);
+        $total_sections = $this->section_model->getTotalCount($search, $school_year);
+        $total_pages = ceil($total_sections / $limit);
 
         $errors = $_SESSION['section_errors'] ?? [];
         $success_message = $_SESSION['section_success'] ?? null;
         unset($_SESSION['section_errors'], $_SESSION['section_success']);
 
         require __DIR__ . '/../views/admin/manage_sections.php';
+    }
+
+    // ajax search for sections
+    public function ajaxSearchSections()
+    {
+        header('Content-Type: application/json');
+        $this->requireAdmin();
+
+        $page = isset($_GET['p']) ? (int)$_GET['p'] : 1;
+        $limit = 10;
+        $offset = ($page - 1) * $limit;
+        $search = $_GET['search'] ?? '';
+        $school_year = $_GET['school_year'] ?? '2025-2026';
+
+        $sections = $this->section_model->getWithPagination($limit, $offset, $search, $school_year);
+        $total_sections = $this->section_model->getTotalCount($search, $school_year);
+        $total_pages = ceil($total_sections / $limit);
+
+        ob_start();
+?>
+
+        <?php if (empty($sections)): ?>
+            <div class="empty-state">
+                <div class="empty-state-icon">
+                    <i class="bi bi-inbox"></i>
+                </div>
+                <p class="empty-state-text">No sections found</p>
+            </div>
+        <?php else: ?>
+            <div class="table-responsive">
+                <table class="table table-hover" id="sectionsTable">
+                    <thead>
+                        <tr>
+                            <th>Section Name</th>
+                            <th>Education Level</th>
+                            <th>Year Level</th>
+                            <th>Strand/Course</th>
+                            <th>Students</th>
+                            <th>School Year</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="sectionsTableBody">
+                        <?php foreach ($sections as $section): ?>
+                            <tr data-section-id="<?= $section['section_id'] ?>">
+                                <td>
+                                    <span class="section-name"><?= htmlspecialchars($section['section_name']) ?></span>
+                                </td>
+                                <td>
+                                    <span class="education-level-badge <?= $section['education_level'] === 'senior_high' ? 'badge-shs' : 'badge-college' ?>">
+                                        <?= $section['education_level'] === 'senior_high' ? 'Senior High' : 'College' ?>
+                                    </span>
+                                </td>
+                                <td>
+                                    <span class="year-level"><?= htmlspecialchars($section['year_level']) ?></span>
+                                </td>
+                                <td>
+                                    <span class="strand-course"><?= htmlspecialchars($section['strand_course']) ?></span>
+                                </td>
+                                <td>
+                                    <span class="student-count">
+                                        <i class="bi bi-people-fill"></i>
+                                        <?= $section['student_count'] ?><?= $section['max_capacity'] ? '/' . $section['max_capacity'] : '' ?>
+                                    </span>
+                                </td>
+                                <td>
+                                    <span class="school-year"><?= htmlspecialchars($section['school_year']) ?></span>
+                                </td>
+                                <td>
+                                    <a href="index.php?page=view_section&section_id=<?= $section['section_id'] ?>"
+                                        class="btn btn-sm btn-outline-info me-1">
+                                        <i class="bi bi-eye-fill"></i> View
+                                    </a>
+                                    <a href="index.php?page=edit_section&section_id=<?= $section['section_id'] ?>"
+                                        class="btn btn-sm btn-outline-primary me-1">
+                                        <i class="bi bi-pencil-fill"></i> Edit
+                                    </a>
+                                    <button class="btn btn-sm btn-outline-danger btn-delete"
+                                        data-section-id="<?= $section['section_id'] ?>"
+                                        data-section-name="<?= htmlspecialchars($section['section_name']) ?>">
+                                        <i class="bi bi-trash-fill"></i> Delete
+                                    </button>
+                                </td>
+                            </tr>
+                        <?php endforeach; ?>
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- pagination -->
+            <?php if ($total_pages > 1): ?>
+                <div class="pagination-wrapper mt-3">
+                    <nav aria-label="Page navigation">
+                        <ul class="pagination justify-content-center mb-0">
+                            <li class="page-item <?= ($page <= 1) ? 'disabled' : '' ?>">
+                                <a class="page-link" href="#" data-page="<?= $page - 1 ?>">
+                                    <i class="bi bi-chevron-left"></i>
+                                </a>
+                            </li>
+
+                            <?php
+                            $start_page = max(1, $page - 2);
+                            $end_page = min($total_pages, $page + 2);
+
+                            for ($i = $start_page; $i <= $end_page; $i++):
+                            ?>
+                                <li class="page-item <?= ($i == $page) ? 'active' : '' ?>">
+                                    <a class="page-link" href="#" data-page="<?= $i ?>">
+                                        <?= $i ?>
+                                    </a>
+                                </li>
+                            <?php endfor; ?>
+
+                            <li class="page-item <?= ($page >= $total_pages) ? 'disabled' : '' ?>">
+                                <a class="page-link" href="#" data-page="<?= $page + 1 ?>">
+                                    <i class="bi bi-chevron-right"></i>
+                                </a>
+                            </li>
+                        </ul>
+                    </nav>
+                    <div class="pagination-info text-center mt-2 text-muted small">
+                        Showing page <?= $page ?> of <?= $total_pages ?> (<?= $total_sections ?> total sections)
+                    </div>
+                </div>
+            <?php endif; ?>
+        <?php endif; ?>
+
+        <?php
+        $html = ob_get_clean();
+
+        echo json_encode([
+            'success' => true,
+            'html' => $html,
+            'total_sections' => $total_sections,
+            'current_page' => $page,
+            'total_pages' => $total_pages
+        ]);
+        exit();
     }
 
     public function showCreateSection()
@@ -81,6 +226,7 @@ class SectionController
 
         require __DIR__ . '/../views/admin/create_section.php';
     }
+
     public function showEditSection()
     {
         $this->requireAdmin();
@@ -97,7 +243,6 @@ class SectionController
             exit();
         }
 
-        // get section details
         $section = $this->section_model->getSectionById($section_id);
 
         if (!$section) {
@@ -123,7 +268,6 @@ class SectionController
 
         $errors = [];
 
-        // validate required fields
         if (empty($section_name)) {
             $errors['section_name'] = 'Section name is required.';
         }
@@ -142,7 +286,6 @@ class SectionController
             $errors['strand_course'] = 'Strand/Course is required.';
         }
 
-        // validate max capacity (REQUIRED)
         $capacity_value = null;
         if (empty($max_capacity)) {
             $errors['max_capacity'] = 'Maximum capacity is required.';
@@ -152,7 +295,6 @@ class SectionController
             $capacity_value = intval($max_capacity);
         }
 
-        // check if section name already exists for this school year
         if (empty($errors) && $this->section_model->sectionExists($section_name, $school_year)) {
             $errors['section_name'] = 'Section name already exists for this school year.';
         }
@@ -166,7 +308,6 @@ class SectionController
             exit();
         }
 
-        // create section
         $result = $this->section_model->create(
             $section_name,
             $education_level,
@@ -229,7 +370,6 @@ class SectionController
             $errors['strand_course'] = 'Strand/Course is required.';
         }
 
-        // validate max capacity
         $capacity_value = null;
         if (!empty($max_capacity)) {
             if (!is_numeric($max_capacity) || intval($max_capacity) < 1) {
@@ -239,7 +379,6 @@ class SectionController
             }
         }
 
-        // check if section name already exists (excluding current section)
         if (empty($errors) && $this->section_model->sectionExists($section_name, $school_year, $section_id)) {
             $errors['section_name'] = 'Section name already exists for this school year.';
         }
@@ -253,7 +392,6 @@ class SectionController
             exit();
         }
 
-        // update section
         $result = $this->section_model->update(
             $section_id,
             $section_name,
@@ -296,7 +434,6 @@ class SectionController
             exit();
         }
 
-        // attempt to delete
         $result = $this->section_model->delete($section_id);
 
         if ($result) {
@@ -320,6 +457,10 @@ class SectionController
         $this->requireAdmin();
 
         $section_id = isset($_GET['section_id']) ? intval($_GET['section_id']) : null;
+        $search = $_GET['search'] ?? '';
+        $page = isset($_GET['p']) ? (int)$_GET['p'] : 1;
+        $limit = 10;
+        $offset = ($page - 1) * $limit;
 
         if (empty($section_id)) {
             $_SESSION['section_errors'] = ['general' => 'Invalid section.'];
@@ -327,7 +468,6 @@ class SectionController
             exit();
         }
 
-        // get section details with student count
         $section = $this->section_model->getSectionWithStudentCount($section_id);
 
         if (!$section) {
@@ -336,9 +476,125 @@ class SectionController
             exit();
         }
 
-        // get students in this section
-        $students = $this->student_model->getStudentsBySection($section_id);
+        $students = $this->student_model->getStudentsBySectionWithPagination($section_id, $limit, $offset, $search);
+        $total_students = $this->student_model->getTotalStudentsInSectionCount($section_id, $search);
+        $total_pages = ceil($total_students / $limit);
 
         require __DIR__ . '/../views/admin/view_section.php';
+    }
+
+    public function ajaxSectionStudents()
+    {
+        header('Content-Type: application/json');
+        $this->requireAdmin();
+
+        $section_id = isset($_GET['section_id']) ? intval($_GET['section_id']) : null;
+        $page = isset($_GET['p']) ? (int)$_GET['p'] : 1;
+        $limit = 10;
+        $offset = ($page - 1) * $limit;
+        $search = $_GET['search'] ?? '';
+
+        if (!$section_id) {
+            echo json_encode(['success' => false, 'message' => 'missing section id']);
+            exit();
+        }
+
+        $students = $this->student_model->getStudentsBySectionWithPagination($section_id, $limit, $offset, $search);
+        $total_students = $this->student_model->getTotalStudentsInSectionCount($section_id, $search);
+        $total_pages = ceil($total_students / $limit);
+
+        ob_start();
+        if (empty($students)): ?>
+            <tr>
+                <td colspan="5">
+                    <div class="empty-state">
+                        <div class="empty-state-icon">
+                            <i class="bi bi-inbox"></i>
+                        </div>
+                        <p class="empty-state-text">No students found</p>
+                    </div>
+                </td>
+            </tr>
+            <?php else:
+            foreach ($students as $student): ?>
+                <tr>
+                    <td>
+                        <span class="subject-code"><?= htmlspecialchars($student['student_number']) ?></span>
+                    </td>
+                    <td>
+                        <span class="section-name">
+                            <?= htmlspecialchars($student['first_name'] . ' ' . ($student['middle_name'] ? $student['middle_name'] . ' ' : '') . $student['last_name']) ?>
+                        </span>
+                    </td>
+                    <td>
+                        <span class="strand-course"><?= htmlspecialchars($student['email']) ?></span>
+                    </td>
+                    <td>
+                        <span class="year-level"><?= htmlspecialchars($student['year_level']) ?></span>
+                    </td>
+                    <td>
+                        <?php
+                        $statusClass = '';
+                        $statusText = ucfirst($student['enrollment_status']);
+                        switch ($student['enrollment_status']) {
+                            case 'active':
+                                $statusClass = 'badge-shs';
+                                break;
+                            case 'inactive':
+                                $statusClass = 'badge-college';
+                                break;
+                            default:
+                                $statusClass = 'badge-college';
+                        }
+                        ?>
+                        <span class="education-level-badge <?= $statusClass ?>">
+                            <?= $statusText ?>
+                        </span>
+                    </td>
+                </tr>
+            <?php endforeach;
+        endif;
+        $table_html = ob_get_clean();
+
+        ob_start();
+        if ($total_pages > 1): ?>
+            <nav aria-label="Page navigation">
+                <ul class="pagination justify-content-center mb-0">
+                    <li class="page-item <?= ($page <= 1) ? 'disabled' : '' ?>">
+                        <a class="page-link" href="#" data-page="<?= $page - 1 ?>">
+                            <i class="bi bi-chevron-left"></i>
+                        </a>
+                    </li>
+                    <?php
+                    $start_page = max(1, $page - 2);
+                    $end_page = min($total_pages, $page + 2);
+                    for ($i = $start_page; $i <= $end_page; $i++):
+                    ?>
+                        <li class="page-item <?= ($i == $page) ? 'active' : '' ?>">
+                            <a class="page-link" href="#" data-page="<?= $i ?>">
+                                <?= $i ?>
+                            </a>
+                        </li>
+                    <?php endfor; ?>
+                    <li class="page-item <?= ($page >= $total_pages) ? 'disabled' : '' ?>">
+                        <a class="page-link" href="#" data-page="<?= $page + 1 ?>">
+                            <i class="bi bi-chevron-right"></i>
+                        </a>
+                    </li>
+                </ul>
+            </nav>
+            <div class="pagination-info text-center mt-2 text-muted small">
+                Showing page <?= $page ?> of <?= $total_pages ?> (<?= $total_students ?> total students)
+            </div>
+<?php endif;
+        $pagination_html = ob_get_clean();
+
+        echo json_encode([
+            'success' => true,
+            'table_html' => $table_html,
+            'pagination_html' => $pagination_html,
+            'total_students' => $total_students
+        ]);
+        exit();
     }
 }
