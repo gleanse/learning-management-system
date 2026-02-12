@@ -50,6 +50,12 @@
                     </a>
                 </li>
                 <li class="nav-item">
+                    <a class="nav-link" href="index.php?page=assign_students">
+                        <i class="bi bi-people-fill"></i>
+                        <span>Assign Students</span>
+                    </a>
+                </li>
+                <li class="nav-item">
                     <a class="nav-link" href="index.php?page=teacher_assignments">
                         <i class="bi bi-person-plus-fill"></i>
                         <span>Teacher Assignments</span>
@@ -149,11 +155,11 @@
                                         Subject Code
                                         <span class="text-danger">*</span>
                                     </label>
-                                    <input type="text" 
-                                           class="form-control" 
-                                           name="subject_code" 
-                                           placeholder="e.g., CS101" 
-                                           required>
+                                    <input type="text"
+                                        class="form-control"
+                                        name="subject_code"
+                                        placeholder="e.g., CS101"
+                                        required>
                                     <div class="invalid-feedback"></div>
                                 </div>
 
@@ -163,11 +169,11 @@
                                         Subject Name
                                         <span class="text-danger">*</span>
                                     </label>
-                                    <input type="text" 
-                                           class="form-control" 
-                                           name="subject_name" 
-                                           placeholder="e.g., Introduction to Computer Science" 
-                                           required>
+                                    <input type="text"
+                                        class="form-control"
+                                        name="subject_name"
+                                        placeholder="e.g., Introduction to Computer Science"
+                                        required>
                                     <div class="invalid-feedback"></div>
                                 </div>
                             </div>
@@ -177,10 +183,10 @@
                                     <i class="bi bi-text-left"></i>
                                     Description
                                 </label>
-                                <textarea class="form-control" 
-                                          name="description" 
-                                          rows="4" 
-                                          placeholder="Enter subject description (optional)"></textarea>
+                                <textarea class="form-control"
+                                    name="description"
+                                    rows="4"
+                                    placeholder="Enter subject description (optional)"></textarea>
                                 <div class="invalid-feedback"></div>
                             </div>
 

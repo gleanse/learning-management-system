@@ -50,6 +50,12 @@
                     </a>
                 </li>
                 <li class="nav-item">
+                    <a class="nav-link" href="index.php?page=assign_students">
+                        <i class="bi bi-people-fill"></i>
+                        <span>Assign Students</span>
+                    </a>
+                </li>
+                <li class="nav-item">
                     <a class="nav-link active" href="index.php?page=teacher_assignments">
                         <i class="bi bi-person-plus-fill"></i>
                         <span>Teacher Assignments</span>

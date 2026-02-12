@@ -290,4 +290,93 @@ class Section
         $result = $stmt->fetch();
         return $result['count'];
     }
+
+    // get sections with availability info (for student assignment dropdown)
+    public function getSectionsWithAvailability($school_year = '2025-2026', $year_level = null, $education_level = null)
+    {
+        $sql = "
+            SELECT 
+                sec.section_id,
+                sec.section_name,
+                sec.education_level,
+                sec.year_level,
+                sec.strand_course,
+                sec.max_capacity,
+                sec.school_year,
+                COUNT(s.student_id) as current_students,
+                (sec.max_capacity - COUNT(s.student_id)) as available_slots
+            FROM sections sec
+            LEFT JOIN students s ON sec.section_id = s.section_id AND s.enrollment_status = 'active'
+            WHERE sec.school_year = ?
+        ";
+
+        $params = [$school_year];
+
+        if ($year_level !== null) {
+            $sql .= " AND sec.year_level = ?";
+            $params[] = $year_level;
+        }
+
+        if ($education_level !== null) {
+            $sql .= " AND sec.education_level = ?";
+            $params[] = $education_level;
+        }
+
+        $sql .= " 
+            GROUP BY sec.section_id, sec.section_name, sec.education_level, sec.year_level, sec.strand_course, sec.max_capacity, sec.school_year
+            HAVING available_slots > 0
+            ORDER BY sec.education_level DESC, sec.year_level ASC, sec.section_name ASC
+        ";
+
+        $stmt = $this->connection->prepare($sql);
+        $stmt->execute($params);
+        return $stmt->fetchAll();
+    }
+
+    // check if section has available slots
+    public function hasAvailableSlots($section_id)
+    {
+        $stmt = $this->connection->prepare("
+            SELECT 
+                sec.max_capacity,
+                COUNT(s.student_id) as current_students
+            FROM sections sec
+            LEFT JOIN students s ON sec.section_id = s.section_id AND s.enrollment_status = 'active'
+            WHERE sec.section_id = ?
+            GROUP BY sec.section_id, sec.max_capacity
+        ");
+
+        $stmt->execute([$section_id]);
+        $result = $stmt->fetch();
+
+        if (!$result) {
+            return false;
+        }
+
+        $available_slots = $result['max_capacity'] - $result['current_students'];
+        return $available_slots > 0;
+    }
+
+    // get available slots count for a section
+    public function getAvailableSlots($section_id)
+    {
+        $stmt = $this->connection->prepare("
+            SELECT 
+                sec.max_capacity,
+                COUNT(s.student_id) as current_students
+            FROM sections sec
+            LEFT JOIN students s ON sec.section_id = s.section_id AND s.enrollment_status = 'active'
+            WHERE sec.section_id = ?
+            GROUP BY sec.section_id, sec.max_capacity
+        ");
+
+        $stmt->execute([$section_id]);
+        $result = $stmt->fetch();
+
+        if (!$result) {
+            return 0;
+        }
+
+        return max(0, $result['max_capacity'] - $result['current_students']);
+    }
 }

@@ -7,6 +7,7 @@ require_once __DIR__ . '/controllers/TeacherAssignmentController.php';
 require_once __DIR__ . '/controllers/DashboardController.php';
 require_once __DIR__ . '/controllers/SubjectController.php';
 require_once __DIR__ . '/controllers/SectionController.php';
+require_once __DIR__ . '/controllers/AssignStudentController.php';
 
 $page = $_GET['page'] ?? 'login';
 $method = $_SERVER['REQUEST_METHOD'];
@@ -227,6 +228,102 @@ if ($page === 'view_section' && $method === 'GET') {
 
     $controller = new SectionController();
     $controller->showViewSection();
+    exit();
+}
+
+// STUDENT ASSIGNMENT ROUTES (admin only)
+if ($page === 'assign_students' && $method === 'GET') {
+    if (!isLoggedIn() || (!isAdmin() && !isSuperAdmin())) {
+        header('Location: index.php?page=login');
+        exit();
+    }
+
+    $controller = new AssignStudentController();
+    $controller->showAssignStudents();
+    exit();
+}
+
+// ajax search students for assignment
+if ($page === 'ajax_search_students' && $method === 'GET') {
+    if (!isLoggedIn() || (!isAdmin() && !isSuperAdmin())) {
+        header('Location: index.php?page=login');
+        exit();
+    }
+
+    $controller = new AssignStudentController();
+    $controller->ajaxSearchStudents();
+    exit();
+}
+
+// ajax get section info
+if ($page === 'ajax_get_section_info' && $method === 'GET') {
+    if (!isLoggedIn() || (!isAdmin() && !isSuperAdmin())) {
+        header('Location: index.php?page=login');
+        exit();
+    }
+
+    $controller = new AssignStudentController();
+    $controller->ajaxGetSectionInfo();
+    exit();
+}
+
+// ajax get sections by filter
+if ($page === 'ajax_get_sections_by_filter' && $method === 'GET') {
+    if (!isLoggedIn() || (!isAdmin() && !isSuperAdmin())) {
+        header('Location: index.php?page=login');
+        exit();
+    }
+
+    $controller = new AssignStudentController();
+    $controller->ajaxGetSectionsByFilter();
+    exit();
+}
+
+// ajax get recent assignments
+if ($page === 'ajax_get_recent_assignments' && $method === 'GET') {
+    if (!isLoggedIn() || (!isAdmin() && !isSuperAdmin())) {
+        header('Location: index.php?page=login');
+        exit();
+    }
+
+    $controller = new AssignStudentController();
+    $controller->ajaxGetRecentAssignments();
+    exit();
+}
+
+// process single student assignment
+if ($page === 'assign_student_action' && $method === 'POST') {
+    if (!isLoggedIn() || (!isAdmin() && !isSuperAdmin())) {
+        header('Location: index.php?page=login');
+        exit();
+    }
+
+    $controller = new AssignStudentController();
+    $controller->processAssignStudent();
+    exit();
+}
+
+// process bulk student assignment
+if ($page === 'bulk_assign_students' && $method === 'POST') {
+    if (!isLoggedIn() || (!isAdmin() && !isSuperAdmin())) {
+        header('Location: index.php?page=login');
+        exit();
+    }
+
+    $controller = new AssignStudentController();
+    $controller->processBulkAssignStudents();
+    exit();
+}
+
+// remove student from section
+if ($page === 'remove_student_from_section' && $method === 'POST') {
+    if (!isLoggedIn() || (!isAdmin() && !isSuperAdmin())) {
+        header('Location: index.php?page=login');
+        exit();
+    }
+
+    $controller = new AssignStudentController();
+    $controller->processRemoveFromSection();
     exit();
 }
 
