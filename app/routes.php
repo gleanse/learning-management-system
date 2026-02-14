@@ -7,7 +7,7 @@ require_once __DIR__ . '/controllers/TeacherAssignmentController.php';
 require_once __DIR__ . '/controllers/DashboardController.php';
 require_once __DIR__ . '/controllers/SubjectController.php';
 require_once __DIR__ . '/controllers/SectionController.php';
-require_once __DIR__ . '/controllers/AssignStudentController.php';
+require_once __DIR__ . '/controllers/StudentSectionController.php';
 
 $page = $_GET['page'] ?? 'login';
 $method = $_SERVER['REQUEST_METHOD'];
@@ -231,99 +231,87 @@ if ($page === 'view_section' && $method === 'GET') {
     exit();
 }
 
-// STUDENT ASSIGNMENT ROUTES (admin only)
-if ($page === 'assign_students' && $method === 'GET') {
+// STUDENT SECTION ASSIGNMENT ROUTES (admin only)
+if ($page === 'student_sections' && $method === 'GET') {
     if (!isLoggedIn() || (!isAdmin() && !isSuperAdmin())) {
         header('Location: index.php?page=login');
         exit();
     }
 
-    $controller = new AssignStudentController();
-    $controller->showAssignStudents();
+    $controller = new StudentSectionController();
+    $controller->showAssignmentPage();
     exit();
 }
 
-// ajax search students for assignment
-if ($page === 'ajax_search_students' && $method === 'GET') {
+// AJAX get section data with current and eligible students
+if ($page === 'student_section_data' && $method === 'GET') {
     if (!isLoggedIn() || (!isAdmin() && !isSuperAdmin())) {
         header('Location: index.php?page=login');
         exit();
     }
 
-    $controller = new AssignStudentController();
-    $controller->ajaxSearchStudents();
+    $controller = new StudentSectionController();
+    $controller->getSectionData();
     exit();
 }
 
-// ajax get section info
-if ($page === 'ajax_get_section_info' && $method === 'GET') {
+// AJAX search eligible students for a section
+if ($page === 'search_eligible_students' && $method === 'GET') {
     if (!isLoggedIn() || (!isAdmin() && !isSuperAdmin())) {
         header('Location: index.php?page=login');
         exit();
     }
 
-    $controller = new AssignStudentController();
-    $controller->ajaxGetSectionInfo();
+    $controller = new StudentSectionController();
+    $controller->searchEligibleStudents();
     exit();
 }
 
-// ajax get sections by filter
-if ($page === 'ajax_get_sections_by_filter' && $method === 'GET') {
+// AJAX search current students in a section
+if ($page === 'search_current_students' && $method === 'GET') {
     if (!isLoggedIn() || (!isAdmin() && !isSuperAdmin())) {
         header('Location: index.php?page=login');
         exit();
     }
 
-    $controller = new AssignStudentController();
-    $controller->ajaxGetSectionsByFilter();
+    $controller = new StudentSectionController();
+    $controller->searchCurrentStudents();
     exit();
 }
 
-// ajax get recent assignments
-if ($page === 'ajax_get_recent_assignments' && $method === 'GET') {
+// assign students to section (supports single and bulk)
+if ($page === 'assign_students' && $method === 'POST') {
     if (!isLoggedIn() || (!isAdmin() && !isSuperAdmin())) {
         header('Location: index.php?page=login');
         exit();
     }
 
-    $controller = new AssignStudentController();
-    $controller->ajaxGetRecentAssignments();
+    $controller = new StudentSectionController();
+    $controller->processAssignment();
     exit();
 }
 
-// process single student assignment
-if ($page === 'assign_student_action' && $method === 'POST') {
+// remove single student from section
+if ($page === 'remove_student' && $method === 'POST') {
     if (!isLoggedIn() || (!isAdmin() && !isSuperAdmin())) {
         header('Location: index.php?page=login');
         exit();
     }
 
-    $controller = new AssignStudentController();
-    $controller->processAssignStudent();
+    $controller = new StudentSectionController();
+    $controller->processRemoveStudent();
     exit();
 }
 
-// process bulk student assignment
-if ($page === 'bulk_assign_students' && $method === 'POST') {
+// bulk remove students from section
+if ($page === 'bulk_remove_students' && $method === 'POST') {
     if (!isLoggedIn() || (!isAdmin() && !isSuperAdmin())) {
         header('Location: index.php?page=login');
         exit();
     }
 
-    $controller = new AssignStudentController();
-    $controller->processBulkAssignStudents();
-    exit();
-}
-
-// remove student from section
-if ($page === 'remove_student_from_section' && $method === 'POST') {
-    if (!isLoggedIn() || (!isAdmin() && !isSuperAdmin())) {
-        header('Location: index.php?page=login');
-        exit();
-    }
-
-    $controller = new AssignStudentController();
-    $controller->processRemoveFromSection();
+    $controller = new StudentSectionController();
+    $controller->processBulkRemove();
     exit();
 }
 
