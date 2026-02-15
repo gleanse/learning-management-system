@@ -151,4 +151,24 @@ class Teacher
         $stmt->execute();
         return $stmt->fetchAll();
     }
+
+    // get single teacher details by id
+    public function getTeacherById($teacher_id)
+    {
+        $stmt = $this->connection->prepare("
+            SELECT 
+                id,
+                username,
+                email,
+                first_name,
+                middle_name,
+                last_name,
+                status,
+                CONCAT(first_name, ' ', last_name) as full_name
+            FROM users
+            WHERE id = ? AND role = 'teacher'
+        ");
+        $stmt->execute([$teacher_id]);
+        return $stmt->fetch();
+    }
 }

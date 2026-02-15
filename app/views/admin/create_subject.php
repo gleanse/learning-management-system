@@ -62,6 +62,12 @@
                     </a>
                 </li>
                 <li class="nav-item">
+                    <a class="nav-link" href="index.php?page=manage_schedules">
+                        <i class="bi bi-calendar-week-fill"></i>
+                        <span>Manage Schedules</span>
+                    </a>
+                </li>
+                <li class="nav-item">
                     <a class="nav-link" href="index.php?page=logout">
                         <i class="bi bi-box-arrow-right"></i>
                         <span>Logout</span>

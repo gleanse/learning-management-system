@@ -8,6 +8,7 @@ require_once __DIR__ . '/controllers/DashboardController.php';
 require_once __DIR__ . '/controllers/SubjectController.php';
 require_once __DIR__ . '/controllers/SectionController.php';
 require_once __DIR__ . '/controllers/StudentSectionController.php';
+require_once __DIR__ . '/controllers/ScheduleManagementController.php';
 
 $page = $_GET['page'] ?? 'login';
 $method = $_SERVER['REQUEST_METHOD'];
@@ -312,6 +313,90 @@ if ($page === 'bulk_remove_students' && $method === 'POST') {
 
     $controller = new StudentSectionController();
     $controller->processBulkRemove();
+    exit();
+}
+
+// SCHEDULE MANAGEMENT ROUTES (admin only)
+if ($page === 'manage_schedules' && $method === 'GET') {
+    if (!isLoggedIn() || (!isAdmin() && !isSuperAdmin())) {
+        header('Location: index.php?page=login');
+        exit();
+    }
+
+    $controller = new ScheduleManagementController();
+    $controller->showScheduleManagement();
+    exit();
+}
+
+// show create schedule form page
+if ($page === 'create_schedule' && $method === 'GET') {
+    if (!isLoggedIn() || (!isAdmin() && !isSuperAdmin())) {
+        header('Location: index.php?page=login');
+        exit();
+    }
+
+    $controller = new ScheduleManagementController();
+    $controller->showCreateSchedule();
+    exit();
+}
+
+// process create schedule form
+if ($page === 'create_schedule' && $method === 'POST') {
+    if (!isLoggedIn() || (!isAdmin() && !isSuperAdmin())) {
+        header('Location: index.php?page=login');
+        exit();
+    }
+
+    $controller = new ScheduleManagementController();
+    $controller->processCreateSchedule();
+    exit();
+}
+
+// show edit schedule form page
+if ($page === 'edit_schedule' && $method === 'GET') {
+    if (!isLoggedIn() || (!isAdmin() && !isSuperAdmin())) {
+        header('Location: index.php?page=login');
+        exit();
+    }
+
+    $controller = new ScheduleManagementController();
+    $controller->showEditSchedule();
+    exit();
+}
+
+// process update schedule form
+if ($page === 'update_schedule' && $method === 'POST') {
+    if (!isLoggedIn() || (!isAdmin() && !isSuperAdmin())) {
+        header('Location: index.php?page=login');
+        exit();
+    }
+
+    $controller = new ScheduleManagementController();
+    $controller->processUpdateSchedule();
+    exit();
+}
+
+// delete schedule
+if ($page === 'delete_schedule' && $method === 'POST') {
+    if (!isLoggedIn() || (!isAdmin() && !isSuperAdmin())) {
+        header('Location: index.php?page=login');
+        exit();
+    }
+
+    $controller = new ScheduleManagementController();
+    $controller->processDeleteSchedule();
+    exit();
+}
+
+// toggle schedule status (active/inactive)
+if ($page === 'toggle_schedule_status' && $method === 'POST') {
+    if (!isLoggedIn() || (!isAdmin() && !isSuperAdmin())) {
+        header('Location: index.php?page=login');
+        exit();
+    }
+
+    $controller = new ScheduleManagementController();
+    $controller->processToggleStatus();
     exit();
 }
 
