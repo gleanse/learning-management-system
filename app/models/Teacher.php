@@ -171,4 +171,74 @@ class Teacher
         $stmt->execute([$teacher_id]);
         return $stmt->fetch();
     }
+
+    // get teachers with pagination
+    public function getWithPagination($limit, $offset, $search = '')
+    {
+        if (!empty($search)) {
+            $stmt = $this->connection->prepare("
+                SELECT 
+                    id,
+                    CONCAT(first_name, ' ', last_name) as full_name,
+                    email,
+                    first_name,
+                    last_name
+                FROM users
+                WHERE role = 'teacher' 
+                AND status = 'active'
+                AND (first_name LIKE :search OR last_name LIKE :search OR email LIKE :search)
+                ORDER BY last_name ASC, first_name ASC
+                LIMIT :limit OFFSET :offset
+            ");
+            $search_term = "%{$search}%";
+            $stmt->bindValue(':search', $search_term, PDO::PARAM_STR);
+            $stmt->bindValue(':limit', (int)$limit, PDO::PARAM_INT);
+            $stmt->bindValue(':offset', (int)$offset, PDO::PARAM_INT);
+            $stmt->execute();
+        } else {
+            $stmt = $this->connection->prepare("
+                SELECT 
+                    id,
+                    CONCAT(first_name, ' ', last_name) as full_name,
+                    email,
+                    first_name,
+                    last_name
+                FROM users
+                WHERE role = 'teacher' AND status = 'active'
+                ORDER BY last_name ASC, first_name ASC
+                LIMIT :limit OFFSET :offset
+            ");
+            $stmt->bindValue(':limit', (int)$limit, PDO::PARAM_INT);
+            $stmt->bindValue(':offset', (int)$offset, PDO::PARAM_INT);
+            $stmt->execute();
+        }
+
+        return $stmt->fetchAll(PDO::FETCH_ASSOC);
+    }
+
+    // get total count for pagination
+    public function getTotalCount($search = '')
+    {
+        if (!empty($search)) {
+            $stmt = $this->connection->prepare("
+                SELECT COUNT(*) as count
+                FROM users
+                WHERE role = 'teacher' 
+                AND status = 'active'
+                AND (first_name LIKE ? OR last_name LIKE ? OR email LIKE ?)
+            ");
+            $search_term = "%{$search}%";
+            $stmt->execute([$search_term, $search_term, $search_term]);
+        } else {
+            $stmt = $this->connection->prepare("
+                SELECT COUNT(*) as count
+                FROM users
+                WHERE role = 'teacher' AND status = 'active'
+            ");
+            $stmt->execute();
+        }
+
+        $result = $stmt->fetch();
+        return $result['count'];
+    }
 }

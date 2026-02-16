@@ -150,33 +150,74 @@
                             <input type="hidden" name="csrf_token" value="<?= $_SESSION['csrf_token'] ?>">
 
                             <div class="row">
+                                <!-- teacher select with search -->
                                 <div class="col-md-6 mb-3">
                                     <label class="form-label">
                                         <i class="bi bi-person-fill"></i>
                                         Teacher
                                         <span class="text-danger">*</span>
                                     </label>
-                                    <select class="form-select" name="teacher_id" required>
-                                        <option value="">Select a teacher...</option>
-                                        <?php foreach ($teachers as $teacher): ?>
-                                            <option value="<?= $teacher['id'] ?>"><?= htmlspecialchars($teacher['full_name']) ?></option>
-                                        <?php endforeach; ?>
-                                    </select>
+                                    <div class="custom-searchable-select">
+                                        <input type="hidden" name="teacher_id" id="teacherIdInput" required>
+                                        <div class="select-display" id="teacherDisplay" data-placeholder="search and select a teacher...">
+                                            <span class="select-placeholder">Search and select a teacher...</span>
+                                            <i class="bi bi-chevron-down"></i>
+                                        </div>
+                                        <div class="select-dropdown" id="teacherDropdown" style="display: none;">
+                                            <div class="search-box">
+                                                <i class="bi bi-search"></i>
+                                                <input type="text" class="form-control" id="teacherSearch" placeholder="type to search teachers..." autocomplete="off">
+                                            </div>
+                                            <div class="dropdown-loading" style="display: none;">
+                                                <div class="spinner-border spinner-border-sm" role="status"></div>
+                                                <span>Searching...</span>
+                                            </div>
+                                            <ul class="select-options" id="teacherOptions">
+                                                <li class="select-option" data-value="">Select a teacher...</li>
+                                                <?php foreach ($teachers as $teacher): ?>
+                                                    <li class="select-option" data-value="<?= $teacher['id'] ?>">
+                                                        <?= htmlspecialchars($teacher['full_name']) ?>
+                                                    </li>
+                                                <?php endforeach; ?>
+                                            </ul>
+                                        </div>
+                                    </div>
                                     <div class="invalid-feedback"></div>
                                 </div>
 
+                                <!-- section select with search -->
                                 <div class="col-md-6 mb-3">
                                     <label class="form-label">
                                         <i class="bi bi-diagram-3-fill"></i>
                                         Section
                                         <span class="text-danger">*</span>
                                     </label>
-                                    <select class="form-select" name="section_id" required>
-                                        <option value="">Select a section...</option>
-                                        <?php foreach ($sections as $section): ?>
-                                            <option value="<?= $section['section_id'] ?>"><?= htmlspecialchars($section['section_name']) ?> (<?= htmlspecialchars($section['year_level']) ?>)</option>
-                                        <?php endforeach; ?>
-                                    </select>
+                                    <div class="custom-searchable-select">
+                                        <input type="hidden" name="section_id" id="sectionIdInput" required>
+                                        <div class="select-display" id="sectionDisplay" data-placeholder="search and select a section...">
+                                            <span class="select-placeholder">Search and select a section...</span>
+                                            <i class="bi bi-chevron-down"></i>
+                                        </div>
+                                        <div class="select-dropdown" id="sectionDropdown" style="display: none;">
+                                            <div class="search-box">
+                                                <i class="bi bi-search"></i>
+                                                <input type="text" class="form-control" id="sectionSearch" placeholder="type to search sections..." autocomplete="off">
+                                            </div>
+                                            <div class="dropdown-loading" style="display: none;">
+                                                <div class="spinner-border spinner-border-sm" role="status"></div>
+                                                <span>Searching...</span>
+                                            </div>
+                                            <ul class="select-options" id="sectionOptions">
+                                                <li class="select-option" data-value="">Select a section...</li>
+                                                <?php foreach ($sections as $section): ?>
+                                                    <li class="select-option" data-value="<?= $section['section_id'] ?>">
+                                                        <?= htmlspecialchars($section['section_name']) ?>
+                                                        (<?= htmlspecialchars($section['year_level']) ?> - <?= htmlspecialchars($section['strand_course']) ?>)
+                                                    </li>
+                                                <?php endforeach; ?>
+                                            </ul>
+                                        </div>
+                                    </div>
                                     <div class="invalid-feedback"></div>
                                 </div>
                             </div>
@@ -190,8 +231,8 @@
                                     </label>
                                     <select class="form-select" name="school_year" required>
                                         <?php foreach ($school_year_options as $index => $sy): ?>
-                                            <option value="<?= $sy ?>" <?= ($index === 1) ? 'selected' : '' ?>>
-                                                <?= $sy ?> <?= ($index === 0) ? '(Current)' : '(Next)' ?>
+                                            <option value="<?= $sy ?>" <?= ($index === 0) ? 'selected' : '' ?>>
+                                                <?= $sy ?> <?= ($index === 0) ? '(current)' : '(next)' ?>
                                             </option>
                                         <?php endforeach; ?>
                                     </select>
@@ -212,22 +253,60 @@
                                 </div>
                             </div>
 
+                            <!-- subjects with search and pagination -->
                             <div class="mb-3">
-                                <label class="form-label">
-                                    <i class="bi bi-book-fill"></i>
-                                    Subjects
-                                    <span class="text-danger">*</span>
-                                </label>
+                                <div class="d-flex justify-content-between align-items-center mb-2">
+                                    <label class="form-label mb-0">
+                                        <i class="bi bi-book-fill"></i>
+                                        Subjects
+                                        <span class="text-danger">*</span>
+                                    </label>
+                                </div>
+
+                                <!-- search input for subjects -->
+                                <input type="text" class="form-control mb-2" id="assignSubjectSearch" placeholder="search subjects...">
+
+                                <!-- selected count -->
+                                <div class="selected-count d-flex justify-content-between align-items-center mb-2">
+                                    <span class="badge bg-primary" id="assignSelectedCount">0 selected</span>
+
+                                    <div class="subject-controls">
+                                        <button type="button" class="btn btn-sm btn-outline-secondary" id="selectAllSubjects">
+                                            <i class="bi bi-check-all"></i> Select All
+                                        </button>
+                                        <button type="button" class="btn btn-sm btn-outline-secondary" id="deselectAllSubjects">
+                                            <i class="bi bi-x-circle"></i> Deselect All
+                                        </button>
+                                    </div>
+                                </div>
+
+                                <!-- subjects container with pagination -->
                                 <div class="subjects-container" id="assignSubjectsContainer">
                                     <?php foreach ($subjects as $subject): ?>
                                         <div class="form-check">
-                                            <input class="form-check-input" type="checkbox" name="subject_ids[]" value="<?= $subject['subject_id'] ?>" id="subject_<?= $subject['subject_id'] ?>">
+                                            <input class="form-check-input subject-checkbox" type="checkbox" name="subject_ids[]"
+                                                value="<?= $subject['subject_id'] ?>"
+                                                id="subject_<?= $subject['subject_id'] ?>">
                                             <label class="form-check-label" for="subject_<?= $subject['subject_id'] ?>">
+                                                <strong><?= htmlspecialchars($subject['subject_code']) ?></strong> -
                                                 <?= htmlspecialchars($subject['subject_name']) ?>
                                             </label>
                                         </div>
                                     <?php endforeach; ?>
                                 </div>
+
+                                <!-- pagination for subjects -->
+                                <div class="pagination-wrapper mt-2" id="assignSubjectPagination" style="display: none;">
+                                    <nav>
+                                        <ul class="pagination pagination-sm justify-content-center mb-0">
+                                            <!-- populated by js -->
+                                        </ul>
+                                    </nav>
+                                    <div class="pagination-info text-center">
+                                        <small class="text-muted" id="assignPaginationInfo"></small>
+                                    </div>
+                                </div>
+
                                 <div class="invalid-feedback d-block" id="subject_ids_error"></div>
                             </div>
 
@@ -286,8 +365,11 @@
                                                     <?php if ($assignment['subject_count'] < 2): ?>
                                                         <span class="text-muted"><?= htmlspecialchars($assignment['subjects']) ?></span>
                                                     <?php else: ?>
-                                                        <button class="btn btn-sm btn-outline-secondary" data-bs-toggle="modal" data-bs-target="#subjectsModal" data-subjects="<?= htmlspecialchars($assignment['subjects']) ?>">
-                                                            <i class="bi bi-book"></i> <?= $assignment['subject_count'] ?> subjects
+                                                        <button class="btn btn-sm btn-outline-secondary view-subjects-btn"
+                                                            data-subjects="<?= htmlspecialchars($assignment['subjects']) ?>"
+                                                            data-teacher-name="<?= htmlspecialchars($assignment['teacher_name']) ?>"
+                                                            data-section-name="<?= htmlspecialchars($assignment['section_name']) ?>">
+                                                            <i class="bi bi-book"></i> <?= $assignment['subject_count'] ?> Subjects
                                                         </button>
                                                     <?php endif; ?>
                                                 </td>
@@ -297,7 +379,9 @@
                                                         data-section-id="<?= $assignment['section_id'] ?>"
                                                         data-school-year="<?= htmlspecialchars($assignment['school_year']) ?>"
                                                         data-semester="<?= htmlspecialchars($assignment['semester']) ?>"
-                                                        data-subject-ids="<?= htmlspecialchars($assignment['subject_ids']) ?>">
+                                                        data-subject-ids="<?= htmlspecialchars($assignment['subject_ids']) ?>"
+                                                        data-teacher-name="<?= htmlspecialchars($assignment['teacher_name']) ?>"
+                                                        data-section-name="<?= htmlspecialchars($assignment['section_name']) ?>">
                                                         <i class="bi bi-pencil"></i> Reassign
                                                     </button>
                                                     <button class="btn btn-sm btn-outline-danger btn-remove"
@@ -363,8 +447,11 @@
                                                     <?php if ($assignment['subject_count'] < 2): ?>
                                                         <span class="text-muted"><?= htmlspecialchars($assignment['subjects']) ?></span>
                                                     <?php else: ?>
-                                                        <button class="btn btn-sm btn-outline-secondary" data-bs-toggle="modal" data-bs-target="#subjectsModal" data-subjects="<?= htmlspecialchars($assignment['subjects']) ?>">
-                                                            <i class="bi bi-book"></i> <?= $assignment['subject_count'] ?> subjects
+                                                        <button class="btn btn-sm btn-outline-secondary view-subjects-btn"
+                                                            data-subjects="<?= htmlspecialchars($assignment['subjects']) ?>"
+                                                            data-teacher-name="<?= htmlspecialchars($assignment['teacher_name']) ?>"
+                                                            data-section-name="<?= htmlspecialchars($assignment['section_name']) ?>">
+                                                            <i class="bi bi-book"></i> <?= $assignment['subject_count'] ?> Subjects
                                                         </button>
                                                     <?php endif; ?>
                                                 </td>
@@ -393,12 +480,12 @@
 
     <!-- reassign modal -->
     <div class="modal fade" id="reassignModal" tabindex="-1">
-        <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-dialog modal-dialog-centered modal-lg">
             <div class="modal-content">
                 <div class="modal-header">
                     <h5 class="modal-title">
                         <i class="bi bi-pencil"></i>
-                        Reassign Teacher
+                        Reassign teacher
                     </h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                 </div>
@@ -410,29 +497,68 @@
                         <input type="hidden" name="school_year" id="reassign_school_year">
                         <input type="hidden" name="semester" id="reassign_semester">
 
-                        <div class="alert alert-info">
+                        <!-- context info -->
+                        <div class="alert alert-info mb-3">
                             <i class="bi bi-info-circle"></i>
                             <div>
-                                <strong>Note:</strong> Unchecking subjects will soft-remove them. Checking removed subjects will restore them.
+                                <strong>Editing:</strong> <span id="reassignContext"></span><br>
+                                <small>Unchecking subjects will soft-remove them. checking removed subjects will restore them.</small>
                             </div>
                         </div>
 
+                        <!-- subjects with search -->
                         <div class="mb-3">
-                            <label class="form-label">
-                                <i class="bi bi-book-fill"></i>
-                                Subjects
-                                <span class="text-danger">*</span>
-                            </label>
+                            <div class="d-flex justify-content-between align-items-center mb-2">
+                                <label class="form-label mb-0">
+                                    <i class="bi bi-book-fill"></i>
+                                    Subjects
+                                    <span class="text-danger">*</span>
+                                </label>
+                                <div class="subject-controls">
+                                    <button type="button" class="btn btn-sm btn-outline-secondary" id="reassignSelectAll">
+                                        <i class="bi bi-check-all"></i> Select All
+                                    </button>
+                                    <button type="button" class="btn btn-sm btn-outline-secondary" id="reassignDeselectAll">
+                                        <i class="bi bi-x-circle"></i> Deselect All
+                                    </button>
+                                </div>
+                            </div>
+
+                            <!-- search input -->
+                            <input type="text" class="form-control mb-2" id="reassignSubjectSearch" placeholder="search subjects...">
+
+                            <!-- selected count -->
+                            <div class="selected-count mb-2">
+                                <span class="badge bg-primary" id="reassignSelectedCount">0 Selected</span>
+                            </div>
+
+                            <!-- subjects container -->
                             <div class="subjects-container" id="reassignSubjectsContainer">
                                 <?php foreach ($subjects as $subject): ?>
                                     <div class="form-check">
-                                        <input class="form-check-input" type="checkbox" name="subject_ids[]" value="<?= $subject['subject_id'] ?>" id="reassign_subject_<?= $subject['subject_id'] ?>">
+                                        <input class="form-check-input subject-checkbox" type="checkbox" name="subject_ids[]"
+                                            value="<?= $subject['subject_id'] ?>"
+                                            id="reassign_subject_<?= $subject['subject_id'] ?>">
                                         <label class="form-check-label" for="reassign_subject_<?= $subject['subject_id'] ?>">
+                                            <strong><?= htmlspecialchars($subject['subject_code']) ?></strong> -
                                             <?= htmlspecialchars($subject['subject_name']) ?>
                                         </label>
                                     </div>
                                 <?php endforeach; ?>
                             </div>
+
+                            <!-- pagination -->
+                            <div class="pagination-wrapper mt-2" id="reassignSubjectPagination" style="display: none;">
+                                <nav>
+                                    <ul class="pagination pagination-sm justify-content-center mb-0">
+                                        <!-- populated by js -->
+                                    </ul>
+                                </nav>
+                                <div class="pagination-info text-center">
+                                    <small class="text-muted" id="reassignPaginationInfo"></small>
+                                </div>
+                            </div>
+
                             <div class="invalid-feedback d-block" id="reassign_subject_ids_error"></div>
                         </div>
                     </div>
@@ -459,11 +585,17 @@
                 <div class="modal-header">
                     <h5 class="modal-title">
                         <i class="bi bi-book"></i>
-                        Assigned Subjects
+                        Assigned subjects
                     </h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                 </div>
                 <div class="modal-body">
+                    <div class="alert alert-info mb-3">
+                        <i class="bi bi-info-circle"></i>
+                        <div>
+                            <strong id="subjectsModalContext"></strong>
+                        </div>
+                    </div>
                     <ul class="list-group list-group-flush" id="subjectsList"></ul>
                 </div>
                 <div class="modal-footer">

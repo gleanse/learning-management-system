@@ -468,6 +468,54 @@ if ($page === 'restore_teacher_assignment' && $method === 'POST') {
     exit();
 }
 
+// ajax search subjects for teacher assignment form
+if ($page === 'ajax_search_assignment_subjects' && $method === 'GET') {
+    if (!isLoggedIn() || (!isAdmin() && !isSuperAdmin())) {
+        header('Location: index.php?page=login');
+        exit();
+    }
+
+    $controller = new TeacherAssignmentController();
+    $controller->ajaxSearchSubjectsForAssignment();
+    exit();
+}
+
+// ajax search subjects for reassignment modal
+if ($page === 'ajax_search_reassignment_subjects' && $method === 'GET') {
+    if (!isLoggedIn() || (!isAdmin() && !isSuperAdmin())) {
+        header('Location: index.php?page=login');
+        exit();
+    }
+
+    $controller = new TeacherAssignmentController();
+    $controller->ajaxSearchSubjectsForReassignment();
+    exit();
+}
+
+// ajax search teachers for assignment
+if ($page === 'ajax_search_assignment_teachers' && $method === 'GET') {
+    if (!isLoggedIn() || (!isAdmin() && !isSuperAdmin())) {
+        header('Location: index.php?page=login');
+        exit();
+    }
+
+    $controller = new TeacherAssignmentController();
+    $controller->ajaxSearchTeachers();
+    exit();
+}
+
+// ajax search sections for assignment
+if ($page === 'ajax_search_assignment_sections' && $method === 'GET') {
+    if (!isLoggedIn() || (!isAdmin() && !isSuperAdmin())) {
+        header('Location: index.php?page=login');
+        exit();
+    }
+
+    $controller = new TeacherAssignmentController();
+    $controller->ajaxSearchSections();
+    exit();
+}
+
 // TEACHER DASHBOARD ROUTES (teacher only)
 if ($page === 'teacher_dashboard' && $method === 'GET') {
     if (!isLoggedIn() || !isTeacher()) {

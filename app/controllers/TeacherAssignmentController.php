@@ -493,4 +493,196 @@ class TeacherAssignmentController
         header('Location: index.php?page=teacher_assignments');
         exit();
     }
+
+    // ajax search subjects for assignment form
+    public function ajaxSearchSubjectsForAssignment()
+    {
+        header('Content-Type: application/json');
+
+        $this->requireAdmin();
+
+        $page = isset($_GET['p']) ? (int)$_GET['p'] : 1;
+        $limit = 10;
+        $offset = ($page - 1) * $limit;
+        $search = $_GET['search'] ?? '';
+
+        $subjects = $this->subject_model->getWithPagination($limit, $offset, $search);
+        $total_subjects = $this->subject_model->getTotalCount($search);
+        $total_pages = ceil($total_subjects / $limit);
+
+        // start output buffering to capture html
+        ob_start();
+?>
+
+        <?php if (empty($subjects)): ?>
+            <div class="text-center text-muted py-3">
+                <i class="bi bi-search fs-4 d-block mb-2"></i>
+                <p class="mb-0">No subjects found matching "<?= htmlspecialchars($search) ?>"</p>
+            </div>
+        <?php else: ?>
+            <?php foreach ($subjects as $subject): ?>
+                <div class="form-check">
+                    <input class="form-check-input subject-checkbox" type="checkbox" name="subject_ids[]"
+                        value="<?= $subject['subject_id'] ?>"
+                        id="subject_<?= $subject['subject_id'] ?>">
+                    <label class="form-check-label" for="subject_<?= $subject['subject_id'] ?>">
+                        <strong><?= htmlspecialchars($subject['subject_code']) ?></strong> -
+                        <?= htmlspecialchars($subject['subject_name']) ?>
+                    </label>
+                </div>
+            <?php endforeach; ?>
+        <?php endif; ?>
+
+    <?php
+        $html = ob_get_clean();
+
+        $this->jsonResponse([
+            'success' => true,
+            'html' => $html,
+            'total_subjects' => $total_subjects,
+            'current_page' => $page,
+            'total_pages' => $total_pages
+        ]);
+    }
+
+    // ajax search subjects for reassignment modal
+    public function ajaxSearchSubjectsForReassignment()
+    {
+        header('Content-Type: application/json');
+
+        $this->requireAdmin();
+
+        $page = isset($_GET['p']) ? (int)$_GET['p'] : 1;
+        $limit = 10;
+        $offset = ($page - 1) * $limit;
+        $search = $_GET['search'] ?? '';
+        $current_subject_ids = isset($_GET['current_ids']) ? explode(',', $_GET['current_ids']) : [];
+
+        $subjects = $this->subject_model->getWithPagination($limit, $offset, $search);
+        $total_subjects = $this->subject_model->getTotalCount($search);
+        $total_pages = ceil($total_subjects / $limit);
+
+        // start output buffering to capture html
+        ob_start();
+    ?>
+
+        <?php if (empty($subjects)): ?>
+            <div class="text-center text-muted py-3">
+                <i class="bi bi-search fs-4 d-block mb-2"></i>
+                <p class="mb-0">No subjects found matching "<?= htmlspecialchars($search) ?>"</p>
+            </div>
+        <?php else: ?>
+            <?php foreach ($subjects as $subject): ?>
+                <?php $is_checked = in_array($subject['subject_id'], $current_subject_ids); ?>
+                <div class="form-check">
+                    <input class="form-check-input subject-checkbox" type="checkbox" name="subject_ids[]"
+                        value="<?= $subject['subject_id'] ?>"
+                        id="reassign_subject_<?= $subject['subject_id'] ?>"
+                        <?= $is_checked ? 'checked' : '' ?>>
+                    <label class="form-check-label" for="reassign_subject_<?= $subject['subject_id'] ?>">
+                        <strong><?= htmlspecialchars($subject['subject_code']) ?></strong> -
+                        <?= htmlspecialchars($subject['subject_name']) ?>
+                    </label>
+                </div>
+            <?php endforeach; ?>
+        <?php endif; ?>
+
+    <?php
+        $html = ob_get_clean();
+
+        $this->jsonResponse([
+            'success' => true,
+            'html' => $html,
+            'total_subjects' => $total_subjects,
+            'current_page' => $page,
+            'total_pages' => $total_pages
+        ]);
+    }
+
+    // ajax search teachers
+    public function ajaxSearchTeachers()
+    {
+        header('Content-Type: application/json');
+
+        $this->requireAdmin();
+
+        $page = isset($_GET['p']) ? (int)$_GET['p'] : 1;
+        $limit = 10;
+        $offset = ($page - 1) * $limit;
+        $search = $_GET['search'] ?? '';
+
+        $teachers = $this->teacher_model->getWithPagination($limit, $offset, $search);
+        $total_teachers = $this->teacher_model->getTotalCount($search);
+        $total_pages = ceil($total_teachers / $limit);
+
+        // start output buffering to capture html
+        ob_start();
+    ?>
+
+        <?php if (empty($teachers)): ?>
+            <option value="">No teachers found</option>
+        <?php else: ?>
+            <option value="">Select a teacher...</option>
+            <?php foreach ($teachers as $teacher): ?>
+                <option value="<?= $teacher['id'] ?>">
+                    <?= htmlspecialchars($teacher['full_name']) ?>
+                </option>
+            <?php endforeach; ?>
+        <?php endif; ?>
+
+    <?php
+        $html = ob_get_clean();
+
+        $this->jsonResponse([
+            'success' => true,
+            'html' => $html,
+            'total_teachers' => $total_teachers,
+            'current_page' => $page,
+            'total_pages' => $total_pages
+        ]);
+    }
+
+    // ajax search sections
+    public function ajaxSearchSections()
+    {
+        header('Content-Type: application/json');
+
+        $this->requireAdmin();
+
+        $page = isset($_GET['p']) ? (int)$_GET['p'] : 1;
+        $limit = 10;
+        $offset = ($page - 1) * $limit;
+        $search = $_GET['search'] ?? '';
+
+        $sections = $this->section_model->getWithPagination($limit, $offset, $search);
+        $total_sections = $this->section_model->getTotalCount($search);
+        $total_pages = ceil($total_sections / $limit);
+
+        // start output buffering to capture html
+        ob_start();
+    ?>
+
+        <?php if (empty($sections)): ?>
+            <option value="">No sections found</option>
+        <?php else: ?>
+            <option value="">Select a section...</option>
+            <?php foreach ($sections as $section): ?>
+                <option value="<?= $section['section_id'] ?>">
+                    <?= htmlspecialchars($section['section_name']) ?>
+                    (<?= htmlspecialchars($section['year_level']) ?> - <?= htmlspecialchars($section['strand_course']) ?>)
+                </option>
+            <?php endforeach; ?>
+        <?php endif; ?>
+
+<?php
+        $html = ob_get_clean();
+
+        $this->jsonResponse([
+            'success' => true,
+            'html' => $html,
+            'total_sections' => $total_sections,
+            'current_page' => $page,
+            'total_pages' => $total_pages
+        ]);
+    }
 }
