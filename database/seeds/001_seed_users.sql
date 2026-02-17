@@ -92,3 +92,18 @@ VALUES (
     NOW(),
     NOW()
 );
+
+-- seed sample registrar user (password: password)
+INSERT INTO users (username, email, password, role, status, first_name, middle_name, last_name, created_at, updated_at) 
+VALUES (
+    'registrar1',
+    'registrar1@gmail.com',
+    '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi',
+    'registrar',
+    'active',
+    'Rosa',
+    'Dela',
+    'Cruz',
+    NOW(),
+    NOW()
+);

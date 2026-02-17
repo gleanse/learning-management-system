@@ -1,6 +1,6 @@
 -- link students to the students table.
 -- NOTE: student2 and student4 are intentionally left without a section.
-INSERT INTO students (user_id, student_number, lrn, section_id, year_level, education_level, strand_course, enrollment_status, created_at, updated_at)
+INSERT INTO students (user_id, student_number, lrn, section_id, year_level, education_level, strand_course, enrollment_status, guardian_contact, guardian, created_at, updated_at)
 VALUES
 -- student1 - college BSIT 2A (Assigned)
 (
@@ -12,6 +12,8 @@ VALUES
     'college',
     'BSIT',
     'active',
+    '09171234567',
+    'Maria Dela Cruz',
     NOW(),
     NOW()
 ),
@@ -25,6 +27,8 @@ VALUES
     'college',
     'BSIT',
     'active',
+    NULL,
+    NULL,
     NOW(),
     NOW()
 ),
@@ -38,10 +42,12 @@ VALUES
     'senior_high',
     'STEM',
     'active',
+    '09981234567',
+    'Juan Santos',
     NOW(),
     NOW()
 ),
--- student4 - shs grade 12 HUMSS (Unassigned)
+-- student4 - shs grade 12 HUMSS (unassigned)
 (
     (SELECT id FROM users WHERE username = 'student4'),
     '2025-00004',
@@ -51,9 +57,12 @@ VALUES
     'senior_high',
     'HUMSS',
     'active',
+    NULL,
+    NULL,
     NOW(),
     NOW()
 );
+
 
 -- log ONLY the initial assignments that were actually made.
 -- this assumes you have at least one admin user in your users seed.

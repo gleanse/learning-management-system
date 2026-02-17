@@ -1,0 +1,3 @@
+ALTER TABLE students
+ADD COLUMN guardian_contact VARCHAR(20) NULL,
+ADD COLUMN guardian VARCHAR(100) NULL;

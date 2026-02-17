@@ -39,6 +39,11 @@ function isSuperAdmin()
     return isset($_SESSION['user_role']) && $_SESSION['user_role'] === 'superadmin';
 }
 
+function isRegistrar()
+{
+    return isset($_SESSION['user_role']) && $_SESSION['user_role'] === 'registrar';
+}
+
 // ADMIN dashboard
 if ($page === 'admin_dashboard' && $method === 'GET') {
     if (!isLoggedIn() || (!isAdmin() && !isSuperAdmin())) {
@@ -309,7 +314,7 @@ if ($page === 'bulk_remove_students' && $method === 'POST') {
 
 // SCHEDULE MANAGEMENT ROUTES (admin only)
 
-// ajax  paginated teacher list for schedule picker
+// ajax paginated teacher list for schedule picker
 if ($page === 'ajax_get_teachers' && $method === 'GET') {
     if (!isLoggedIn() || (!isAdmin() && !isSuperAdmin())) {
         header('Location: index.php?page=login');
@@ -628,6 +633,18 @@ if ($page === 'student_grades_view' && $method === 'GET') {
     exit();
 }
 
+// REGISTRAR ROUTES (registrar only)
+if ($page === 'registrar_dashboard' && $method === 'GET') {
+    if (!isLoggedIn() || !isRegistrar()) {
+        header('Location: index.php?page=login');
+        exit();
+    }
+
+    // TODO: view here for the registrar dashboard
+    // include __DIR__ . '';
+    exit();
+}
+
 // AUTH ROUTES
 if ($page === 'login' && $method === 'GET') {
     if (isLoggedIn()) {
@@ -639,6 +656,8 @@ if ($page === 'login' && $method === 'GET') {
             header('Location: index.php?page=admin_dashboard');
         } elseif (isSuperAdmin()) {
             header('Location: index.php?page=superadmin_dashboard');
+        } elseif (isRegistrar()) {
+            header('Location: index.php?page=registrar_dashboard');
         }
         exit();
     }
@@ -668,6 +687,8 @@ if ($page === 'dashboard' && $method === 'GET') {
         header('Location: index.php?page=admin_dashboard');
     } elseif (isSuperAdmin()) {
         header('Location: index.php?page=superadmin_dashboard');
+    } elseif (isRegistrar()) {
+        header('Location: index.php?page=registrar_dashboard');
     } else {
         header('Location: index.php?page=login');
     }
@@ -702,6 +723,8 @@ if (isLoggedIn()) {
         header('Location: index.php?page=admin_dashboard');
     } elseif (isSuperAdmin()) {
         header('Location: index.php?page=superadmin_dashboard');
+    } elseif (isRegistrar()) {
+        header('Location: index.php?page=registrar_dashboard');
     } else {
         header('Location: index.php?page=login');
     }
