@@ -1,54 +1,40 @@
--- clean schema - final database structure
--- this represents the final state of all migrations
--- for quick recreation of fresh database
+DROP DATABASE IF EXISTS registrar;
+CREATE DATABASE registrar;
+USE registrar;
 
-CREATE TABLE users(
-    id INT PRIMARY KEY AUTO_INCREMENT,
-    username VARCHAR(50) NOT NULL UNIQUE,
-    email VARCHAR(255) UNIQUE,
+SET FOREIGN_KEY_CHECKS = 0;
+
+-- ===============================
+-- USERS
+-- ===============================
+CREATE TABLE users (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    username VARCHAR(100) UNIQUE NOT NULL,
     password VARCHAR(255) NOT NULL,
-    role ENUM('student', 'teacher', 'registrar', 'admin', 'superadmin') NOT NULL,
-    status ENUM('active', 'inactive', 'suspended', 'graduated') DEFAULT 'active',
+    role ENUM('admin', 'finance', 'registrar', 'student', 'teacher') DEFAULT 'student',
     first_name VARCHAR(100) NOT NULL,
-    middle_name VARCHAR(100) NULL,
     last_name VARCHAR(100) NOT NULL,
-    created_by INT,
+    email VARCHAR(100) UNIQUE NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-    last_login TIMESTAMP NULL,
-    FOREIGN KEY (created_by) REFERENCES users(id) ON DELETE SET NULL 
-);
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+) ENGINE=InnoDB;
 
-CREATE TABLE login_lockouts (
-    ip_address VARCHAR(45) PRIMARY KEY,
-    fail_count INT DEFAULT 0,
-    locked_until TIMESTAMP NULL,
-    last_attempt TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-    INDEX idx_locked (locked_until)
-);
-
-CREATE TABLE remember_tokens (
-    id INT PRIMARY KEY AUTO_INCREMENT,
-    user_id INT NOT NULL,
-    token_hash VARCHAR(64) NOT NULL,
-    expires_at DATETIME NOT NULL,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
-);
-
+-- ===============================
+-- SECTIONS
+-- ===============================
 CREATE TABLE sections (
     section_id INT AUTO_INCREMENT PRIMARY KEY,
     section_name VARCHAR(100) NOT NULL,
-    education_level ENUM('senior_high', 'college') NOT NULL,
     year_level VARCHAR(50) NOT NULL,
-    strand_course VARCHAR(50) NOT NULL,
-    max_capacity INT NULL,
     school_year VARCHAR(20) NOT NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     UNIQUE KEY unique_section (section_name, school_year)
-);
+) ENGINE=InnoDB;
 
+-- ===============================
+-- SUBJECTS
+-- ===============================
 CREATE TABLE subjects (
     subject_id INT AUTO_INCREMENT PRIMARY KEY,
     subject_code VARCHAR(20) UNIQUE NOT NULL,
@@ -56,45 +42,48 @@ CREATE TABLE subjects (
     description TEXT NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
-);
+) ENGINE=InnoDB;
 
+-- ===============================
+-- STUDENTS
+-- ===============================
 CREATE TABLE students (
     student_id INT AUTO_INCREMENT PRIMARY KEY,
     user_id INT NOT NULL,
     student_number VARCHAR(50) UNIQUE NOT NULL,
     lrn VARCHAR(12) NULL,
-    section_id INT NULL,
+    section_id INT NOT NULL,
     year_level VARCHAR(50) NOT NULL,
     education_level ENUM('senior_high', 'college') NOT NULL,
-    strand_course VARCHAR(50) NOT NULL,
     enrollment_status ENUM('active', 'inactive', 'graduated', 'dropped') DEFAULT 'active',
-    contact VARCHAR(20) NULL, -- merged from registrar system
-    guardian VARCHAR(100) NULL, -- merged from registrar system
+    contact VARCHAR(20) NULL,
+    guardian VARCHAR(100) NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
-    FOREIGN KEY (section_id) REFERENCES sections(section_id) ON DELETE RESTRICT
-);
+    INDEX (user_id),
+    INDEX (section_id)
+) ENGINE=InnoDB;
 
+-- ===============================
+-- TEACHER SUBJECT ASSIGNMENTS
+-- ===============================
 CREATE TABLE teacher_subject_assignments (
     assignment_id INT AUTO_INCREMENT PRIMARY KEY,
     teacher_id INT NOT NULL,
     subject_id INT NOT NULL,
-    section_id INT NOT NULL,
     year_level VARCHAR(50) NOT NULL,
     school_year VARCHAR(20) NOT NULL,
-    semester ENUM('First','Second') NOT NULL DEFAULT 'First',
     assigned_date DATE NOT NULL,
-    status ENUM('active', 'inactive') DEFAULT 'active' NOT NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-    FOREIGN KEY (teacher_id) REFERENCES users(id) ON DELETE CASCADE,
-    FOREIGN KEY (subject_id) REFERENCES subjects(subject_id) ON DELETE CASCADE,
-    CONSTRAINT fk_teacher_section 
-        FOREIGN KEY (section_id) REFERENCES sections(section_id) ON DELETE CASCADE,
-    UNIQUE KEY unique_teacher_subject_section_semester (teacher_id, subject_id, year_level, school_year, semester, section_id)
-);
+    UNIQUE KEY unique_teacher_subject (teacher_id, subject_id, year_level, school_year),
+    INDEX (teacher_id),
+    INDEX (subject_id)
+) ENGINE=InnoDB;
 
+-- ===============================
+-- STUDENT SUBJECT ENROLLMENTS
+-- ===============================
 CREATE TABLE student_subject_enrollments (
     enrollment_id INT AUTO_INCREMENT PRIMARY KEY,
     student_id INT NOT NULL,
@@ -104,11 +93,14 @@ CREATE TABLE student_subject_enrollments (
     enrolled_date DATE NOT NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-    FOREIGN KEY (student_id) REFERENCES students(student_id) ON DELETE CASCADE,
-    FOREIGN KEY (subject_id) REFERENCES subjects(subject_id) ON DELETE CASCADE,
-    UNIQUE KEY unique_enrollment (student_id, subject_id, school_year, semester)
-);
+    UNIQUE KEY unique_enrollment (student_id, subject_id, school_year, semester),
+    INDEX (student_id),
+    INDEX (subject_id)
+) ENGINE=InnoDB;
 
+-- ===============================
+-- GRADES
+-- ===============================
 CREATE TABLE grades (
     grade_id INT AUTO_INCREMENT PRIMARY KEY,
     student_id INT NOT NULL,
@@ -122,12 +114,15 @@ CREATE TABLE grades (
     graded_date DATETIME NOT NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-    FOREIGN KEY (student_id) REFERENCES students(student_id) ON DELETE CASCADE,
-    FOREIGN KEY (subject_id) REFERENCES subjects(subject_id) ON DELETE CASCADE,
-    FOREIGN KEY (teacher_id) REFERENCES users(id) ON DELETE CASCADE,
-    UNIQUE KEY unique_grade (student_id, subject_id, grading_period, semester, school_year)
-);
+    UNIQUE KEY unique_grade (student_id, subject_id, grading_period, semester, school_year),
+    INDEX (student_id),
+    INDEX (subject_id),
+    INDEX (teacher_id)
+) ENGINE=InnoDB;
 
+-- ===============================
+-- GRADING PERIODS
+-- ===============================
 CREATE TABLE grading_periods (
     period_id INT AUTO_INCREMENT PRIMARY KEY,
     school_year VARCHAR(20) NOT NULL,
@@ -138,77 +133,48 @@ CREATE TABLE grading_periods (
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     UNIQUE KEY unique_period (school_year, semester, grading_period)
-);
+) ENGINE=InnoDB;
 
+-- ===============================
+-- SECTION SUBJECTS
+-- ===============================
 CREATE TABLE section_subjects (
     section_id INT NOT NULL,
     subject_id INT NOT NULL,
     school_year VARCHAR(20) NOT NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     PRIMARY KEY (section_id, subject_id, school_year),
-    FOREIGN KEY (section_id) REFERENCES sections(section_id) ON DELETE CASCADE,
-    FOREIGN KEY (subject_id) REFERENCES subjects(subject_id) ON DELETE CASCADE
-);
+    INDEX (section_id),
+    INDEX (subject_id)
+) ENGINE=InnoDB;
 
-CREATE TABLE class_schedules (
-    schedule_id INT AUTO_INCREMENT PRIMARY KEY,
-    teacher_id INT NOT NULL,
-    subject_id INT NOT NULL,
-    section_id INT NOT NULL,
-    day_of_week ENUM('Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday') NOT NULL,
-    start_time TIME NOT NULL,
-    end_time TIME NOT NULL,
-    room VARCHAR(50) NULL,
-    school_year VARCHAR(20) NOT NULL,
-    semester ENUM('First', 'Second') NOT NULL,
-    status ENUM('active', 'inactive') DEFAULT 'active',
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-    FOREIGN KEY (teacher_id) REFERENCES users(id) ON DELETE CASCADE,
-    FOREIGN KEY (subject_id) REFERENCES subjects(subject_id) ON DELETE CASCADE,
-    FOREIGN KEY (section_id) REFERENCES sections(section_id) ON DELETE CASCADE,
-    UNIQUE KEY unique_schedule (teacher_id, subject_id, section_id, day_of_week, start_time, school_year, semester)
-);
-
-CREATE TABLE student_assignments (
-    assignment_id INT AUTO_INCREMENT PRIMARY KEY,
-    student_id INT NOT NULL,
-    section_id INT NOT NULL,
-    assigned_by INT NOT NULL,
-    assigned_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (student_id) REFERENCES students(student_id) ON DELETE CASCADE,
-    FOREIGN KEY (section_id) REFERENCES sections(section_id) ON DELETE CASCADE,
-    FOREIGN KEY (assigned_by) REFERENCES users(id) ON DELETE CASCADE,
-    INDEX idx_student (student_id),
-    INDEX idx_section (section_id),
-    INDEX idx_assigned_at (assigned_at)
-);
-
--- registrar system tables
-
+-- ===============================
+-- ACADEMIC YEARS
+-- ===============================
 CREATE TABLE academic_years (
     id INT PRIMARY KEY AUTO_INCREMENT,
     school_year VARCHAR(20) UNIQUE NOT NULL,
     is_active BOOLEAN DEFAULT FALSE,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-);
+) ENGINE=InnoDB;
 
-INSERT INTO academic_years (school_year, is_active) VALUES
-('2023-2024', 0),
-('2024-2025', 1),
-('2025-2026', 0);
-
+-- ===============================
+-- PAYMENT TERMS
+-- ===============================
 CREATE TABLE payment_terms (
     id INT PRIMARY KEY AUTO_INCREMENT,
     term_name VARCHAR(50) NOT NULL,
     number_of_payments INT NOT NULL
-);
+) ENGINE=InnoDB;
 
 INSERT INTO payment_terms (term_name, number_of_payments) VALUES
 ('Full Payment', 1),
 ('Per Semester', 2),
 ('Per Quarter', 4);
 
+-- ===============================
+-- FEE STRUCTURE
+-- ===============================
 CREATE TABLE fee_structure (
     id INT PRIMARY KEY AUTO_INCREMENT,
     section_id INT NOT NULL,
@@ -216,9 +182,12 @@ CREATE TABLE fee_structure (
     semester_fee DECIMAL(10,2) NOT NULL,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     UNIQUE KEY unique_section_year (section_id, year_level),
-    FOREIGN KEY (section_id) REFERENCES sections(section_id) ON DELETE CASCADE
-);
+    INDEX (section_id)
+) ENGINE=InnoDB;
 
+-- ===============================
+-- ENROLLMENTS (FINANCIAL)
+-- ===============================
 CREATE TABLE enrollments (
     id INT PRIMARY KEY AUTO_INCREMENT,
     student_id INT NOT NULL,
@@ -231,12 +200,15 @@ CREATE TABLE enrollments (
     payment_per_installment DECIMAL(10,2) NOT NULL,
     total_fees DECIMAL(10,2) NOT NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (student_id) REFERENCES students(student_id) ON DELETE CASCADE,
-    FOREIGN KEY (ay_id) REFERENCES academic_years(id) ON DELETE CASCADE,
-    FOREIGN KEY (section_id) REFERENCES sections(section_id) ON DELETE CASCADE,
-    FOREIGN KEY (term_id) REFERENCES payment_terms(id) ON DELETE CASCADE
-);
+    INDEX (student_id),
+    INDEX (ay_id),
+    INDEX (section_id),
+    INDEX (term_id)
+) ENGINE=InnoDB;
 
+-- ===============================
+-- PAYMENT INSTALLMENTS
+-- ===============================
 CREATE TABLE payment_installments (
     id INT PRIMARY KEY AUTO_INCREMENT,
     enrollment_id INT NOT NULL,
@@ -247,10 +219,12 @@ CREATE TABLE payment_installments (
     status ENUM('unpaid', 'partial', 'paid') DEFAULT 'unpaid',
     due_date DATE,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-    FOREIGN KEY (enrollment_id) REFERENCES enrollments(id) ON DELETE CASCADE
-);
+    INDEX (enrollment_id)
+) ENGINE=InnoDB;
 
+-- ===============================
+-- CASH DRAWER
+-- ===============================
 CREATE TABLE cash_drawer (
     id INT PRIMARY KEY AUTO_INCREMENT,
     drawer_date DATE NOT NULL UNIQUE,
@@ -259,10 +233,26 @@ CREATE TABLE cash_drawer (
     total_cash_in DECIMAL(10,2) DEFAULT 0,
     status ENUM('open', 'closed') DEFAULT 'open',
     opened_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    closed_at DATETIME NULL,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
-);
+    closed_at DATETIME NULL
+) ENGINE=InnoDB;
 
+-- ===============================
+-- CASH DRAWERS
+-- ===============================
+CREATE TABLE cash_drawers (
+    id INT PRIMARY KEY AUTO_INCREMENT,
+    drawer_date DATE NOT NULL UNIQUE,
+    opening_balance DECIMAL(10,2) NOT NULL,
+    closing_balance DECIMAL(10,2) DEFAULT 0,
+    total_cash_in DECIMAL(10,2) DEFAULT 0,
+    is_open TINYINT(1) DEFAULT 1,
+    opened_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    closed_at DATETIME NULL
+) ENGINE=InnoDB;
+
+-- ===============================
+-- CASH PAYMENTS
+-- ===============================
 CREATE TABLE cash_payments (
     id INT PRIMARY KEY AUTO_INCREMENT,
     installment_id INT NOT NULL,
@@ -270,10 +260,13 @@ CREATE TABLE cash_payments (
     amount DECIMAL(10,2) NOT NULL,
     receipt_number VARCHAR(50) UNIQUE NOT NULL,
     payment_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (installment_id) REFERENCES payment_installments(id) ON DELETE CASCADE,
-    FOREIGN KEY (drawer_id) REFERENCES cash_drawer(id) ON DELETE CASCADE
-);
+    INDEX (installment_id),
+    INDEX (drawer_id)
+) ENGINE=InnoDB;
 
+-- ===============================
+-- FEE HISTORY
+-- ===============================
 CREATE TABLE fee_history (
     id INT PRIMARY KEY AUTO_INCREMENT,
     section_id INT NOT NULL,
@@ -282,5 +275,59 @@ CREATE TABLE fee_history (
     new_fee DECIMAL(10,2),
     changed_by VARCHAR(100),
     changed_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (section_id) REFERENCES sections(section_id) ON DELETE CASCADE
-);
+    INDEX (section_id)
+) ENGINE=InnoDB;
+
+SET FOREIGN_KEY_CHECKS = 1;
+
+-- Insert academic years
+INSERT INTO academic_years (school_year, is_active) VALUES
+('2024-2025', 1),  -- Set as active
+('2023-2024', 0),
+('2025-2026', 0);
+
+-- Verify
+SELECT * FROM academic_years;
+
+
+-- Baguhin ang unique constraint para isama ang year_level
+ALTER TABLE sections DROP INDEX unique_section;
+ALTER TABLE sections ADD UNIQUE KEY unique_section_year (section_name, year_level, school_year);
+
+-- Ngayon i-insert ang college sections
+INSERT INTO sections (section_name, year_level, school_year) VALUES
+('BSIT', '1st Year', '2024-2025'),
+('BSIT', '2nd Year', '2024-2025'),
+('BSIT', '3rd Year', '2024-2025'),
+('BSIT', '4th Year', '2024-2025'),
+('BSHM', '1st Year', '2024-2025'),
+('BSHM', '2nd Year', '2024-2025'),
+('BSHM', '3rd Year', '2024-2025'),
+('BSHM', '4th Year', '2024-2025'),
+('BSOA', '1st Year', '2024-2025'),
+('BSOA', '2nd Year', '2024-2025'),
+('BSOA', '3rd Year', '2024-2025'),
+('BSOA', '4th Year', '2024-2025');
+
+-- I-verify
+SELECT * FROM sections ORDER BY section_name, 
+    CASE year_level
+        WHEN 'Grade 11' THEN 1
+        WHEN 'Grade 12' THEN 2
+        WHEN '1st Year' THEN 3
+        WHEN '2nd Year' THEN 4
+        WHEN '3rd Year' THEN 5
+        WHEN '4th Year' THEN 6
+    END;
+
+    ALTER TABLE students MODIFY COLUMN enrollment_status ENUM('active', 'inactive', 'graduated', 'dropped') DEFAULT 'inactive';
+    UPDATE students SET enrollment_status = 'inactive' WHERE student_id NOT IN (SELECT student_id FROM enrollments);
+
+    -- Add updated_at column to payment_installments table
+ALTER TABLE payment_installments ADD COLUMN updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP;
+
+-- Add updated_at column to cash_drawer table
+ALTER TABLE cash_drawer ADD COLUMN updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP;
+
+
+
