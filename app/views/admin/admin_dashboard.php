@@ -60,7 +60,7 @@
                     </a>
                 </li>
                 <li class="nav-item">
-                    <a class="nav-link" href="index.php?page=manage_schedules">
+                    <a class="nav-link" href="index.php?page=teacher_schedules">
                         <i class="bi bi-calendar-week-fill"></i>
                         <span>Manage Schedules</span>
                     </a>
@@ -311,6 +311,19 @@
                                         <div class="link-content">
                                             <h6 class="link-title">Teacher Assignments</h6>
                                             <p class="link-desc">Assign teachers to sections and subjects</p>
+                                        </div>
+                                        <div class="link-arrow">
+                                            <i class="bi bi-arrow-right"></i>
+                                        </div>
+                                    </a>
+
+                                    <a href="index.php?page=teacher_schedules" class="quick-link-item">
+                                        <div class="link-icon">
+                                            <i class="bi bi-calendar-week-fill"></i>
+                                        </div>
+                                        <div class="link-content">
+                                            <h6 class="link-title">Manage Schedules</h6>
+                                            <p class="link-desc">Set schedules for teacher assignments</p>
                                         </div>
                                         <div class="link-arrow">
                                             <i class="bi bi-arrow-right"></i>

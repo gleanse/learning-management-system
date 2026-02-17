@@ -183,6 +183,105 @@ class Schedule
         return $stmt->fetch();
     }
 
+    // get all active assignments for a teacher with their existing schedule entries
+    // returns each assignment with a nested 'schedules' array
+    // used by the dedicated teacher schedule management page
+    public function getAssignmentsWithSchedules($teacher_id, $school_year, $semester)
+    {
+        $stmt = $this->connection->prepare("
+            SELECT 
+                tsa.assignment_id,
+                tsa.teacher_id,
+                tsa.subject_id,
+                tsa.section_id,
+                tsa.year_level,
+                tsa.school_year,
+                tsa.semester,
+                CONCAT(u.first_name, ' ', IF(u.middle_name IS NOT NULL, CONCAT(u.middle_name, ' '), ''), u.last_name) as teacher_name,
+                sub.subject_code,
+                sub.subject_name,
+                sec.section_name,
+                sec.education_level,
+                sec.strand_course
+            FROM teacher_subject_assignments tsa
+            INNER JOIN users u ON tsa.teacher_id = u.id
+            INNER JOIN subjects sub ON tsa.subject_id = sub.subject_id
+            INNER JOIN sections sec ON tsa.section_id = sec.section_id
+            WHERE tsa.teacher_id = ?
+                AND tsa.school_year = ?
+                AND tsa.semester = ?
+                AND tsa.status = 'active'
+            ORDER BY sec.section_name ASC, sub.subject_name ASC
+        ");
+
+        $stmt->execute([$teacher_id, $school_year, $semester]);
+        $assignments = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+        if (empty($assignments)) {
+            return [];
+        }
+
+        // fetch existing schedules per assignment (matched by teacher+subject+section+sy+sem)
+        $schedule_stmt = $this->connection->prepare("
+            SELECT 
+                cs.schedule_id,
+                cs.day_of_week,
+                cs.start_time,
+                cs.end_time,
+                cs.room,
+                cs.status
+            FROM class_schedules cs
+            WHERE cs.teacher_id = ?
+                AND cs.subject_id = ?
+                AND cs.section_id = ?
+                AND cs.school_year = ?
+                AND cs.semester = ?
+            ORDER BY 
+                FIELD(cs.day_of_week, 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'),
+                cs.start_time ASC
+        ");
+
+        foreach ($assignments as &$assignment) {
+            $schedule_stmt->execute([
+                $assignment['teacher_id'],
+                $assignment['subject_id'],
+                $assignment['section_id'],
+                $school_year,
+                $semester
+            ]);
+            $assignment['schedules'] = $schedule_stmt->fetchAll(PDO::FETCH_ASSOC);
+        }
+
+        return $assignments;
+    }
+
+    // get schedule entries for a specific teacher+subject+section combo
+    // used after add/edit/delete to refresh only the affected assignment row via ajax
+    public function getSchedulesByAssignment($teacher_id, $subject_id, $section_id, $school_year, $semester)
+    {
+        $stmt = $this->connection->prepare("
+            SELECT 
+                cs.schedule_id,
+                cs.day_of_week,
+                cs.start_time,
+                cs.end_time,
+                cs.room,
+                cs.status
+            FROM class_schedules cs
+            WHERE cs.teacher_id = ?
+                AND cs.subject_id = ?
+                AND cs.section_id = ?
+                AND cs.school_year = ?
+                AND cs.semester = ?
+            ORDER BY 
+                FIELD(cs.day_of_week, 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'),
+                cs.start_time ASC
+        ");
+
+        $stmt->execute([$teacher_id, $subject_id, $section_id, $school_year, $semester]);
+        return $stmt->fetchAll(PDO::FETCH_ASSOC);
+    }
+
     // create new schedule
     public function create($teacher_id, $subject_id, $section_id, $day_of_week, $start_time, $end_time, $room, $school_year, $semester, $status = 'active')
     {
@@ -286,7 +385,7 @@ class Schedule
         return $result['count'] > 0;
     }
 
-    // check if room has conflicting schedule (only if room is not null)
+    // check if room has conflicting schedule (skips check if room is empty)
     public function checkRoomConflict($room, $day_of_week, $start_time, $end_time, $school_year, $semester, $exclude_schedule_id = null)
     {
         if (empty($room)) {
@@ -322,7 +421,7 @@ class Schedule
         return $result['count'] > 0;
     }
 
-    // check all conflicts at once (returns array of conflict types)
+    // check all conflicts at once and return array of conflict types found
     public function checkAllConflicts($teacher_id, $section_id, $room, $day_of_week, $start_time, $end_time, $school_year, $semester, $exclude_schedule_id = null)
     {
         $conflicts = [];
@@ -342,7 +441,7 @@ class Schedule
         return $conflicts;
     }
 
-    // get conflicting schedules details (for error messages)
+    // get conflicting schedule details for building error messages
     public function getConflictingSchedules($teacher_id, $section_id, $room, $day_of_week, $start_time, $end_time, $school_year, $semester, $exclude_schedule_id = null)
     {
         $conflicts = [];

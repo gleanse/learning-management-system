@@ -62,7 +62,7 @@
                     </a>
                 </li>
                 <li class="nav-item">
-                    <a class="nav-link" href="index.php?page=manage_schedules">
+                    <a class="nav-link" href="index.php?page=teacher_schedules">
                         <i class="bi bi-calendar-week-fill"></i>
                         <span>Manage Schedules</span>
                     </a>

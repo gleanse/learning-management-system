@@ -63,7 +63,6 @@ if ($page === 'subjects' && $method === 'GET') {
     exit();
 }
 
-// AJAX search for subjects (admin only)
 if ($page === 'ajax_search_subjects' && $method === 'GET') {
     if (!isLoggedIn() || (!isAdmin() && !isSuperAdmin())) {
         header('Location: index.php?page=login');
@@ -142,7 +141,6 @@ if ($page === 'manage_sections' && $method === 'GET') {
     exit();
 }
 
-// AJAX search for sections (admin only)
 if ($page === 'ajax_search_sections' && $method === 'GET') {
     if (!isLoggedIn() || (!isAdmin() && !isSuperAdmin())) {
         header('Location: index.php?page=login');
@@ -154,7 +152,6 @@ if ($page === 'ajax_search_sections' && $method === 'GET') {
     exit();
 }
 
-// AJAX get students for specific section (admin only)
 if ($page === 'ajax_section_students' && $method === 'GET') {
     if (!isLoggedIn() || (!isAdmin() && !isSuperAdmin())) {
         header('Location: index.php?page=login');
@@ -244,7 +241,6 @@ if ($page === 'student_sections' && $method === 'GET') {
     exit();
 }
 
-// AJAX get section data with current and eligible students
 if ($page === 'student_section_data' && $method === 'GET') {
     if (!isLoggedIn() || (!isAdmin() && !isSuperAdmin())) {
         header('Location: index.php?page=login');
@@ -256,7 +252,6 @@ if ($page === 'student_section_data' && $method === 'GET') {
     exit();
 }
 
-// AJAX search eligible students for a section
 if ($page === 'search_eligible_students' && $method === 'GET') {
     if (!isLoggedIn() || (!isAdmin() && !isSuperAdmin())) {
         header('Location: index.php?page=login');
@@ -268,7 +263,6 @@ if ($page === 'search_eligible_students' && $method === 'GET') {
     exit();
 }
 
-// AJAX search current students in a section
 if ($page === 'search_current_students' && $method === 'GET') {
     if (!isLoggedIn() || (!isAdmin() && !isSuperAdmin())) {
         header('Location: index.php?page=login');
@@ -280,7 +274,6 @@ if ($page === 'search_current_students' && $method === 'GET') {
     exit();
 }
 
-// assign students to section (supports single and bulk)
 if ($page === 'assign_students' && $method === 'POST') {
     if (!isLoggedIn() || (!isAdmin() && !isSuperAdmin())) {
         header('Location: index.php?page=login');
@@ -292,7 +285,6 @@ if ($page === 'assign_students' && $method === 'POST') {
     exit();
 }
 
-// remove single student from section
 if ($page === 'remove_student' && $method === 'POST') {
     if (!isLoggedIn() || (!isAdmin() && !isSuperAdmin())) {
         header('Location: index.php?page=login');
@@ -304,7 +296,6 @@ if ($page === 'remove_student' && $method === 'POST') {
     exit();
 }
 
-// bulk remove students from section
 if ($page === 'bulk_remove_students' && $method === 'POST') {
     if (!isLoggedIn() || (!isAdmin() && !isSuperAdmin())) {
         header('Location: index.php?page=login');
@@ -317,30 +308,44 @@ if ($page === 'bulk_remove_students' && $method === 'POST') {
 }
 
 // SCHEDULE MANAGEMENT ROUTES (admin only)
-if ($page === 'manage_schedules' && $method === 'GET') {
+
+// teacher-first schedule management page
+if ($page === 'teacher_schedules' && $method === 'GET') {
     if (!isLoggedIn() || (!isAdmin() && !isSuperAdmin())) {
         header('Location: index.php?page=login');
         exit();
     }
 
     $controller = new ScheduleManagementController();
-    $controller->showScheduleManagement();
+    $controller->showTeacherSchedulePage();
     exit();
 }
 
-// show create schedule form page
-if ($page === 'create_schedule' && $method === 'GET') {
+// ajax: get assignments + schedules for a teacher
+if ($page === 'ajax_get_teacher_assignments' && $method === 'GET') {
     if (!isLoggedIn() || (!isAdmin() && !isSuperAdmin())) {
         header('Location: index.php?page=login');
         exit();
     }
 
     $controller = new ScheduleManagementController();
-    $controller->showCreateSchedule();
+    $controller->ajaxGetTeacherAssignments();
     exit();
 }
 
-// process create schedule form
+// ajax: get schedule entries for a single assignment row
+if ($page === 'ajax_get_assignment_schedules' && $method === 'GET') {
+    if (!isLoggedIn() || (!isAdmin() && !isSuperAdmin())) {
+        header('Location: index.php?page=login');
+        exit();
+    }
+
+    $controller = new ScheduleManagementController();
+    $controller->ajaxGetAssignmentSchedules();
+    exit();
+}
+
+// process create schedule (AJAX from teacher_schedules modal)
 if ($page === 'create_schedule' && $method === 'POST') {
     if (!isLoggedIn() || (!isAdmin() && !isSuperAdmin())) {
         header('Location: index.php?page=login');
@@ -352,19 +357,7 @@ if ($page === 'create_schedule' && $method === 'POST') {
     exit();
 }
 
-// show edit schedule form page
-if ($page === 'edit_schedule' && $method === 'GET') {
-    if (!isLoggedIn() || (!isAdmin() && !isSuperAdmin())) {
-        header('Location: index.php?page=login');
-        exit();
-    }
-
-    $controller = new ScheduleManagementController();
-    $controller->showEditSchedule();
-    exit();
-}
-
-// process update schedule form
+// process update schedule (AJAX from teacher_schedules modal)
 if ($page === 'update_schedule' && $method === 'POST') {
     if (!isLoggedIn() || (!isAdmin() && !isSuperAdmin())) {
         header('Location: index.php?page=login');
@@ -376,7 +369,7 @@ if ($page === 'update_schedule' && $method === 'POST') {
     exit();
 }
 
-// delete schedule
+// process delete schedule (AJAX from teacher_schedules modal)
 if ($page === 'delete_schedule' && $method === 'POST') {
     if (!isLoggedIn() || (!isAdmin() && !isSuperAdmin())) {
         header('Location: index.php?page=login');
@@ -385,18 +378,6 @@ if ($page === 'delete_schedule' && $method === 'POST') {
 
     $controller = new ScheduleManagementController();
     $controller->processDeleteSchedule();
-    exit();
-}
-
-// toggle schedule status (active/inactive)
-if ($page === 'toggle_schedule_status' && $method === 'POST') {
-    if (!isLoggedIn() || (!isAdmin() && !isSuperAdmin())) {
-        header('Location: index.php?page=login');
-        exit();
-    }
-
-    $controller = new ScheduleManagementController();
-    $controller->processToggleStatus();
     exit();
 }
 
@@ -456,7 +437,6 @@ if ($page === 'remove_teacher_assignment' && $method === 'POST') {
     exit();
 }
 
-// restores a previously removed assignment back to active
 if ($page === 'restore_teacher_assignment' && $method === 'POST') {
     if (!isLoggedIn() || (!isAdmin() && !isSuperAdmin())) {
         header('Location: index.php?page=login');
@@ -468,7 +448,6 @@ if ($page === 'restore_teacher_assignment' && $method === 'POST') {
     exit();
 }
 
-// ajax search subjects for teacher assignment form
 if ($page === 'ajax_search_assignment_subjects' && $method === 'GET') {
     if (!isLoggedIn() || (!isAdmin() && !isSuperAdmin())) {
         header('Location: index.php?page=login');
@@ -480,7 +459,6 @@ if ($page === 'ajax_search_assignment_subjects' && $method === 'GET') {
     exit();
 }
 
-// ajax search subjects for reassignment modal
 if ($page === 'ajax_search_reassignment_subjects' && $method === 'GET') {
     if (!isLoggedIn() || (!isAdmin() && !isSuperAdmin())) {
         header('Location: index.php?page=login');
@@ -492,7 +470,6 @@ if ($page === 'ajax_search_reassignment_subjects' && $method === 'GET') {
     exit();
 }
 
-// ajax search teachers for assignment
 if ($page === 'ajax_search_assignment_teachers' && $method === 'GET') {
     if (!isLoggedIn() || (!isAdmin() && !isSuperAdmin())) {
         header('Location: index.php?page=login');
@@ -504,7 +481,6 @@ if ($page === 'ajax_search_assignment_teachers' && $method === 'GET') {
     exit();
 }
 
-// ajax search sections for assignment
 if ($page === 'ajax_search_assignment_sections' && $method === 'GET') {
     if (!isLoggedIn() || (!isAdmin() && !isSuperAdmin())) {
         header('Location: index.php?page=login');
@@ -642,7 +618,6 @@ if ($page === 'student_grades_view' && $method === 'GET') {
 
 // AUTH ROUTES
 if ($page === 'login' && $method === 'GET') {
-    // redirect based on role if already logged in
     if (isLoggedIn()) {
         if (isTeacher()) {
             header('Location: index.php?page=teacher_dashboard');
@@ -673,7 +648,6 @@ if ($page === 'dashboard' && $method === 'GET') {
         exit();
     }
 
-    // redirect to role-specific dashboard
     if (isTeacher()) {
         header('Location: index.php?page=teacher_dashboard');
     } elseif (isStudent()) {
@@ -683,7 +657,6 @@ if ($page === 'dashboard' && $method === 'GET') {
     } elseif (isSuperAdmin()) {
         header('Location: index.php?page=superadmin_dashboard');
     } else {
-        // fallback if role is not recognized
         header('Location: index.php?page=login');
     }
     exit();
