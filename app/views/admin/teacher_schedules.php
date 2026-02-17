@@ -13,16 +13,14 @@
 </head>
 
 <body>
-    <div class="toast-container position-fixed top-0 end-0 p-3" style="z-index: 1100;" id="toastContainer"></div>
+    <div class="toast-container position-fixed top-0 end-0 p-3" style="z-index:1100;" id="toastContainer"></div>
 
     <div class="d-flex">
-        <!-- sidebar -->
         <div class="sidenav">
             <div class="sidenav-header">
                 <div class="school-brand">
                     <div class="school-logo">
-                        <img src="assets/DCSA-LOGO.png" alt="School Logo"
-                            style="width: 100%; height: 100%; object-fit: contain; border-radius: 0.75rem;">
+                        <img src="assets/DCSA-LOGO.png" alt="School Logo" style="width:100%;height:100%;object-fit:contain;border-radius:0.75rem;">
                     </div>
                     <div class="school-info">
                         <h5>Datamex College of Saint Adeline</h5>
@@ -31,76 +29,32 @@
                 </div>
             </div>
             <ul class="sidenav-menu">
-                <li class="nav-item">
-                    <a class="nav-link" href="index.php?page=admin_dashboard">
-                        <i class="bi bi-house-door-fill"></i>
-                        <span>Dashboard</span>
-                    </a>
-                </li>
-                <li class="nav-item">
-                    <a class="nav-link" href="index.php?page=manage_sections">
-                        <i class="bi bi-grid-3x3-gap-fill"></i>
-                        <span>Section Management</span>
-                    </a>
-                </li>
-                <li class="nav-item">
-                    <a class="nav-link" href="index.php?page=subjects">
-                        <i class="bi bi-book-fill"></i>
-                        <span>Subject Management</span>
-                    </a>
-                </li>
-                <li class="nav-item">
-                    <a class="nav-link" href="index.php?page=student_sections">
-                        <i class="bi bi-people-fill"></i>
-                        <span>Assign Students</span>
-                    </a>
-                </li>
-                <li class="nav-item">
-                    <a class="nav-link" href="index.php?page=teacher_assignments">
-                        <i class="bi bi-person-plus-fill"></i>
-                        <span>Teacher Assignments</span>
-                    </a>
-                </li>
-                <li class="nav-item">
-                    <a class="nav-link active" href="index.php?page=teacher_schedules">
-                        <i class="bi bi-calendar-week-fill"></i>
-                        <span>Manage Schedules</span>
-                    </a>
-                </li>
-                <li class="nav-item">
-                    <a class="nav-link" href="index.php?page=logout">
-                        <i class="bi bi-box-arrow-right"></i>
-                        <span>Logout</span>
-                    </a>
-                </li>
+                <li class="nav-item"><a class="nav-link" href="index.php?page=admin_dashboard"><i class="bi bi-house-door-fill"></i><span>Dashboard</span></a></li>
+                <li class="nav-item"><a class="nav-link" href="index.php?page=manage_sections"><i class="bi bi-grid-3x3-gap-fill"></i><span>Section Management</span></a></li>
+                <li class="nav-item"><a class="nav-link" href="index.php?page=subjects"><i class="bi bi-book-fill"></i><span>Subject Management</span></a></li>
+                <li class="nav-item"><a class="nav-link" href="index.php?page=student_sections"><i class="bi bi-people-fill"></i><span>Assign Students</span></a></li>
+                <li class="nav-item"><a class="nav-link" href="index.php?page=teacher_assignments"><i class="bi bi-person-plus-fill"></i><span>Teacher Assignments</span></a></li>
+                <li class="nav-item"><a class="nav-link active" href="index.php?page=teacher_schedules"><i class="bi bi-calendar-week-fill"></i><span>Manage Schedules</span></a></li>
+                <li class="nav-item"><a class="nav-link" href="index.php?page=logout"><i class="bi bi-box-arrow-right"></i><span>Logout</span></a></li>
             </ul>
         </div>
 
-        <!-- main content -->
         <div class="main-content flex-grow-1">
-            <!-- top navbar -->
             <nav class="navbar top-navbar">
                 <div class="container-fluid">
                     <div class="navbar-brand mb-0">
-                        <div class="page-icon">
-                            <i class="bi bi-calendar-week-fill"></i>
-                        </div>
+                        <div class="page-icon"><i class="bi bi-calendar-week-fill"></i></div>
                         <span>Manage Schedules</span>
                     </div>
                     <div class="user-info-wrapper">
                         <div class="user-details">
-                            <span class="user-name">
-                                <?php echo htmlspecialchars($_SESSION['user_firstname'] . ' ' . $_SESSION['user_lastname']); ?>
-                            </span>
-                            <span class="user-role">
-                                <i class="bi bi-person-badge-fill"></i>
-                                <?php echo ucfirst(htmlspecialchars($_SESSION['user_role'])); ?>
-                            </span>
+                            <span class="user-name"><?php echo htmlspecialchars($_SESSION['user_firstname'] . ' ' . $_SESSION['user_lastname']); ?></span>
+                            <span class="user-role"><i class="bi bi-person-badge-fill"></i> <?php echo ucfirst(htmlspecialchars($_SESSION['user_role'])); ?></span>
                         </div>
                         <div class="user-avatar">
                             <?php
                             $firstname = $_SESSION['user_firstname'] ?? 'A';
-                            $lastname  = $_SESSION['user_lastname'] ?? 'U';
+                            $lastname  = $_SESSION['user_lastname']  ?? 'U';
                             echo strtoupper(substr($firstname, 0, 1) . substr($lastname, 0, 1));
                             ?>
                         </div>
@@ -108,100 +62,94 @@
                 </div>
             </nav>
 
-            <!-- page content -->
             <div class="container-fluid p-4">
-                <!-- breadcrumbs -->
+
                 <nav aria-label="breadcrumb">
                     <ol class="breadcrumb">
-                        <li class="breadcrumb-item">
-                            <a href="index.php?page=admin_dashboard">
-                                <i class="bi bi-house-door-fill"></i> Dashboard
-                            </a>
-                        </li>
-                        <li class="breadcrumb-item active" aria-current="page">
-                            Manage Schedules
-                        </li>
+                        <li class="breadcrumb-item"><a href="index.php?page=admin_dashboard"><i class="bi bi-house-door-fill"></i> Dashboard</a></li>
+                        <li class="breadcrumb-item active" aria-current="page">Manage Schedules</li>
                     </ol>
                 </nav>
 
-                <!-- page header -->
-                <div class="page-header">
+                <div class="page-header mb-4">
                     <div class="header-content">
-                        <div class="header-icon">
-                            <i class="bi bi-calendar-week-fill"></i>
-                        </div>
+                        <div class="header-icon"><i class="bi bi-calendar-week-fill"></i></div>
                         <div class="header-text">
                             <h1 class="header-title">Teacher Schedule Management</h1>
-                            <p class="header-subtitle">Select a teacher to view and manage their class schedules by assignment</p>
+                            <p class="header-subtitle">Select a teacher to manage their class schedules</p>
                         </div>
                     </div>
                 </div>
 
-                <!-- filter card -->
-                <div class="card filters-card mb-4">
-                    <div class="card-body">
-                        <div class="row g-3 align-items-end">
-                            <div class="col-md-4">
-                                <label class="form-label">
-                                    <i class="bi bi-person-fill"></i>
-                                    Teacher
-                                </label>
-                                <select class="form-select" id="filterTeacher">
-                                    <option value="">Select a teacher...</option>
-                                    <?php foreach ($teachers as $teacher): ?>
-                                        <option value="<?= $teacher['id'] ?>">
-                                            <?= htmlspecialchars($teacher['full_name']) ?>
-                                        </option>
-                                    <?php endforeach; ?>
-                                </select>
-                            </div>
-                            <div class="col-md-3">
-                                <label class="form-label">
-                                    <i class="bi bi-calendar3"></i>
-                                    School Year
-                                </label>
-                                <select class="form-select" id="filterSchoolYear">
-                                    <?php
-                                    $current_year = (int) date('Y');
-                                    for ($y = $current_year; $y >= $current_year - 3; $y--):
-                                        $year_value = $y . '-' . ($y + 1);
-                                    ?>
-                                        <option value="<?= $year_value ?>" <?= $y === $current_year ? 'selected' : '' ?>>
-                                            <?= $year_value ?>
-                                        </option>
-                                    <?php endfor; ?>
-                                </select>
-                            </div>
-                            <div class="col-md-3">
-                                <label class="form-label">
-                                    <i class="bi bi-calendar2-range"></i>
-                                    Semester
-                                </label>
-                                <select class="form-select" id="filterSemester">
-                                    <option value="First">First Semester</option>
-                                    <option value="Second">Second Semester</option>
-                                </select>
-                            </div>
-                            <div class="col-md-2">
-                                <button class="btn btn-primary w-100" id="loadAssignmentsBtn">
-                                    <i class="bi bi-search"></i>
-                                    Load
-                                </button>
+                <!-- two-column layout -->
+                <div class="schedule-layout">
+
+                    <!-- LEFT: teacher picker -->
+                    <aside class="teacher-picker">
+                        <div class="picker-header">
+                            <span class="picker-title">
+                                <i class="bi bi-people-fill"></i> Teachers
+                            </span>
+                            <span class="picker-count" id="pickerCount"><?= $total_teachers ?></span>
+                        </div>
+                        <div class="picker-search">
+                            <i class="bi bi-search"></i>
+                            <input type="text" id="teacherSearchInput" placeholder="Search name..." autocomplete="off">
+                        </div>
+                        <div class="picker-list" id="teacherList">
+                            <div class="picker-loading">
+                                <span class="spinner-border spinner-border-sm"></span> Loading...
                             </div>
                         </div>
+                        <div class="picker-pagination" id="pickerPagination"></div>
+                    </aside>
+
+                    <!-- RIGHT: schedule panel -->
+                    <div class="schedule-panel">
+
+                        <div class="pick-prompt" id="pickPrompt">
+                            <div class="pick-prompt-icon"><i class="bi bi-person-lines-fill"></i></div>
+                            <p class="pick-prompt-title">No teacher selected</p>
+                            <p class="pick-prompt-text">Search and click a teacher on the left to view and manage their schedules.</p>
+                        </div>
+
+                        <div id="scheduleContent" class="d-none">
+
+                            <!-- slim single-row filter bar -->
+                            <div class="filter-bar mb-3">
+                                <div class="filter-bar-teacher">
+                                    <div class="filter-teacher-avatar" id="filterTeacherAvatar"></div>
+                                    <span class="filter-teacher-name" id="selectedTeacherName"></span>
+                                </div>
+                                <div class="filter-bar-controls">
+                                    <select class="filter-select" id="filterSchoolYear">
+                                        <?php
+                                        $current_year = (int) date('Y');
+                                        for ($y = $current_year; $y >= $current_year - 3; $y--):
+                                            $yv = $y . '-' . ($y + 1);
+                                        ?>
+                                            <option value="<?= $yv ?>" <?= $y === $current_year ? 'selected' : '' ?>><?= $yv ?></option>
+                                        <?php endfor; ?>
+                                    </select>
+                                    <select class="filter-select" id="filterSemester">
+                                        <option value="First">First Semester</option>
+                                        <option value="Second">Second Semester</option>
+                                    </select>
+                                </div>
+                            </div>
+
+                            <!-- quick stats row -->
+                            <div class="stats-row" id="statsRow"></div>
+
+                            <!-- assignments list -->
+                            <div id="assignmentsPanel"></div>
+
+                        </div>
                     </div>
+
                 </div>
 
-                <!-- assignments panel - fully js driven, no php conditions needed -->
-                <div id="assignmentsPanel">
-                    <div class="select-prompt">
-                        <div class="select-prompt-icon">
-                            <i class="bi bi-person-lines-fill"></i>
-                        </div>
-                        <p class="select-prompt-title">Select a teacher to get started</p>
-                        <p class="select-prompt-text">Choose a teacher and filter by school year and semester to view their assignments and manage schedules.</p>
-                    </div>
-                </div>
+                <input type="hidden" id="filterTeacher" value="">
 
             </div>
         </div>
@@ -212,10 +160,7 @@
         <div class="modal-dialog modal-dialog-centered">
             <div class="modal-content">
                 <div class="modal-header">
-                    <h5 class="modal-title">
-                        <i class="bi bi-calendar-plus-fill"></i>
-                        Add Schedule
-                    </h5>
+                    <h5 class="modal-title"><i class="bi bi-calendar-plus-fill"></i> Add Schedule</h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                 </div>
                 <div class="modal-body">
@@ -229,64 +174,39 @@
                         <input type="hidden" name="school_year" id="addSchoolYear">
                         <input type="hidden" name="semester" id="addSemester">
                         <input type="hidden" name="status" value="active">
-
-                        <!-- context info -->
                         <div class="assignment-context mb-3" id="addAssignmentContext"></div>
-
                         <div class="row g-3">
                             <div class="col-12">
-                                <label class="form-label">
-                                    <i class="bi bi-calendar-day"></i>
-                                    Day of Week
-                                    <span class="text-danger">*</span>
-                                </label>
+                                <label class="form-label"><i class="bi bi-calendar-day"></i> Day of Week <span class="text-danger">*</span></label>
                                 <select class="form-select" name="day_of_week" id="addDayOfWeek" required>
                                     <option value="">Select day...</option>
-                                    <option value="Monday">Monday</option>
-                                    <option value="Tuesday">Tuesday</option>
-                                    <option value="Wednesday">Wednesday</option>
-                                    <option value="Thursday">Thursday</option>
-                                    <option value="Friday">Friday</option>
-                                    <option value="Saturday">Saturday</option>
-                                    <option value="Sunday">Sunday</option>
+                                    <option>Monday</option>
+                                    <option>Tuesday</option>
+                                    <option>Wednesday</option>
+                                    <option>Thursday</option>
+                                    <option>Friday</option>
+                                    <option>Saturday</option>
+                                    <option>Sunday</option>
                                 </select>
                             </div>
                             <div class="col-6">
-                                <label class="form-label">
-                                    <i class="bi bi-clock-fill"></i>
-                                    Start Time
-                                    <span class="text-danger">*</span>
-                                </label>
+                                <label class="form-label"><i class="bi bi-clock-fill"></i> Start Time <span class="text-danger">*</span></label>
                                 <input type="time" class="form-control" name="start_time" id="addStartTime" required>
                             </div>
                             <div class="col-6">
-                                <label class="form-label">
-                                    <i class="bi bi-clock-fill"></i>
-                                    End Time
-                                    <span class="text-danger">*</span>
-                                </label>
+                                <label class="form-label"><i class="bi bi-clock-fill"></i> End Time <span class="text-danger">*</span></label>
                                 <input type="time" class="form-control" name="end_time" id="addEndTime" required>
                             </div>
                             <div class="col-12">
-                                <label class="form-label">
-                                    <i class="bi bi-door-closed-fill"></i>
-                                    Room
-                                    <span class="text-muted fw-normal">(optional)</span>
-                                </label>
+                                <label class="form-label"><i class="bi bi-door-closed-fill"></i> Room <span class="text-muted fw-normal">(optional)</span></label>
                                 <input type="text" class="form-control" name="room" id="addRoom" placeholder="e.g., Room 201">
                             </div>
                         </div>
                     </form>
                 </div>
                 <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
-                        <i class="bi bi-x-circle"></i>
-                        Cancel
-                    </button>
-                    <button type="button" class="btn btn-primary" id="confirmAddScheduleBtn">
-                        <i class="bi bi-check-circle-fill"></i>
-                        Add Schedule
-                    </button>
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal"><i class="bi bi-x-circle"></i> Cancel</button>
+                    <button type="button" class="btn btn-primary" id="confirmAddScheduleBtn"><i class="bi bi-check-circle-fill"></i> Add Schedule</button>
                 </div>
             </div>
         </div>
@@ -297,10 +217,7 @@
         <div class="modal-dialog modal-dialog-centered">
             <div class="modal-content">
                 <div class="modal-header">
-                    <h5 class="modal-title">
-                        <i class="bi bi-pencil-fill"></i>
-                        Edit Schedule
-                    </h5>
+                    <h5 class="modal-title"><i class="bi bi-pencil-fill"></i> Edit Schedule</h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                 </div>
                 <div class="modal-body">
@@ -314,57 +231,35 @@
                         <input type="hidden" name="section_id" id="editSectionId">
                         <input type="hidden" name="school_year" id="editSchoolYear">
                         <input type="hidden" name="semester" id="editSemester">
-
-                        <!-- context info -->
                         <div class="assignment-context mb-3" id="editAssignmentContext"></div>
-
                         <div class="row g-3">
                             <div class="col-12">
-                                <label class="form-label">
-                                    <i class="bi bi-calendar-day"></i>
-                                    Day of Week
-                                    <span class="text-danger">*</span>
-                                </label>
+                                <label class="form-label"><i class="bi bi-calendar-day"></i> Day of Week <span class="text-danger">*</span></label>
                                 <select class="form-select" name="day_of_week" id="editDayOfWeek" required>
                                     <option value="">Select day...</option>
-                                    <option value="Monday">Monday</option>
-                                    <option value="Tuesday">Tuesday</option>
-                                    <option value="Wednesday">Wednesday</option>
-                                    <option value="Thursday">Thursday</option>
-                                    <option value="Friday">Friday</option>
-                                    <option value="Saturday">Saturday</option>
-                                    <option value="Sunday">Sunday</option>
+                                    <option>Monday</option>
+                                    <option>Tuesday</option>
+                                    <option>Wednesday</option>
+                                    <option>Thursday</option>
+                                    <option>Friday</option>
+                                    <option>Saturday</option>
+                                    <option>Sunday</option>
                                 </select>
                             </div>
                             <div class="col-6">
-                                <label class="form-label">
-                                    <i class="bi bi-clock-fill"></i>
-                                    Start Time
-                                    <span class="text-danger">*</span>
-                                </label>
+                                <label class="form-label"><i class="bi bi-clock-fill"></i> Start Time <span class="text-danger">*</span></label>
                                 <input type="time" class="form-control" name="start_time" id="editStartTime" required>
                             </div>
                             <div class="col-6">
-                                <label class="form-label">
-                                    <i class="bi bi-clock-fill"></i>
-                                    End Time
-                                    <span class="text-danger">*</span>
-                                </label>
+                                <label class="form-label"><i class="bi bi-clock-fill"></i> End Time <span class="text-danger">*</span></label>
                                 <input type="time" class="form-control" name="end_time" id="editEndTime" required>
                             </div>
                             <div class="col-12">
-                                <label class="form-label">
-                                    <i class="bi bi-door-closed-fill"></i>
-                                    Room
-                                    <span class="text-muted fw-normal">(optional)</span>
-                                </label>
+                                <label class="form-label"><i class="bi bi-door-closed-fill"></i> Room <span class="text-muted fw-normal">(optional)</span></label>
                                 <input type="text" class="form-control" name="room" id="editRoom" placeholder="e.g., Room 201">
                             </div>
                             <div class="col-12">
-                                <label class="form-label">
-                                    <i class="bi bi-toggle-on"></i>
-                                    Status
-                                </label>
+                                <label class="form-label"><i class="bi bi-toggle-on"></i> Status</label>
                                 <select class="form-select" name="status" id="editStatus">
                                     <option value="active">Active</option>
                                     <option value="inactive">Inactive</option>
@@ -374,42 +269,27 @@
                     </form>
                 </div>
                 <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
-                        <i class="bi bi-x-circle"></i>
-                        Cancel
-                    </button>
-                    <button type="button" class="btn btn-primary" id="confirmEditScheduleBtn">
-                        <i class="bi bi-check-circle-fill"></i>
-                        Update Schedule
-                    </button>
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal"><i class="bi bi-x-circle"></i> Cancel</button>
+                    <button type="button" class="btn btn-primary" id="confirmEditScheduleBtn"><i class="bi bi-check-circle-fill"></i> Update Schedule</button>
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- delete confirmation modal -->
+    <!-- delete modal -->
     <div class="modal fade" id="deleteScheduleModal" tabindex="-1">
         <div class="modal-dialog modal-dialog-centered">
             <div class="modal-content">
                 <div class="modal-header">
-                    <h5 class="modal-title">
-                        <i class="bi bi-exclamation-triangle-fill"></i>
-                        Confirm Deletion
-                    </h5>
+                    <h5 class="modal-title"><i class="bi bi-exclamation-triangle-fill"></i> Confirm Deletion</h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                 </div>
                 <div class="modal-body">
-                    <p class="mb-0">Are you sure you want to delete this schedule entry? This action cannot be undone.</p>
+                    <p class="mb-0">Are you sure you want to delete this schedule? This action cannot be undone.</p>
                 </div>
                 <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
-                        <i class="bi bi-x-circle"></i>
-                        Cancel
-                    </button>
-                    <button type="button" class="btn btn-danger" id="confirmDeleteScheduleBtn">
-                        <i class="bi bi-trash-fill"></i>
-                        Delete
-                    </button>
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal"><i class="bi bi-x-circle"></i> Cancel</button>
+                    <button type="button" class="btn btn-danger" id="confirmDeleteScheduleBtn"><i class="bi bi-trash-fill"></i> Delete</button>
                 </div>
             </div>
         </div>
@@ -420,19 +300,14 @@
         const csrfToken = '<?= $_SESSION['csrf_token'] ?>';
     </script>
     <script src="js/teacher-schedules-ajax.js"></script>
-
     <script>
         document.addEventListener('DOMContentLoaded', function() {
-            <?php if (!empty($success_message)): ?>
-                showAlert('success', '<?= addslashes($success_message) ?>');
-            <?php endif; ?>
-
-            <?php if (!empty($errors['general'])): ?>
-                showAlert('danger', '<?= addslashes($errors['general']) ?>');
-            <?php endif; ?>
+            <?php if (!empty($success_message)): ?>showAlert('success', '<?= addslashes($success_message) ?>');
+        <?php endif; ?>
+        <?php if (!empty($errors['general'])): ?>showAlert('danger', '<?= addslashes($errors['general']) ?>');
+        <?php endif; ?>
         });
     </script>
-
 </body>
 
 </html>

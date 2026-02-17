@@ -15,9 +15,9 @@ class ScheduleManagementController
     public function __construct()
     {
         $this->schedule_model = new Schedule();
-        $this->teacher_model = new Teacher();
-        $this->subject_model = new Subject();
-        $this->section_model = new Section();
+        $this->teacher_model  = new Teacher();
+        $this->subject_model  = new Subject();
+        $this->section_model  = new Section();
     }
 
     private function isAjax()
@@ -59,14 +59,6 @@ class ScheduleManagementController
         }
     }
 
-    // generate display schedule id (SCH-YEAR-ID)
-    private function generateScheduleDisplayId($schedule_id, $school_year)
-    {
-        $year = explode('-', $school_year)[0];
-        return 'SCH-' . $year . '-' . str_pad($schedule_id, 3, '0', STR_PAD_LEFT);
-    }
-
-    // build conflict error messages from conflict detail rows
     private function buildConflictMessages($conflict_details, $day_of_week)
     {
         $error_messages = [];
@@ -94,23 +86,47 @@ class ScheduleManagementController
             $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
         }
 
-        $teachers = $this->teacher_model->getAllActiveTeachers();
+        // only pass the total count to the view — teacher list is loaded via ajax
+        $total_teachers = $this->teacher_model->getTotalCount();
 
-        $errors = $_SESSION['schedule_errors'] ?? [];
+        $errors          = $_SESSION['schedule_errors'] ?? [];
         $success_message = $_SESSION['schedule_success'] ?? null;
         unset($_SESSION['schedule_errors'], $_SESSION['schedule_success']);
 
         require __DIR__ . '/../views/admin/teacher_schedules.php';
     }
 
-    // ajax returns assignments+schedules for a teacher when filter changes
+    // ajax: paginated + searchable teacher list for the teacher picker
+    public function ajaxGetTeachers()
+    {
+        $this->requireAdmin();
+
+        $page    = isset($_GET['page_num']) ? max(1, (int) $_GET['page_num']) : 1;
+        $search  = trim($_GET['search'] ?? '');
+        $limit   = 10;
+        $offset  = ($page - 1) * $limit;
+
+        $teachers = $this->teacher_model->getWithPagination($limit, $offset, $search);
+        $total    = $this->teacher_model->getTotalCount($search);
+
+        $this->jsonResponse([
+            'success'      => true,
+            'teachers'     => $teachers,
+            'total'        => $total,
+            'page'         => $page,
+            'limit'        => $limit,
+            'total_pages'  => (int) ceil($total / $limit),
+        ]);
+    }
+
+    // ajax: assignments + schedules for a teacher
     public function ajaxGetTeacherAssignments()
     {
         $this->requireAdmin();
 
-        $teacher_id = isset($_GET['teacher_id']) ? (int) $_GET['teacher_id'] : null;
+        $teacher_id  = isset($_GET['teacher_id']) ? (int) $_GET['teacher_id'] : null;
         $school_year = $_GET['school_year'] ?? '2025-2026';
-        $semester = $_GET['semester'] ?? 'First';
+        $semester    = $_GET['semester']    ?? 'First';
 
         if (empty($teacher_id)) {
             $this->jsonResponse(['success' => false, 'message' => 'teacher id is required.']);
@@ -126,38 +142,28 @@ class ScheduleManagementController
         $this->jsonResponse([
             'success'     => true,
             'assignments' => $assignments,
-            'teacher'     => $teacher
+            'teacher'     => $teacher,
         ]);
     }
 
-    // ajax returns refreshed schedule entries for a single assignment row
-    // called after add/edit/delete to update only the affected row
+    // ajax: refresh schedules for one assignment row after add/edit/delete
     public function ajaxGetAssignmentSchedules()
     {
         $this->requireAdmin();
 
-        $teacher_id = isset($_GET['teacher_id']) ? (int) $_GET['teacher_id'] : null;
-        $subject_id = isset($_GET['subject_id']) ? (int) $_GET['subject_id'] : null;
-        $section_id = isset($_GET['section_id']) ? (int) $_GET['section_id'] : null;
+        $teacher_id  = isset($_GET['teacher_id']) ? (int) $_GET['teacher_id'] : null;
+        $subject_id  = isset($_GET['subject_id']) ? (int) $_GET['subject_id'] : null;
+        $section_id  = isset($_GET['section_id']) ? (int) $_GET['section_id'] : null;
         $school_year = $_GET['school_year'] ?? '2025-2026';
-        $semester = $_GET['semester'] ?? 'First';
+        $semester    = $_GET['semester']    ?? 'First';
 
         if (empty($teacher_id) || empty($subject_id) || empty($section_id)) {
             $this->jsonResponse(['success' => false, 'message' => 'teacher, subject, and section are required.']);
         }
 
-        $schedules = $this->schedule_model->getSchedulesByAssignment(
-            $teacher_id,
-            $subject_id,
-            $section_id,
-            $school_year,
-            $semester
-        );
+        $schedules = $this->schedule_model->getSchedulesByAssignment($teacher_id, $subject_id, $section_id, $school_year, $semester);
 
-        $this->jsonResponse([
-            'success'   => true,
-            'schedules' => $schedules
-        ]);
+        $this->jsonResponse(['success' => true, 'schedules' => $schedules]);
     }
 
     public function processCreateSchedule()
@@ -189,10 +195,8 @@ class ScheduleManagementController
         if (empty($school_year)) $errors['school_year'] = 'school year is required.';
         if (empty($semester))    $errors['semester']    = 'semester is required.';
 
-        if (!empty($start_time) && !empty($end_time)) {
-            if (strtotime($start_time) >= strtotime($end_time)) {
-                $errors['time'] = 'end time must be after start time.';
-            }
+        if (!empty($start_time) && !empty($end_time) && strtotime($start_time) >= strtotime($end_time)) {
+            $errors['time'] = 'end time must be after start time.';
         }
 
         if (!empty($errors)) {
@@ -202,7 +206,6 @@ class ScheduleManagementController
             exit();
         }
 
-        // validate entities exist
         if (!$this->teacher_model->getTeacherById($teacher_id)) {
             $msg = ['teacher_id' => 'selected teacher not found.'];
             if ($this->isAjax()) $this->jsonResponse(['success' => false, 'errors' => $msg]);
@@ -227,65 +230,23 @@ class ScheduleManagementController
             exit();
         }
 
-        // conflict check
-        $conflicts = $this->schedule_model->checkAllConflicts(
-            $teacher_id,
-            $section_id,
-            $room,
-            $day_of_week,
-            $start_time,
-            $end_time,
-            $school_year,
-            $semester
-        );
+        $conflicts = $this->schedule_model->checkAllConflicts($teacher_id, $section_id, $room, $day_of_week, $start_time, $end_time, $school_year, $semester);
 
         if (!empty($conflicts)) {
-            $conflict_details = $this->schedule_model->getConflictingSchedules(
-                $teacher_id,
-                $section_id,
-                $room,
-                $day_of_week,
-                $start_time,
-                $end_time,
-                $school_year,
-                $semester
-            );
+            $conflict_details = $this->schedule_model->getConflictingSchedules($teacher_id, $section_id, $room, $day_of_week, $start_time, $end_time, $school_year, $semester);
             $message = $this->buildConflictMessages($conflict_details, $day_of_week);
-
             if ($this->isAjax()) $this->jsonResponse(['success' => false, 'errors' => ['conflict' => $message]]);
             $_SESSION['schedule_errors'] = ['conflict' => $message];
             header('Location: index.php?page=' . $return_page);
             exit();
         }
 
-        $result = $this->schedule_model->create(
-            $teacher_id,
-            $subject_id,
-            $section_id,
-            $day_of_week,
-            $start_time,
-            $end_time,
-            $room,
-            $school_year,
-            $semester,
-            $status
-        );
+        $result = $this->schedule_model->create($teacher_id, $subject_id, $section_id, $day_of_week, $start_time, $end_time, $room, $school_year, $semester, $status);
 
         if ($result) {
             if ($this->isAjax()) {
-                $schedules = $this->schedule_model->getSchedulesByAssignment(
-                    $teacher_id,
-                    $subject_id,
-                    $section_id,
-                    $school_year,
-                    $semester
-                );
-                $this->jsonResponse([
-                    'success'   => true,
-                    'message'   => 'schedule created successfully.',
-                    'schedules' => $schedules,
-                    'row_key'   => "{$teacher_id}_{$subject_id}_{$section_id}"
-                ]);
+                $schedules = $this->schedule_model->getSchedulesByAssignment($teacher_id, $subject_id, $section_id, $school_year, $semester);
+                $this->jsonResponse(['success' => true, 'message' => 'schedule created successfully.', 'schedules' => $schedules, 'row_key' => "{$teacher_id}_{$subject_id}_{$section_id}"]);
             }
             $_SESSION['schedule_success'] = 'schedule created successfully.';
             header('Location: index.php?page=teacher_schedules');
@@ -329,10 +290,8 @@ class ScheduleManagementController
         if (empty($school_year)) $errors['school_year'] = 'school year is required.';
         if (empty($semester))    $errors['semester']    = 'semester is required.';
 
-        if (!empty($start_time) && !empty($end_time)) {
-            if (strtotime($start_time) >= strtotime($end_time)) {
-                $errors['time'] = 'end time must be after start time.';
-            }
+        if (!empty($start_time) && !empty($end_time) && strtotime($start_time) >= strtotime($end_time)) {
+            $errors['time'] = 'end time must be after start time.';
         }
 
         if (!empty($errors)) {
@@ -350,7 +309,6 @@ class ScheduleManagementController
             exit();
         }
 
-        // validate entities
         if (!$this->teacher_model->getTeacherById($teacher_id)) {
             $msg = ['teacher_id' => 'selected teacher not found.'];
             if ($this->isAjax()) $this->jsonResponse(['success' => false, 'errors' => $msg]);
@@ -375,68 +333,23 @@ class ScheduleManagementController
             exit();
         }
 
-        // conflict check (exclude self)
-        $conflicts = $this->schedule_model->checkAllConflicts(
-            $teacher_id,
-            $section_id,
-            $room,
-            $day_of_week,
-            $start_time,
-            $end_time,
-            $school_year,
-            $semester,
-            $schedule_id
-        );
+        $conflicts = $this->schedule_model->checkAllConflicts($teacher_id, $section_id, $room, $day_of_week, $start_time, $end_time, $school_year, $semester, $schedule_id);
 
         if (!empty($conflicts)) {
-            $conflict_details = $this->schedule_model->getConflictingSchedules(
-                $teacher_id,
-                $section_id,
-                $room,
-                $day_of_week,
-                $start_time,
-                $end_time,
-                $school_year,
-                $semester,
-                $schedule_id
-            );
+            $conflict_details = $this->schedule_model->getConflictingSchedules($teacher_id, $section_id, $room, $day_of_week, $start_time, $end_time, $school_year, $semester, $schedule_id);
             $message = $this->buildConflictMessages($conflict_details, $day_of_week);
-
             if ($this->isAjax()) $this->jsonResponse(['success' => false, 'errors' => ['conflict' => $message]]);
             $_SESSION['schedule_errors'] = ['conflict' => $message];
             header('Location: index.php?page=' . $return_page);
             exit();
         }
 
-        $result = $this->schedule_model->update(
-            $schedule_id,
-            $teacher_id,
-            $subject_id,
-            $section_id,
-            $day_of_week,
-            $start_time,
-            $end_time,
-            $room,
-            $school_year,
-            $semester,
-            $status
-        );
+        $result = $this->schedule_model->update($schedule_id, $teacher_id, $subject_id, $section_id, $day_of_week, $start_time, $end_time, $room, $school_year, $semester, $status);
 
         if ($result) {
             if ($this->isAjax()) {
-                $schedules = $this->schedule_model->getSchedulesByAssignment(
-                    $teacher_id,
-                    $subject_id,
-                    $section_id,
-                    $school_year,
-                    $semester
-                );
-                $this->jsonResponse([
-                    'success'   => true,
-                    'message'   => 'schedule updated successfully.',
-                    'schedules' => $schedules,
-                    'row_key'   => "{$teacher_id}_{$subject_id}_{$section_id}"
-                ]);
+                $schedules = $this->schedule_model->getSchedulesByAssignment($teacher_id, $subject_id, $section_id, $school_year, $semester);
+                $this->jsonResponse(['success' => true, 'message' => 'schedule updated successfully.', 'schedules' => $schedules, 'row_key' => "{$teacher_id}_{$subject_id}_{$section_id}"]);
             }
             $_SESSION['schedule_success'] = 'schedule updated successfully.';
             header('Location: index.php?page=teacher_schedules');
@@ -484,13 +397,7 @@ class ScheduleManagementController
                 $schedules = ($teacher_id && $subject_id && $section_id)
                     ? $this->schedule_model->getSchedulesByAssignment($teacher_id, $subject_id, $section_id, $school_year, $semester)
                     : [];
-
-                $this->jsonResponse([
-                    'success'   => true,
-                    'message'   => 'schedule deleted successfully.',
-                    'schedules' => $schedules,
-                    'row_key'   => "{$teacher_id}_{$subject_id}_{$section_id}"
-                ]);
+                $this->jsonResponse(['success' => true, 'message' => 'schedule deleted successfully.', 'schedules' => $schedules, 'row_key' => "{$teacher_id}_{$subject_id}_{$section_id}"]);
             }
             $_SESSION['schedule_success'] = 'schedule deleted successfully.';
         } else {

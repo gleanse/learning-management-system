@@ -309,6 +309,18 @@ if ($page === 'bulk_remove_students' && $method === 'POST') {
 
 // SCHEDULE MANAGEMENT ROUTES (admin only)
 
+// ajax  paginated teacher list for schedule picker
+if ($page === 'ajax_get_teachers' && $method === 'GET') {
+    if (!isLoggedIn() || (!isAdmin() && !isSuperAdmin())) {
+        header('Location: index.php?page=login');
+        exit();
+    }
+
+    $controller = new ScheduleManagementController();
+    $controller->ajaxGetTeachers();
+    exit();
+}
+
 // teacher-first schedule management page
 if ($page === 'teacher_schedules' && $method === 'GET') {
     if (!isLoggedIn() || (!isAdmin() && !isSuperAdmin())) {

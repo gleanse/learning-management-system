@@ -4,18 +4,19 @@
 let currentTeacherId = null;
 let currentSchoolYear = null;
 let currentSemester = null;
+let currentTeacherName = null;
+let pickerCurrentPage = 1;
+let searchDebounce = null;
+
 let pendingDeleteId = null;
-let pendingDeleteRow = null;
 let pendingDeleteTeacherId = null;
 let pendingDeleteSubjectId = null;
 let pendingDeleteSectionId = null;
 
-// modal instances
 let addModal = null;
 let editModal = null;
 let deleteModal = null;
 
-// initialize on load
 document.addEventListener('DOMContentLoaded', function () {
   addModal = new bootstrap.Modal(document.getElementById('addScheduleModal'));
   editModal = new bootstrap.Modal(document.getElementById('editScheduleModal'));
@@ -23,12 +24,31 @@ document.addEventListener('DOMContentLoaded', function () {
     document.getElementById('deleteScheduleModal')
   );
 
-  // load btn
-  document
-    .getElementById('loadAssignmentsBtn')
-    ?.addEventListener('click', loadAssignments);
+  // load first page of teachers immediately
+  loadTeachers(1);
 
-  // modal confirm buttons
+  // debounced search
+  document
+    .getElementById('teacherSearchInput')
+    ?.addEventListener('input', function () {
+      clearTimeout(searchDebounce);
+      searchDebounce = setTimeout(() => {
+        pickerCurrentPage = 1;
+        loadTeachers(1);
+      }, 300);
+    });
+
+  // filter changes auto-reload schedules
+  document
+    .getElementById('filterSchoolYear')
+    ?.addEventListener('change', () => {
+      if (currentTeacherId) loadAssignments();
+    });
+  document.getElementById('filterSemester')?.addEventListener('change', () => {
+    if (currentTeacherId) loadAssignments();
+  });
+
+  // modal buttons
   document
     .getElementById('confirmAddScheduleBtn')
     ?.addEventListener('click', submitAddSchedule);
@@ -39,7 +59,6 @@ document.addEventListener('DOMContentLoaded', function () {
     .getElementById('confirmDeleteScheduleBtn')
     ?.addEventListener('click', confirmDelete);
 
-  // clear modal errors on close
   document
     .getElementById('addScheduleModal')
     ?.addEventListener('hidden.bs.modal', clearAddErrors);
@@ -47,39 +66,153 @@ document.addEventListener('DOMContentLoaded', function () {
     .getElementById('editScheduleModal')
     ?.addEventListener('hidden.bs.modal', clearEditErrors);
 
-  // time validation in both modals
-  ['add', 'edit'].forEach((prefix) => {
+  ['add', 'edit'].forEach((p) => {
     document
-      .getElementById(`${prefix}StartTime`)
-      ?.addEventListener('change', () => validateModalTimes(prefix));
+      .getElementById(`${p}StartTime`)
+      ?.addEventListener('change', () => validateModalTimes(p));
     document
-      .getElementById(`${prefix}EndTime`)
-      ?.addEventListener('change', () => validateModalTimes(prefix));
+      .getElementById(`${p}EndTime`)
+      ?.addEventListener('change', () => validateModalTimes(p));
   });
 
-  // event delegation for add/edit/delete buttons inside assignments panel
   document
     .getElementById('assignmentsPanel')
     ?.addEventListener('click', handlePanelClick);
 });
 
-// load assignments for selected teacher/filters
+// TEACHER PICKER — server-side paginated
+function loadTeachers(page) {
+  const search =
+    document.getElementById('teacherSearchInput')?.value.trim() || '';
+  const list = document.getElementById('teacherList');
+
+  list.innerHTML = `<div class="picker-loading"><span class="spinner-border spinner-border-sm"></span> Loading...</div>`;
+
+  fetch(
+    `index.php?page=ajax_get_teachers&page_num=${page}&search=${encodeURIComponent(
+      search
+    )}`,
+    {
+      headers: { 'X-Requested-With': 'XMLHttpRequest' },
+    }
+  )
+    .then((r) => r.json())
+    .then((data) => {
+      if (!data.success) {
+        list.innerHTML = `<div class="picker-empty">failed to load teachers.</div>`;
+        return;
+      }
+
+      pickerCurrentPage = data.page;
+
+      // update count badge
+      const badge = document.getElementById('pickerCount');
+      if (badge) badge.textContent = data.total;
+
+      if (data.teachers.length === 0) {
+        list.innerHTML = `<div class="picker-empty"><i class="bi bi-search"></i> No teachers found.</div>`;
+        document.getElementById('pickerPagination').innerHTML = '';
+        return;
+      }
+
+      list.innerHTML = data.teachers
+        .map((t) => {
+          const initials = t.full_name
+            .split(' ')
+            .map((w) => w[0])
+            .slice(0, 2)
+            .join('')
+            .toUpperCase();
+          const isActive = t.id == currentTeacherId;
+          return `
+          <button class="picker-item ${isActive ? 'active' : ''}" data-id="${
+            t.id
+          }" data-name="${t.full_name}">
+            <span class="picker-item-avatar">${initials}</span>
+            <span class="picker-item-name">${t.full_name}</span>
+            <i class="bi bi-chevron-right picker-item-arrow"></i>
+          </button>`;
+        })
+        .join('');
+
+      // attach click handlers
+      list.querySelectorAll('.picker-item').forEach((btn) => {
+        btn.addEventListener('click', () =>
+          selectTeacher(btn.dataset.id, btn.dataset.name)
+        );
+      });
+
+      renderPickerPagination(data.total_pages, data.page);
+    })
+    .catch(() => {
+      list.innerHTML = `<div class="picker-empty">an error occurred.</div>`;
+    });
+}
+
+function renderPickerPagination(totalPages, current) {
+  const container = document.getElementById('pickerPagination');
+  if (totalPages <= 1) {
+    container.innerHTML = '';
+    return;
+  }
+
+  let html = `<button class="pager-btn" ${
+    current === 1 ? 'disabled' : ''
+  } data-p="${current - 1}"><i class="bi bi-chevron-left"></i></button>`;
+  html += `<span class="pager-info">Page ${current} of ${totalPages}</span>`;
+  html += `<button class="pager-btn" ${
+    current === totalPages ? 'disabled' : ''
+  } data-p="${current + 1}"><i class="bi bi-chevron-right"></i></button>`;
+
+  container.innerHTML = html;
+  container.querySelectorAll('.pager-btn:not([disabled])').forEach((btn) => {
+    btn.addEventListener('click', () => loadTeachers(parseInt(btn.dataset.p)));
+  });
+}
+
+function selectTeacher(id, name) {
+  currentTeacherId = id;
+  currentTeacherName = name;
+
+  document.getElementById('filterTeacher').value = id;
+
+  // update avatar + name in filter bar
+  const initials = name
+    .split(' ')
+    .map((w) => w[0])
+    .slice(0, 2)
+    .join('')
+    .toUpperCase();
+  const avatarEl = document.getElementById('filterTeacherAvatar');
+  if (avatarEl) avatarEl.textContent = initials;
+
+  const nameEl = document.getElementById('selectedTeacherName');
+  if (nameEl) nameEl.textContent = name;
+
+  // show schedule content, hide prompt
+  document.getElementById('pickPrompt')?.classList.add('d-none');
+  document.getElementById('scheduleContent')?.classList.remove('d-none');
+
+  // highlight active picker item without re-fetching
+  document
+    .querySelectorAll('.picker-item')
+    .forEach((b) => b.classList.toggle('active', b.dataset.id == id));
+
+  loadAssignments();
+}
+
+// load assignments
 function loadAssignments() {
   const teacherId = document.getElementById('filterTeacher').value;
   const schoolYear = document.getElementById('filterSchoolYear').value;
   const semester = document.getElementById('filterSemester').value;
+  if (!teacherId) return;
 
-  if (!teacherId) {
-    showAlert('danger', 'please select a teacher first.');
-    return;
-  }
-
-  currentTeacherId = teacherId;
   currentSchoolYear = schoolYear;
   currentSemester = semester;
 
-  const panel = document.getElementById('assignmentsPanel');
-  panel.innerHTML = buildLoadingHtml();
+  document.getElementById('statsRow').innerHTML = '';
+  document.getElementById('assignmentsPanel').innerHTML = buildLoadingHtml();
 
   fetch(
     `index.php?page=ajax_get_teacher_assignments&teacher_id=${teacherId}&school_year=${encodeURIComponent(
@@ -92,128 +225,155 @@ function loadAssignments() {
     .then((r) => r.json())
     .then((data) => {
       if (data.success) {
-        panel.innerHTML = buildAssignmentsPanelHtml(
-          data.teacher,
-          data.assignments,
-          schoolYear,
-          semester
-        );
+        renderStatsRow(data.assignments);
+        document.getElementById('assignmentsPanel').innerHTML =
+          buildAssignmentsPanelHtml(data.assignments, schoolYear, semester);
       } else {
-        panel.innerHTML = buildErrorHtml(
+        document.getElementById('assignmentsPanel').innerHTML = buildErrorHtml(
           data.message || 'failed to load assignments.'
         );
       }
     })
     .catch(() => {
-      panel.innerHTML = buildErrorHtml('an error occurred. please try again.');
+      document.getElementById('assignmentsPanel').innerHTML =
+        buildErrorHtml('an error occurred.');
     });
 }
 
-// handle clicks inside the assignments panel (event delegation)
-function handlePanelClick(event) {
-  const addBtn = event.target.closest('.btn-add-schedule');
-  const editBtn = event.target.closest('.btn-edit-schedule');
-  const deleteBtn = event.target.closest('.btn-delete-schedule');
+function renderStatsRow(assignments) {
+  if (!assignments || assignments.length === 0) {
+    document.getElementById('statsRow').innerHTML = '';
+    return;
+  }
 
-  if (addBtn) {
-    openAddModal(addBtn);
-  } else if (editBtn) {
-    openEditModal(editBtn);
-  } else if (deleteBtn) {
-    openDeleteModal(deleteBtn);
+  const total = assignments.length;
+  const scheduled = assignments.filter(
+    (a) => a.schedules && a.schedules.length > 0
+  ).length;
+  const unscheduled = total - scheduled;
+
+  document.getElementById('statsRow').innerHTML = `
+    <div class="stat-chip"><i class="bi bi-journal-bookmark-fill"></i> ${total} Assignment${
+    total !== 1 ? 's' : ''
+  }</div>
+    <div class="stat-chip scheduled"><i class="bi bi-check-circle-fill"></i> ${scheduled} Scheduled</div>
+    ${
+      unscheduled > 0
+        ? `<div class="stat-chip pending"><i class="bi bi-clock-fill"></i> ${unscheduled} Pending</div>`
+        : ''
+    }
+  `;
+}
+
+// panel click delegation
+function handlePanelClick(e) {
+  const add = e.target.closest('.btn-add-schedule');
+  const edit = e.target.closest('.btn-edit-schedule');
+  const del = e.target.closest('.btn-delete-schedule');
+  const toggle = e.target.closest('.accordion-toggle');
+
+  if (add) openAddModal(add);
+  else if (edit) openEditModal(edit);
+  else if (del) openDeleteModal(del);
+  else if (toggle) toggleAccordion(toggle);
+}
+
+function toggleAccordion(toggleEl) {
+  const card = toggleEl.closest('.assignment-card');
+  const body = card?.querySelector('.assignment-card-body');
+  const chevron = toggleEl.querySelector('.accordion-chevron');
+  if (!card || !body) return;
+
+  const isOpen = card.classList.contains('accordion-open');
+  if (isOpen) {
+    card.classList.remove('accordion-open');
+    body.style.maxHeight = '0';
+    if (chevron) chevron.style.transform = 'rotate(0deg)';
+  } else {
+    card.classList.add('accordion-open');
+    body.style.maxHeight = body.scrollHeight + 'px';
+    if (chevron) chevron.style.transform = 'rotate(180deg)';
   }
 }
 
-// open add schedule modal and populate hidden fields
+// builds the 3-column assignment context card html
+function buildAssignmentContextHtml(teacherName, subjectName, sectionName) {
+  return `
+    <div class="assignment-context-header">
+      <i class="bi bi-info-circle-fill"></i> assignment info
+    </div>
+    <div class="assignment-context-body">
+      <div class="assignment-context-item">
+        <div class="assignment-context-label"><i class="bi bi-person-fill"></i> teacher</div>
+        <div class="assignment-context-value">${teacherName}</div>
+      </div>
+      <div class="assignment-context-item">
+        <div class="assignment-context-label"><i class="bi bi-book-fill"></i> subject</div>
+        <div class="assignment-context-value">${subjectName}</div>
+      </div>
+      <div class="assignment-context-item">
+        <div class="assignment-context-label"><i class="bi bi-people-fill"></i> section</div>
+        <div class="assignment-context-value">${sectionName}</div>
+      </div>
+    </div>`;
+}
+
+// modals
 function openAddModal(btn) {
-  const teacherId = btn.dataset.teacherId;
-  const subjectId = btn.dataset.subjectId;
-  const sectionId = btn.dataset.sectionId;
-  const schoolYear = btn.dataset.schoolYear;
-  const semester = btn.dataset.semester;
-  const subjectName = btn.dataset.subjectName;
-  const sectionName = btn.dataset.sectionName;
-
-  document.getElementById('addTeacherId').value = teacherId;
-  document.getElementById('addSubjectId').value = subjectId;
-  document.getElementById('addSectionId').value = sectionId;
-  document.getElementById('addSchoolYear').value = schoolYear;
-  document.getElementById('addSemester').value = semester;
-
-  document.getElementById(
-    'addAssignmentContext'
-  ).innerHTML = `<i class="bi bi-info-circle-fill"></i> Adding schedule for <strong>${subjectName}</strong> &mdash; Section <strong>${sectionName}</strong>`;
-
-  // reset form fields
+  document.getElementById('addTeacherId').value = btn.dataset.teacherId;
+  document.getElementById('addSubjectId').value = btn.dataset.subjectId;
+  document.getElementById('addSectionId').value = btn.dataset.sectionId;
+  document.getElementById('addSchoolYear').value = btn.dataset.schoolYear;
+  document.getElementById('addSemester').value = btn.dataset.semester;
+  document.getElementById('addAssignmentContext').innerHTML =
+    buildAssignmentContextHtml(
+      currentTeacherName,
+      btn.dataset.subjectName,
+      btn.dataset.sectionName
+    );
   document.getElementById('addDayOfWeek').value = '';
   document.getElementById('addStartTime').value = '';
   document.getElementById('addEndTime').value = '';
   document.getElementById('addRoom').value = '';
-
   clearAddErrors();
   addModal.show();
 }
 
-// open edit schedule modal
 function openEditModal(btn) {
-  const scheduleId = btn.dataset.scheduleId;
-  const teacherId = btn.dataset.teacherId;
-  const subjectId = btn.dataset.subjectId;
-  const sectionId = btn.dataset.sectionId;
-  const schoolYear = btn.dataset.schoolYear;
-  const semester = btn.dataset.semester;
-  const day = btn.dataset.day;
-  const startTime = btn.dataset.startTime;
-  const endTime = btn.dataset.endTime;
-  const room = btn.dataset.room;
-  const status = btn.dataset.status;
-  const subjectName = btn.dataset.subjectName;
-  const sectionName = btn.dataset.sectionName;
-
-  document.getElementById('editScheduleId').value = scheduleId;
-  document.getElementById('editTeacherId').value = teacherId;
-  document.getElementById('editSubjectId').value = subjectId;
-  document.getElementById('editSectionId').value = sectionId;
-  document.getElementById('editSchoolYear').value = schoolYear;
-  document.getElementById('editSemester').value = semester;
-  document.getElementById('editDayOfWeek').value = day;
-  document.getElementById('editStartTime').value = startTime;
-  document.getElementById('editEndTime').value = endTime;
-  document.getElementById('editRoom').value = room || '';
-  document.getElementById('editStatus').value = status;
-
-  document.getElementById(
-    'editAssignmentContext'
-  ).innerHTML = `<i class="bi bi-info-circle-fill"></i> Editing schedule for <strong>${subjectName}</strong> &mdash; Section <strong>${sectionName}</strong>`;
-
+  document.getElementById('editScheduleId').value = btn.dataset.scheduleId;
+  document.getElementById('editTeacherId').value = btn.dataset.teacherId;
+  document.getElementById('editSubjectId').value = btn.dataset.subjectId;
+  document.getElementById('editSectionId').value = btn.dataset.sectionId;
+  document.getElementById('editSchoolYear').value = btn.dataset.schoolYear;
+  document.getElementById('editSemester').value = btn.dataset.semester;
+  document.getElementById('editDayOfWeek').value = btn.dataset.day;
+  document.getElementById('editStartTime').value = btn.dataset.startTime;
+  document.getElementById('editEndTime').value = btn.dataset.endTime;
+  document.getElementById('editRoom').value = btn.dataset.room || '';
+  document.getElementById('editStatus').value = btn.dataset.status;
+  document.getElementById('editAssignmentContext').innerHTML =
+    buildAssignmentContextHtml(
+      currentTeacherName,
+      btn.dataset.subjectName,
+      btn.dataset.sectionName
+    );
   clearEditErrors();
   editModal.show();
 }
 
-// open delete confirmation modal
 function openDeleteModal(btn) {
   pendingDeleteId = btn.dataset.scheduleId;
   pendingDeleteTeacherId = btn.dataset.teacherId;
   pendingDeleteSubjectId = btn.dataset.subjectId;
   pendingDeleteSectionId = btn.dataset.sectionId;
-  pendingDeleteRow = btn.closest('.schedule-entry');
-
   deleteModal.show();
 }
 
-// submit add schedule
 function submitAddSchedule() {
   clearAddErrors();
-
-  const startTime = document.getElementById('addStartTime').value;
-  const endTime = document.getElementById('addEndTime').value;
-
   if (!validateModalTimes('add')) return;
-
   const formData = new FormData(document.getElementById('addScheduleForm'));
-
   setModalLoading('confirmAddScheduleBtn', true);
-
   fetch('index.php?page=create_schedule', {
     method: 'POST',
     headers: { 'X-Requested-With': 'XMLHttpRequest' },
@@ -225,9 +385,7 @@ function submitAddSchedule() {
         addModal.hide();
         showAlert('success', data.message);
         refreshAssignmentRow(data.row_key, data.schedules);
-      } else {
-        showModalErrors('addScheduleError', data.errors || data.message);
-      }
+      } else showModalErrors('addScheduleError', data.errors || data.message);
     })
     .catch(() =>
       showModalErrors(
@@ -238,16 +396,11 @@ function submitAddSchedule() {
     .finally(() => setModalLoading('confirmAddScheduleBtn', false));
 }
 
-// submit edit schedule
 function submitEditSchedule() {
   clearEditErrors();
-
   if (!validateModalTimes('edit')) return;
-
   const formData = new FormData(document.getElementById('editScheduleForm'));
-
   setModalLoading('confirmEditScheduleBtn', true);
-
   fetch('index.php?page=update_schedule', {
     method: 'POST',
     headers: { 'X-Requested-With': 'XMLHttpRequest' },
@@ -259,9 +412,7 @@ function submitEditSchedule() {
         editModal.hide();
         showAlert('success', data.message);
         refreshAssignmentRow(data.row_key, data.schedules);
-      } else {
-        showModalErrors('editScheduleError', data.errors || data.message);
-      }
+      } else showModalErrors('editScheduleError', data.errors || data.message);
     })
     .catch(() =>
       showModalErrors(
@@ -272,10 +423,8 @@ function submitEditSchedule() {
     .finally(() => setModalLoading('confirmEditScheduleBtn', false));
 }
 
-// confirm delete
 function confirmDelete() {
   if (!pendingDeleteId) return;
-
   const formData = new FormData();
   formData.append('csrf_token', csrfToken);
   formData.append('schedule_id', pendingDeleteId);
@@ -284,9 +433,7 @@ function confirmDelete() {
   formData.append('section_id', pendingDeleteSectionId);
   formData.append('school_year', currentSchoolYear);
   formData.append('semester', currentSemester);
-
   setModalLoading('confirmDeleteScheduleBtn', true);
-
   fetch('index.php?page=delete_schedule', {
     method: 'POST',
     headers: { 'X-Requested-With': 'XMLHttpRequest' },
@@ -294,23 +441,19 @@ function confirmDelete() {
   })
     .then((r) => r.json())
     .then((data) => {
+      deleteModal.hide();
       if (data.success) {
-        deleteModal.hide();
         showAlert('success', data.message);
         refreshAssignmentRow(data.row_key, data.schedules);
-      } else {
-        deleteModal.hide();
-        showAlert('danger', data.message || 'failed to delete schedule.');
-      }
+      } else showAlert('danger', data.message || 'failed to delete schedule.');
     })
     .catch(() => {
       deleteModal.hide();
-      showAlert('danger', 'an error occurred. please try again.');
+      showAlert('danger', 'an error occurred.');
     })
     .finally(() => {
       setModalLoading('confirmDeleteScheduleBtn', false);
       pendingDeleteId =
-        pendingDeleteRow =
         pendingDeleteTeacherId =
         pendingDeleteSubjectId =
         pendingDeleteSectionId =
@@ -318,101 +461,85 @@ function confirmDelete() {
     });
 }
 
-// refresh only the schedule entries for one assignment card
 function refreshAssignmentRow(rowKey, schedules) {
-  const entriesContainer = document.querySelector(
-    `[data-row-key="${rowKey}"] .schedule-entries`
-  );
-  const statusBadge = document.querySelector(
-    `[data-row-key="${rowKey}"] .schedule-status-badge`
-  );
-
-  if (!entriesContainer) return;
+  const card = document.querySelector(`[data-row-key="${rowKey}"]`);
+  if (!card) return;
+  const entries = card.querySelector('.schedule-entries');
+  const badge = card.querySelector('.schedule-status-badge');
+  const body = card.querySelector('.assignment-card-body');
+  if (!entries) return;
 
   if (schedules && schedules.length > 0) {
-    // get assignment data from the card's add button
-    const addBtn = document.querySelector(
-      `[data-row-key="${rowKey}"] .btn-add-schedule`
-    );
-    const teacherId = addBtn?.dataset.teacherId;
-    const subjectId = addBtn?.dataset.subjectId;
-    const sectionId = addBtn?.dataset.sectionId;
-    const schoolYear = addBtn?.dataset.schoolYear;
-    const semester = addBtn?.dataset.semester;
-    const subjectName = addBtn?.dataset.subjectName;
-    const sectionName = addBtn?.dataset.sectionName;
-
-    entriesContainer.innerHTML = schedules
+    const addBtn = card.querySelector('.btn-add-schedule');
+    entries.innerHTML = schedules
       .map((s) =>
         buildScheduleEntryHtml(
           s,
-          teacherId,
-          subjectId,
-          sectionId,
-          schoolYear,
-          semester,
-          subjectName,
-          sectionName
+          addBtn?.dataset.teacherId,
+          addBtn?.dataset.subjectId,
+          addBtn?.dataset.sectionId,
+          addBtn?.dataset.schoolYear,
+          addBtn?.dataset.semester,
+          addBtn?.dataset.subjectName,
+          addBtn?.dataset.sectionName
         )
       )
       .join('');
-
-    if (statusBadge) {
-      statusBadge.className = 'schedule-status-badge has-schedules';
-      statusBadge.innerHTML = `<i class="bi bi-check-circle-fill"></i> ${
+    if (badge) {
+      badge.className = 'schedule-status-badge has-schedules';
+      badge.innerHTML = `<i class="bi bi-check-circle-fill"></i> ${
         schedules.length
       } schedule${schedules.length > 1 ? 's' : ''}`;
     }
   } else {
-    entriesContainer.innerHTML = buildEmptyEntriesHtml();
-
-    if (statusBadge) {
-      statusBadge.className = 'schedule-status-badge no-schedules';
-      statusBadge.innerHTML = `<i class="bi bi-clock"></i> Not scheduled`;
+    entries.innerHTML = buildEmptyEntriesHtml();
+    if (badge) {
+      badge.className = 'schedule-status-badge no-schedules';
+      badge.innerHTML = `<i class="bi bi-clock"></i> Not scheduled`;
     }
   }
+
+  if (card.classList.contains('accordion-open') && body) {
+    body.style.maxHeight = 'none';
+    body.style.maxHeight = body.scrollHeight + 'px';
+  }
+
+  // refresh stats row
+  const allCards = document.querySelectorAll('.assignment-card');
+  const fakeMapped = Array.from(allCards).map((c) => ({
+    schedules: c.querySelectorAll('.schedule-entry').length > 0 ? [1] : [],
+  }));
+  renderStatsRow(fakeMapped);
 }
 
-// TIME VALIDATION
+// time validation
 function validateModalTimes(prefix) {
-  const startInput = document.getElementById(`${prefix}StartTime`);
-  const endInput = document.getElementById(`${prefix}EndTime`);
-
-  if (!startInput || !endInput || !startInput.value || !endInput.value)
-    return true;
-
-  if (startInput.value >= endInput.value) {
-    endInput.classList.add('is-invalid');
-
-    let errDiv = endInput.parentElement.querySelector('.time-validation-error');
-    if (!errDiv) {
-      errDiv = document.createElement('div');
-      errDiv.className = 'invalid-feedback d-block time-validation-error';
-      endInput.parentElement.appendChild(errDiv);
+  const s = document.getElementById(`${prefix}StartTime`);
+  const e = document.getElementById(`${prefix}EndTime`);
+  if (!s || !e || !s.value || !e.value) return true;
+  if (s.value >= e.value) {
+    e.classList.add('is-invalid');
+    let err = e.parentElement.querySelector('.time-validation-error');
+    if (!err) {
+      err = document.createElement('div');
+      err.className = 'invalid-feedback d-block time-validation-error';
+      e.parentElement.appendChild(err);
     }
-    errDiv.textContent = 'end time must be after start time.';
+    err.textContent = 'end time must be after start time.';
     return false;
   }
-
-  endInput.classList.remove('is-invalid');
-  endInput.parentElement.querySelector('.time-validation-error')?.remove();
+  e.classList.remove('is-invalid');
+  e.parentElement.querySelector('.time-validation-error')?.remove();
   return true;
 }
 
-// MODAL HELPERS
 function showModalErrors(containerId, errors) {
-  const container = document.getElementById(containerId);
-  if (!container) return;
-
-  let message = '';
-  if (typeof errors === 'string') {
-    message = errors;
-  } else if (typeof errors === 'object') {
-    message = Object.values(errors).join('<br>');
-  }
-
-  container.innerHTML = `<i class="bi bi-exclamation-triangle-fill me-2"></i>${message}`;
-  container.classList.remove('d-none');
+  const el = document.getElementById(containerId);
+  if (!el) return;
+  el.innerHTML = `<i class="bi bi-exclamation-triangle-fill me-2"></i>${
+    typeof errors === 'string' ? errors : Object.values(errors).join('<br>')
+  }`;
+  el.classList.remove('d-none');
 }
 
 function clearAddErrors() {
@@ -440,130 +567,99 @@ function setModalLoading(btnId, loading) {
   if (!btn) return;
   btn.disabled = loading;
   if (loading) {
-    btn.dataset.originalHtml = btn.innerHTML;
+    btn.dataset.orig = btn.innerHTML;
     btn.innerHTML = `<span class="spinner-border spinner-border-sm me-1"></span> Please wait...`;
-  } else {
-    btn.innerHTML = btn.dataset.originalHtml || btn.innerHTML;
-  }
+  } else btn.innerHTML = btn.dataset.orig || btn.innerHTML;
 }
 
-// HTML BUILDERS
+// HTML builders
 function buildLoadingHtml() {
-  return `
-        <div class="panel-loading">
-            <div class="spinner-border" role="status"><span class="visually-hidden">Loading...</span></div>
-            <p class="mb-0">Loading assignments...</p>
-        </div>`;
+  return `<div class="panel-loading"><div class="spinner-border" role="status"></div><p class="mb-0">Loading...</p></div>`;
 }
 
-function buildErrorHtml(message) {
-  return `
-        <div class="empty-state">
-            <div class="empty-state-icon"><i class="bi bi-exclamation-triangle"></i></div>
-            <p class="empty-state-title">Something went wrong</p>
-            <p class="empty-state-text">${message}</p>
-        </div>`;
+function buildErrorHtml(msg) {
+  return `<div class="empty-state"><div class="empty-state-icon"><i class="bi bi-exclamation-triangle"></i></div><p class="empty-state-title">Something went wrong</p><p class="empty-state-text">${msg}</p></div>`;
 }
 
-function buildAssignmentsPanelHtml(teacher, assignments, schoolYear, semester) {
+function buildAssignmentsPanelHtml(assignments, schoolYear, semester) {
   if (!assignments || assignments.length === 0) {
-    return `
-            <div class="empty-state">
-                <div class="empty-state-icon"><i class="bi bi-calendar-x"></i></div>
-                <p class="empty-state-title">No assignments found</p>
-                <p class="empty-state-text">${teacher.full_name} has no active assignments for ${schoolYear} &mdash; ${semester} Semester.</p>
-            </div>`;
+    return `<div class="empty-state"><div class="empty-state-icon"><i class="bi bi-calendar-x"></i></div><p class="empty-state-title">No assignments found</p><p class="empty-state-text">${currentTeacherName} has no active assignments for ${schoolYear} &mdash; ${semester} Semester.</p></div>`;
   }
-
-  const scheduledCount = assignments.filter(
-    (a) => a.schedules && a.schedules.length > 0
-  ).length;
-  const unscheduledCount = assignments.length - scheduledCount;
-
-  const banner = `
-        <div class="teacher-banner">
-            <div class="teacher-banner-avatar"><i class="bi bi-person-fill"></i></div>
-            <div class="teacher-banner-info">
-                <p class="teacher-banner-name">${teacher.full_name}</p>
-                <p class="teacher-banner-meta">${schoolYear} &bull; ${semester} Semester &bull; ${scheduledCount} scheduled &bull; ${unscheduledCount} pending</p>
-            </div>
-            <div class="teacher-banner-count">
-                <div class="count-number">${assignments.length}</div>
-                <div class="count-label">Assignments</div>
-            </div>
-        </div>`;
-
-  const cards = assignments
+  return assignments
     .map((a) => buildAssignmentCardHtml(a, schoolYear, semester))
     .join('');
-
-  return banner + cards;
 }
 
-function buildAssignmentCardHtml(assignment, schoolYear, semester) {
-  const rowKey = `${assignment.teacher_id}_${assignment.subject_id}_${assignment.section_id}`;
-  const hasSchedules = assignment.schedules && assignment.schedules.length > 0;
+function buildAssignmentCardHtml(a, schoolYear, semester) {
+  const rowKey = `${a.teacher_id}_${a.subject_id}_${a.section_id}`;
+  const hasSchedules = a.schedules && a.schedules.length > 0;
+  const isOpen = !hasSchedules;
 
   const statusBadge = hasSchedules
     ? `<span class="schedule-status-badge has-schedules"><i class="bi bi-check-circle-fill"></i> ${
-        assignment.schedules.length
-      } schedule${assignment.schedules.length > 1 ? 's' : ''}</span>`
+        a.schedules.length
+      } schedule${a.schedules.length > 1 ? 's' : ''}</span>`
     : `<span class="schedule-status-badge no-schedules"><i class="bi bi-clock"></i> Not scheduled</span>`;
 
   const entriesHtml = hasSchedules
-    ? assignment.schedules
+    ? a.schedules
         .map((s) =>
           buildScheduleEntryHtml(
             s,
-            assignment.teacher_id,
-            assignment.subject_id,
-            assignment.section_id,
+            a.teacher_id,
+            a.subject_id,
+            a.section_id,
             schoolYear,
             semester,
-            assignment.subject_name,
-            assignment.section_name
+            a.subject_name,
+            a.section_name
           )
         )
         .join('')
     : buildEmptyEntriesHtml();
 
   return `
-        <div class="assignment-card" data-row-key="${rowKey}">
-            <div class="assignment-card-header">
-                <div class="assignment-info">
-                    <div class="subject-icon"><i class="bi bi-book-fill"></i></div>
-                    <div class="assignment-details">
-                        <p class="assignment-subject-code">${assignment.subject_code}</p>
-                        <p class="assignment-subject-name">${assignment.subject_name}</p>
-                        <span class="assignment-section-badge">
-                            <i class="bi bi-people-fill"></i>
-                            ${assignment.section_name}
-                        </span>
-                    </div>
-                </div>
-                <div class="d-flex align-items-center gap-2 flex-wrap">
-                    ${statusBadge}
-                    <button class="btn-add-schedule"
-                        data-teacher-id="${assignment.teacher_id}"
-                        data-subject-id="${assignment.subject_id}"
-                        data-section-id="${assignment.section_id}"
-                        data-school-year="${schoolYear}"
-                        data-semester="${semester}"
-                        data-subject-name="${assignment.subject_name}"
-                        data-section-name="${assignment.section_name}">
-                        <i class="bi bi-plus-circle-fill"></i>
-                        Add Schedule
-                    </button>
-                </div>
-            </div>
-            <div class="schedule-entries">
-                ${entriesHtml}
-            </div>
-        </div>`;
+    <div class="assignment-card ${
+      isOpen ? 'accordion-open' : ''
+    }" data-row-key="${rowKey}">
+      <div class="assignment-card-header accordion-toggle">
+        <div class="assignment-info">
+          <div class="subject-icon"><i class="bi bi-book-fill"></i></div>
+          <div class="assignment-details">
+            <p class="assignment-subject-code">${a.subject_code}</p>
+            <p class="assignment-subject-name">${a.subject_name}</p>
+            <span class="assignment-section-badge"><i class="bi bi-people-fill"></i> ${
+              a.section_name
+            }</span>
+          </div>
+        </div>
+        <div class="assignment-card-actions">
+          ${statusBadge}
+          <button class="btn-add-schedule"
+            data-teacher-id="${a.teacher_id}" data-subject-id="${
+    a.subject_id
+  }" data-section-id="${a.section_id}"
+            data-school-year="${schoolYear}" data-semester="${semester}"
+            data-subject-name="${a.subject_name}" data-section-name="${
+    a.section_name
+  }">
+            <i class="bi bi-plus-circle-fill"></i> Add Schedule
+          </button>
+          <span class="accordion-chevron" style="transform:rotate(${
+            isOpen ? 180 : 0
+          }deg)"><i class="bi bi-chevron-down"></i></span>
+        </div>
+      </div>
+      <div class="assignment-card-body" style="max-height:${
+        isOpen ? '999px' : '0'
+      }">
+        <div class="schedule-entries">${entriesHtml}</div>
+      </div>
+    </div>`;
 }
 
 function buildScheduleEntryHtml(
-  schedule,
+  s,
   teacherId,
   subjectId,
   sectionId,
@@ -572,96 +668,74 @@ function buildScheduleEntryHtml(
   subjectName,
   sectionName
 ) {
-  const dayClass = `day-${schedule.day_of_week.toLowerCase()}`;
-  const startFormatted = formatTime(schedule.start_time);
-  const endFormatted = formatTime(schedule.end_time);
-
-  const roomHtml = schedule.room
-    ? `<span class="entry-room"><i class="bi bi-door-closed"></i>${schedule.room}</span>`
-    : `<span class="entry-room-none">No room</span>`;
-
-  const statusHtml = `<span class="entry-status ${schedule.status}">${
-    schedule.status === 'active' ? 'Active' : 'Inactive'
-  }</span>`;
+  const dayClass = `day-${s.day_of_week.toLowerCase()}`;
+  const startFormatted = formatTime(s.start_time);
+  const endFormatted = formatTime(s.end_time);
 
   return `
-        <div class="schedule-entry">
-            <span class="day-badge ${dayClass}">${schedule.day_of_week}</span>
-            <span class="entry-time"><i class="bi bi-clock"></i>${startFormatted} &ndash; ${endFormatted}</span>
-            ${roomHtml}
-            ${statusHtml}
-            <div class="entry-actions">
-                <button class="btn btn-sm btn-outline-primary btn-edit-schedule"
-                    data-schedule-id="${schedule.schedule_id}"
-                    data-teacher-id="${teacherId}"
-                    data-subject-id="${subjectId}"
-                    data-section-id="${sectionId}"
-                    data-school-year="${schoolYear}"
-                    data-semester="${semester}"
-                    data-day="${schedule.day_of_week}"
-                    data-start-time="${schedule.start_time}"
-                    data-end-time="${schedule.end_time}"
-                    data-room="${schedule.room || ''}"
-                    data-status="${schedule.status}"
-                    data-subject-name="${subjectName}"
-                    data-section-name="${sectionName}"
-                    title="Edit schedule">
-                    <i class="bi bi-pencil-fill"></i>
-                </button>
-                <button class="btn btn-sm btn-outline-danger btn-delete-schedule"
-                    data-schedule-id="${schedule.schedule_id}"
-                    data-teacher-id="${teacherId}"
-                    data-subject-id="${subjectId}"
-                    data-section-id="${sectionId}"
-                    title="Delete schedule">
-                    <i class="bi bi-trash-fill"></i>
-                </button>
-            </div>
-        </div>`;
+    <div class="schedule-entry">
+      <span class="day-badge ${dayClass}">${s.day_of_week}</span>
+      <span class="entry-time"><i class="bi bi-clock"></i> ${startFormatted} &ndash; ${endFormatted}</span>
+      ${
+        s.room
+          ? `<span class="entry-room"><i class="bi bi-door-closed"></i> ${s.room}</span>`
+          : `<span class="entry-room-none">No room</span>`
+      }
+      <span class="entry-status ${s.status}">${
+    s.status === 'active' ? 'Active' : 'Inactive'
+  }</span>
+      <div class="entry-actions">
+        <button class="btn btn-sm btn-outline-primary btn-edit-schedule"
+          data-schedule-id="${
+            s.schedule_id
+          }" data-teacher-id="${teacherId}" data-subject-id="${subjectId}"
+          data-section-id="${sectionId}" data-school-year="${schoolYear}" data-semester="${semester}"
+          data-day="${s.day_of_week}" data-start-time="${
+    s.start_time
+  }" data-end-time="${s.end_time}"
+          data-room="${s.room || ''}" data-status="${s.status}"
+          data-subject-name="${subjectName}" data-section-name="${sectionName}">
+          <i class="bi bi-pencil-fill"></i> Edit
+        </button>
+        <button class="btn btn-sm btn-outline-danger btn-delete-schedule"
+          data-schedule-id="${s.schedule_id}" data-teacher-id="${teacherId}"
+          data-subject-id="${subjectId}" data-section-id="${sectionId}">
+          <i class="bi bi-trash-fill"></i> Remove
+        </button>
+      </div>
+    </div>`;
 }
 
 function buildEmptyEntriesHtml() {
-  return `
-        <div class="schedule-entries-empty">
-            <i class="bi bi-calendar-plus"></i>
-            No schedules yet. Click "Add Schedule" to get started.
-        </div>`;
+  return `<div class="schedule-entries-empty"><i class="bi bi-calendar-plus"></i> No schedules yet. Click "Add" to get started.</div>`;
 }
 
-// UTILITY
 function formatTime(timeStr) {
   if (!timeStr) return '';
   const [hours, minutes] = timeStr.split(':');
   const h = parseInt(hours);
-  const period = h >= 12 ? 'PM' : 'AM';
-  const displayH = h % 12 === 0 ? 12 : h % 12;
-  return `${displayH}:${minutes} ${period}`;
+  return `${h % 12 === 0 ? 12 : h % 12}:${minutes} ${h >= 12 ? 'PM' : 'AM'}`;
 }
 
 function showAlert(type, message) {
   const container = document.getElementById('toastContainer');
-  const toastId = 'toast-' + Date.now();
+  const id = 'toast-' + Date.now();
   const icon =
     type === 'success'
       ? 'bi-check-circle-fill'
       : 'bi-exclamation-triangle-fill';
-  const title = type === 'success' ? 'Success' : 'Error';
-
   container.insertAdjacentHTML(
     'beforeend',
     `
-        <div id="${toastId}" class="toast toast-${type}" role="alert" aria-live="assertive" aria-atomic="true">
-            <div class="toast-header">
-                <i class="bi ${icon} me-2"></i>
-                <strong class="me-auto">${title}</strong>
-                <button type="button" class="btn-close" data-bs-dismiss="toast" aria-label="Close"></button>
-            </div>
-            <div class="toast-body">${message}</div>
-        </div>`
+    <div id="${id}" class="toast toast-${type}" role="alert" aria-live="assertive" aria-atomic="true">
+      <div class="toast-header"><i class="bi ${icon} me-2"></i><strong class="me-auto">${
+      type === 'success' ? 'Success' : 'Error'
+    }</strong>
+        <button type="button" class="btn-close" data-bs-dismiss="toast"></button></div>
+      <div class="toast-body">${message}</div>
+    </div>`
   );
-
-  const toastEl = document.getElementById(toastId);
-  const toast = new bootstrap.Toast(toastEl, { autohide: true, delay: 5000 });
-  toast.show();
-  toastEl.addEventListener('hidden.bs.toast', () => toastEl.remove());
+  const el = document.getElementById(id);
+  new bootstrap.Toast(el, { autohide: true, delay: 5000 }).show();
+  el.addEventListener('hidden.bs.toast', () => el.remove());
 }
