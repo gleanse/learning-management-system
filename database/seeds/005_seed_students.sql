@@ -1,10 +1,30 @@
--- link students to the students table.
--- NOTE: student2 and student4 are intentionally left without a section.
-INSERT INTO students (user_id, student_number, lrn, section_id, year_level, education_level, strand_course, enrollment_status, guardian_contact, guardian, created_at, updated_at)
+-- updated students seed with name fields
+-- compatible with migrated schema
+
+INSERT INTO students (
+    user_id, 
+    first_name, 
+    middle_name, 
+    last_name, 
+    student_number, 
+    lrn, 
+    section_id, 
+    year_level, 
+    education_level, 
+    strand_course, 
+    enrollment_status, 
+    guardian_contact, 
+    guardian, 
+    created_at, 
+    updated_at
+)
 VALUES
--- student1 - college BSIT 2A (Assigned)
+-- student1 - college BSIT 2A (assigned)
 (
     (SELECT id FROM users WHERE username = 'student1'),
+    'Nicka',
+    'Garcia',
+    'Reyes',
     '2025-00001',
     NULL,
     (SELECT section_id FROM sections WHERE section_name = 'BSIT 2A'),
@@ -17,12 +37,15 @@ VALUES
     NOW(),
     NOW()
 ),
--- student2 - college BSIT 2B (Unassigned)
+-- student2 - college BSIT (unassigned)
 (
     (SELECT id FROM users WHERE username = 'student2'),
+    'Pedro',
+    'Cruz',
+    'Ramos',
     '2025-00002',
     NULL,
-    NULL, -- section is null, student is unassigned
+    NULL,
     '2nd Year',
     'college',
     'BSIT',
@@ -32,9 +55,12 @@ VALUES
     NOW(),
     NOW()
 ),
--- student3 - shs grade 11 STEM (Assigned)
+-- student3 - shs grade 11 STEM (assigned)
 (
     (SELECT id FROM users WHERE username = 'student3'),
+    'Ana',
+    'Marie',
+    'Torres',
     '2025-00003',
     '123456789012',
     (SELECT section_id FROM sections WHERE section_name = 'Grade 11 - STEM A'),
@@ -50,9 +76,12 @@ VALUES
 -- student4 - shs grade 12 HUMSS (unassigned)
 (
     (SELECT id FROM users WHERE username = 'student4'),
+    'Carlos',
+    'David',
+    'Gonzales',
     '2025-00004',
     '123456789013',
-    NULL, -- section is null, student is unassigned
+    NULL,
     'Grade 12',
     'senior_high',
     'HUMSS',
@@ -63,9 +92,46 @@ VALUES
     NOW()
 );
 
+-- enrolled student WITHOUT user account
 
--- log ONLY the initial assignments that were actually made.
--- this assumes you have at least one admin user in your users seed.
+INSERT INTO students (
+    user_id,
+    first_name,
+    middle_name,
+    last_name,
+    student_number,
+    lrn,
+    section_id,
+    year_level,
+    education_level,
+    strand_course,
+    enrollment_status,
+    guardian_contact,
+    guardian,
+    created_at,
+    updated_at
+)
+VALUES
+(
+    NULL,
+    'John',
+    'Michael',
+    'Dela Cruz',
+    '2025-00005',
+    '123456789014',
+    NULL,
+    'Grade 11',
+    'senior_high',
+    'STEM',
+    'active',
+    '09181234567',
+    'Maria Dela Cruz',
+    NOW(),
+    NOW()
+);
+
+
+-- log only the initial assignments that were actually made
 INSERT INTO student_assignments (student_id, section_id, assigned_by, assigned_at)
 VALUES
 (

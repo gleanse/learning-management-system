@@ -527,7 +527,9 @@ class SectionController
                         </span>
                     </td>
                     <td>
-                        <span class="strand-course"><?= htmlspecialchars($student['email']) ?></span>
+                        <span class="strand-course">
+                            <?= htmlspecialchars($student['email'] ?? 'No email') ?>
+                        </span>
                     </td>
                     <td>
                         <span class="year-level"><?= htmlspecialchars($student['year_level']) ?></span>

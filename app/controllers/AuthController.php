@@ -74,7 +74,21 @@ class AuthController
         $user = $this->user_model->authenticate($username_or_email, $password);
     
         if ($user) {
-            // on sucessful login
+            // check account status before allowing login — credentials are valid but account may be blocked
+            $blocked_statuses = [
+                'inactive'  => 'Your account is currently inactive. Please contact the administrator for assistance.',
+                'suspended' => 'Your account has been suspended. Please contact the administrator for assistance.',
+                'graduated' => 'Your account is no longer active as you have already graduated.',
+            ];
+
+            if (isset($blocked_statuses[$user['status']])) {
+                $_SESSION['login_errors'] = ['general' => $blocked_statuses[$user['status']]];
+                $_SESSION['old_input'] = ['username_or_email' => $username_or_email];
+                header('Location: index.php?page=login');
+                exit();
+            }
+
+            // on successful login
             $this->lockout_model->clearLockout($user_ip);
             // for session fixation security
             session_regenerate_id(true);

@@ -9,6 +9,8 @@ require_once __DIR__ . '/controllers/SubjectController.php';
 require_once __DIR__ . '/controllers/SectionController.php';
 require_once __DIR__ . '/controllers/StudentSectionController.php';
 require_once __DIR__ . '/controllers/ScheduleManagementController.php';
+require_once __DIR__ . '/controllers/UserManagementController.php';
+require_once __DIR__ . '/controllers/SuperAdminDashboardController.php';
 
 $page = $_GET['page'] ?? 'login';
 $method = $_SERVER['REQUEST_METHOD'];
@@ -52,6 +54,18 @@ if ($page === 'admin_dashboard' && $method === 'GET') {
     }
 
     $controller = new DashboardController();
+    $controller->showDashboard();
+    exit();
+}
+
+// SUPERADMIN dashboard
+if ($page === 'superadmin_dashboard' && $method === 'GET') {
+    if (!isLoggedIn() || !isSuperAdmin()) {
+        header('Location: index.php?page=login');
+        exit();
+    }
+
+    $controller = new SuperAdminDashboardController();
     $controller->showDashboard();
     exit();
 }
@@ -362,7 +376,7 @@ if ($page === 'ajax_get_assignment_schedules' && $method === 'GET') {
     exit();
 }
 
-// process create schedule (AJAX from teacher_schedules modal)
+// process create schedule (ajax from teacher_schedules modal)
 if ($page === 'create_schedule' && $method === 'POST') {
     if (!isLoggedIn() || (!isAdmin() && !isSuperAdmin())) {
         header('Location: index.php?page=login');
@@ -374,7 +388,7 @@ if ($page === 'create_schedule' && $method === 'POST') {
     exit();
 }
 
-// process update schedule (AJAX from teacher_schedules modal)
+// process update schedule (ajax from teacher_schedules modal)
 if ($page === 'update_schedule' && $method === 'POST') {
     if (!isLoggedIn() || (!isAdmin() && !isSuperAdmin())) {
         header('Location: index.php?page=login');
@@ -386,7 +400,7 @@ if ($page === 'update_schedule' && $method === 'POST') {
     exit();
 }
 
-// process delete schedule (AJAX from teacher_schedules modal)
+// process delete schedule (ajax from teacher_schedules modal)
 if ($page === 'delete_schedule' && $method === 'POST') {
     if (!isLoggedIn() || (!isAdmin() && !isSuperAdmin())) {
         header('Location: index.php?page=login');
@@ -506,6 +520,116 @@ if ($page === 'ajax_search_assignment_sections' && $method === 'GET') {
 
     $controller = new TeacherAssignmentController();
     $controller->ajaxSearchSections();
+    exit();
+}
+
+// USER MANAGEMENT ROUTES (superadmin only)
+
+// main user management page
+if ($page === 'user_management' && $method === 'GET') {
+    if (!isLoggedIn() || !isSuperAdmin()) {
+        header('Location: index.php?page=login');
+        exit();
+    }
+
+    $controller = new UserManagementController();
+    $controller->showUserManagementPage();
+    exit();
+}
+
+// ajax: paginated user list with search + role filter
+if ($page === 'ajax_get_users' && $method === 'GET') {
+    if (!isLoggedIn() || !isSuperAdmin()) {
+        header('Location: index.php?page=login');
+        exit();
+    }
+
+    $controller = new UserManagementController();
+    $controller->ajaxGetUsers();
+    exit();
+}
+
+// ajax: paginated students without user accounts
+if ($page === 'ajax_get_students_without_account' && $method === 'GET') {
+    if (!isLoggedIn() || !isSuperAdmin()) {
+        header('Location: index.php?page=login');
+        exit();
+    }
+
+    $controller = new UserManagementController();
+    $controller->ajaxGetStudentsWithoutAccount();
+    exit();
+}
+
+// ajax: real-time username availability check
+if ($page === 'ajax_check_username' && $method === 'GET') {
+    if (!isLoggedIn() || !isSuperAdmin()) {
+        header('Location: index.php?page=login');
+        exit();
+    }
+
+    $controller = new UserManagementController();
+    $controller->ajaxCheckUsername();
+    exit();
+}
+
+// ajax: real-time email availability check
+if ($page === 'ajax_check_email' && $method === 'GET') {
+    if (!isLoggedIn() || !isSuperAdmin()) {
+        header('Location: index.php?page=login');
+        exit();
+    }
+
+    $controller = new UserManagementController();
+    $controller->ajaxCheckEmail();
+    exit();
+}
+
+// ajax: create non-student user account
+if ($page === 'create_user' && $method === 'POST') {
+    if (!isLoggedIn() || !isSuperAdmin()) {
+        header('Location: index.php?page=login');
+        exit();
+    }
+
+    $controller = new UserManagementController();
+    $controller->processCreateUser();
+    exit();
+}
+
+// ajax: create and link account for existing student record
+if ($page === 'create_student_account' && $method === 'POST') {
+    if (!isLoggedIn() || !isSuperAdmin()) {
+        header('Location: index.php?page=login');
+        exit();
+    }
+
+    $controller = new UserManagementController();
+    $controller->processCreateStudentAccount();
+    exit();
+}
+
+// ajax: update existing user details
+if ($page === 'update_user' && $method === 'POST') {
+    if (!isLoggedIn() || !isSuperAdmin()) {
+        header('Location: index.php?page=login');
+        exit();
+    }
+
+    $controller = new UserManagementController();
+    $controller->processUpdateUser();
+    exit();
+}
+
+// ajax: update user account status
+if ($page === 'update_user_status' && $method === 'POST') {
+    if (!isLoggedIn() || !isSuperAdmin()) {
+        header('Location: index.php?page=login');
+        exit();
+    }
+
+    $controller = new UserManagementController();
+    $controller->processUpdateStatus();
     exit();
 }
 

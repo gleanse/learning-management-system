@@ -107,3 +107,18 @@ VALUES (
     NOW(),
     NOW()
 );
+
+-- seed sample superadmin user (password: password)
+INSERT INTO users (username, email, password, role, status, first_name, middle_name, last_name, created_at, updated_at) 
+VALUES (
+    'superadmin1',
+    'superadmin@gmail.com',
+    '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi',
+    'superadmin',
+    'active',
+    'Super',
+    'Admin',
+    'User',
+    NOW(),
+    NOW()
+);

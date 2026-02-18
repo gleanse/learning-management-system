@@ -19,22 +19,21 @@ class Student
                 s.student_id,
                 s.student_number,
                 s.lrn,
-                u.first_name,
-                u.middle_name,
-                u.last_name,
+                s.first_name,
+                s.middle_name,
+                s.last_name,
                 s.year_level,
                 s.education_level,
                 sec.section_name,
                 sec.strand_course
             FROM student_subject_enrollments sse
             INNER JOIN students s ON sse.student_id = s.student_id
-            INNER JOIN users u ON s.user_id = u.id
             LEFT JOIN sections sec ON s.section_id = sec.section_id
             WHERE sse.subject_id = ? 
                 AND s.section_id = ?
                 AND sse.school_year = ? 
                 AND sse.semester = ?
-            ORDER BY u.last_name ASC, u.first_name ASC
+            ORDER BY s.last_name ASC, s.first_name ASC
         ");
 
         $stmt->execute([$subject_id, $section_id, $school_year, $semester]);
@@ -173,12 +172,12 @@ class Student
                 s.strand_course,
                 s.section_id,
                 sec.section_name,
-                u.first_name,
-                u.middle_name,
-                u.last_name,
+                s.first_name,
+                s.middle_name,
+                s.last_name,
                 u.email
             FROM students s
-            INNER JOIN users u ON s.user_id = u.id
+            LEFT JOIN users u ON s.user_id = u.id
             LEFT JOIN sections sec ON s.section_id = sec.section_id
             WHERE s.user_id = ?
         ");
@@ -214,16 +213,15 @@ class Student
         $stmt = $this->connection->prepare("
             SELECT 
                 s.student_number,
-                u.first_name,
-                u.middle_name,
-                u.last_name,
+                s.first_name,
+                s.middle_name,
+                s.last_name,
                 sec.section_name,
                 sec.education_level,
                 sec.strand_course,
                 s.year_level,
                 s.created_at
             FROM students s
-            JOIN users u ON s.user_id = u.id
             LEFT JOIN sections sec ON s.section_id = sec.section_id
             WHERE s.enrollment_status = 'active'
             ORDER BY s.created_at DESC
@@ -246,12 +244,19 @@ class Student
     {
         $stmt = $this->connection->prepare("
             SELECT 
-                s.student_id, s.student_number, s.year_level, s.enrollment_status,
-                u.first_name, u.middle_name, u.last_name, u.email
+                s.student_id, 
+                s.student_number, 
+                s.year_level, 
+                s.enrollment_status,
+                s.first_name, 
+                s.middle_name, 
+                s.last_name,
+                u.email,
+                s.user_id
             FROM students s
-            INNER JOIN users u ON s.user_id = u.id
+            LEFT JOIN users u ON s.user_id = u.id
             WHERE s.section_id = ?
-            ORDER BY u.last_name ASC, u.first_name ASC
+            ORDER BY s.last_name ASC, s.first_name ASC
         ");
         $stmt->execute([$section_id]);
         return $stmt->fetchAll();
@@ -261,17 +266,24 @@ class Student
     {
         $sql = "
             SELECT 
-                s.student_id, s.student_number, s.year_level, s.enrollment_status,
-                u.first_name, u.middle_name, u.last_name, u.email
+                s.student_id, 
+                s.student_number, 
+                s.year_level, 
+                s.enrollment_status,
+                s.first_name, 
+                s.middle_name, 
+                s.last_name,
+                u.email,
+                s.user_id
             FROM students s
-            INNER JOIN users u ON s.user_id = u.id
+            LEFT JOIN users u ON s.user_id = u.id
             WHERE s.section_id = :section_id
         ";
 
         if (!empty($search)) {
-            $sql .= " AND (s.student_number LIKE :search OR u.last_name LIKE :search OR u.first_name LIKE :search)";
+            $sql .= " AND (s.student_number LIKE :search OR s.last_name LIKE :search OR s.first_name LIKE :search)";
         }
-        $sql .= " ORDER BY u.last_name ASC, u.first_name ASC LIMIT :limit OFFSET :offset";
+        $sql .= " ORDER BY s.last_name ASC, s.first_name ASC LIMIT :limit OFFSET :offset";
 
         $stmt = $this->connection->prepare($sql);
         $stmt->bindValue(':section_id', $section_id);
@@ -288,10 +300,10 @@ class Student
 
     public function getTotalStudentsInSectionCount($section_id, $search = '')
     {
-        $sql = "SELECT COUNT(*) as count FROM students s INNER JOIN users u ON s.user_id = u.id WHERE s.section_id = ?";
+        $sql = "SELECT COUNT(*) as count FROM students s WHERE s.section_id = ?";
         $params = [$section_id];
         if (!empty($search)) {
-            $sql .= " AND (s.student_number LIKE ? OR u.last_name LIKE ? OR u.first_name LIKE ?)";
+            $sql .= " AND (s.student_number LIKE ? OR s.last_name LIKE ? OR s.first_name LIKE ?)";
             $params = array_merge($params, ["%{$search}%", "%{$search}%", "%{$search}%"]);
         }
         $stmt = $this->connection->prepare($sql);
@@ -304,17 +316,24 @@ class Student
     {
         $sql = "
             SELECT 
-                s.student_id, s.student_number, s.year_level, s.enrollment_status,
-                u.first_name, u.middle_name, u.last_name, u.email
+                s.student_id, 
+                s.student_number, 
+                s.year_level, 
+                s.enrollment_status,
+                s.first_name, 
+                s.middle_name, 
+                s.last_name,
+                u.email,
+                s.user_id
             FROM students s
-            INNER JOIN users u ON s.user_id = u.id
+            LEFT JOIN users u ON s.user_id = u.id
             WHERE s.section_id IS NULL AND s.enrollment_status = 'active'
         ";
 
         if (!empty($search)) {
-            $sql .= " AND (s.student_number LIKE :search OR u.last_name LIKE :search OR u.first_name LIKE :search OR u.email LIKE :search)";
+            $sql .= " AND (s.student_number LIKE :search OR s.last_name LIKE :search OR s.first_name LIKE :search OR u.email LIKE :search)";
         }
-        $sql .= " ORDER BY s.year_level ASC, u.last_name ASC, u.first_name ASC";
+        $sql .= " ORDER BY s.year_level ASC, s.last_name ASC, s.first_name ASC";
 
         if ($limit !== null) {
             $sql .= " LIMIT :limit";
@@ -335,12 +354,13 @@ class Student
     public function getTotalUnassignedCount($search = '')
     {
         $sql = "
-            SELECT COUNT(*) as count FROM students s INNER JOIN users u ON s.user_id = u.id
+            SELECT COUNT(*) as count FROM students s 
+            LEFT JOIN users u ON s.user_id = u.id
             WHERE s.section_id IS NULL AND s.enrollment_status = 'active'
         ";
         $params = [];
         if (!empty($search)) {
-            $sql .= " AND (s.student_number LIKE ? OR u.last_name LIKE ? OR u.first_name LIKE ? OR u.email LIKE ?)";
+            $sql .= " AND (s.student_number LIKE ? OR s.last_name LIKE ? OR s.first_name LIKE ? OR u.email LIKE ?)";
             $term = "%{$search}%";
             $params = [$term, $term, $term, $term];
         }
@@ -353,14 +373,14 @@ class Student
     public function getTotalStudentsByYearLevelCount($year_level, $search = '')
     {
         $sql = "
-            SELECT COUNT(*) as count FROM students s INNER JOIN users u ON s.user_id = u.id
+            SELECT COUNT(*) as count FROM students s 
             WHERE s.year_level = ? AND s.enrollment_status = 'active'
         ";
         $params = [$year_level];
         if (!empty($search)) {
-            $sql .= " AND (s.student_number LIKE ? OR u.last_name LIKE ? OR u.first_name LIKE ? OR u.email LIKE ?)";
+            $sql .= " AND (s.student_number LIKE ? OR s.last_name LIKE ? OR s.first_name LIKE ?)";
             $term = "%{$search}%";
-            $params = array_merge($params, [$term, $term, $term, $term]);
+            $params = array_merge($params, [$term, $term, $term]);
         }
         $stmt = $this->connection->prepare($sql);
         $stmt->execute($params);
@@ -372,18 +392,27 @@ class Student
     {
         $sql = "
             SELECT 
-                s.student_id, s.student_number, s.year_level, s.section_id, s.enrollment_status,
-                u.first_name, u.middle_name, u.last_name, u.email, sec.section_name
+                s.student_id, 
+                s.student_number, 
+                s.year_level, 
+                s.section_id, 
+                s.enrollment_status,
+                s.first_name, 
+                s.middle_name, 
+                s.last_name, 
+                u.email, 
+                sec.section_name,
+                s.user_id
             FROM students s
-            INNER JOIN users u ON s.user_id = u.id
+            LEFT JOIN users u ON s.user_id = u.id
             LEFT JOIN sections sec ON s.section_id = sec.section_id
             WHERE s.year_level = :year_level AND s.enrollment_status = 'active'
         ";
 
         if (!empty($search)) {
-            $sql .= " AND (s.student_number LIKE :search OR u.last_name LIKE :search OR u.first_name LIKE :search OR u.email LIKE :search)";
+            $sql .= " AND (s.student_number LIKE :search OR s.last_name LIKE :search OR s.first_name LIKE :search OR u.email LIKE :search)";
         }
-        $sql .= " ORDER BY u.last_name ASC, u.first_name ASC";
+        $sql .= " ORDER BY s.last_name ASC, s.first_name ASC";
 
         if ($limit !== null) {
             $sql .= " LIMIT :limit";
@@ -467,15 +496,16 @@ class Student
                 s.strand_course,
                 s.section_id,
                 s.enrollment_status,
-                u.first_name,
-                u.middle_name,
-                u.last_name,
+                s.first_name,
+                s.middle_name,
+                s.last_name,
                 u.email,
                 sec.section_name,
                 sec.education_level as section_education_level,
-                sec.strand_course as section_strand_course
+                sec.strand_course as section_strand_course,
+                s.user_id
             FROM students s
-            INNER JOIN users u ON s.user_id = u.id
+            LEFT JOIN users u ON s.user_id = u.id
             LEFT JOIN sections sec ON s.section_id = sec.section_id
             WHERE s.student_id = ?
         ");
@@ -499,8 +529,8 @@ class Student
                 sa.assignment_id,
                 sa.assigned_at,
                 s.student_number,
-                u_student.first_name as student_first_name,
-                u_student.last_name as student_last_name,
+                s.first_name as student_first_name,
+                s.last_name as student_last_name,
                 s.year_level,
                 sec.section_name,
                 sec.education_level,
@@ -510,7 +540,6 @@ class Student
                 u_admin.username as admin_username
             FROM student_assignments sa
             INNER JOIN students s ON sa.student_id = s.student_id
-            INNER JOIN users u_student ON s.user_id = u_student.id
             INNER JOIN sections sec ON sa.section_id = sec.section_id
             INNER JOIN users u_admin ON sa.assigned_by = u_admin.id
             ORDER BY sa.assigned_at DESC
@@ -527,11 +556,20 @@ class Student
     {
         $sql = "
             SELECT 
-                s.student_id, s.student_number, s.lrn, s.year_level, 
-                s.education_level, s.strand_course, s.enrollment_status,
-                u.first_name, u.middle_name, u.last_name, u.email
+                s.student_id, 
+                s.student_number, 
+                s.lrn, 
+                s.year_level, 
+                s.education_level, 
+                s.strand_course, 
+                s.enrollment_status,
+                s.first_name, 
+                s.middle_name, 
+                s.last_name, 
+                u.email,
+                s.user_id
             FROM students s
-            INNER JOIN users u ON s.user_id = u.id
+            LEFT JOIN users u ON s.user_id = u.id
             INNER JOIN sections sec ON 
                 sec.section_id = :section_id
                 AND s.education_level = sec.education_level
@@ -542,10 +580,10 @@ class Student
         ";
 
         if (!empty($search)) {
-            $sql .= " AND (s.student_number LIKE :search OR u.first_name LIKE :search OR u.last_name LIKE :search OR u.email LIKE :search)";
+            $sql .= " AND (s.student_number LIKE :search OR s.first_name LIKE :search OR s.last_name LIKE :search OR u.email LIKE :search)";
         }
 
-        $sql .= " ORDER BY u.last_name ASC, u.first_name ASC";
+        $sql .= " ORDER BY s.last_name ASC, s.first_name ASC";
 
         if ($limit !== null) {
             $sql .= " LIMIT :limit";
@@ -574,7 +612,7 @@ class Student
         $sql = "
             SELECT COUNT(*) as count
             FROM students s
-            INNER JOIN users u ON s.user_id = u.id
+            LEFT JOIN users u ON s.user_id = u.id
             INNER JOIN sections sec ON 
                 sec.section_id = ?
                 AND s.education_level = sec.education_level
@@ -587,7 +625,7 @@ class Student
         $params = [$section_id];
 
         if (!empty($search)) {
-            $sql .= " AND (s.student_number LIKE ? OR u.first_name LIKE ? OR u.last_name LIKE ? OR u.email LIKE ?)";
+            $sql .= " AND (s.student_number LIKE ? OR s.first_name LIKE ? OR s.last_name LIKE ? OR u.email LIKE ?)";
             $term = "%{$search}%";
             $params = array_merge($params, [$term, $term, $term, $term]);
         }
@@ -596,5 +634,116 @@ class Student
         $stmt->execute($params);
         $result = $stmt->fetch();
         return $result['count'];
+    }
+
+    // get students without user accounts
+    public function getStudentsWithoutUserAccount($limit = null, $offset = null, $search = '')
+    {
+        $sql = "
+            SELECT 
+                s.student_id,
+                s.student_number,
+                s.lrn,
+                s.first_name,
+                s.middle_name,
+                s.last_name,
+                s.year_level,
+                s.education_level,
+                s.strand_course,
+                s.enrollment_status,
+                sec.section_name,
+                s.created_at
+            FROM students s
+            LEFT JOIN sections sec ON s.section_id = sec.section_id
+            WHERE s.user_id IS NULL
+        ";
+
+        if (!empty($search)) {
+            $sql .= " AND (s.student_number LIKE :search OR s.first_name LIKE :search OR s.last_name LIKE :search OR s.lrn LIKE :search)";
+        }
+
+        $sql .= " ORDER BY s.created_at DESC, s.last_name ASC, s.first_name ASC";
+
+        if ($limit !== null) {
+            $sql .= " LIMIT :limit";
+            if ($offset !== null) $sql .= " OFFSET :offset";
+        }
+
+        $stmt = $this->connection->prepare($sql);
+
+        if ($limit !== null) {
+            $stmt->bindValue(':limit', (int)$limit, PDO::PARAM_INT);
+            if ($offset !== null) $stmt->bindValue(':offset', (int)$offset, PDO::PARAM_INT);
+        }
+
+        if (!empty($search)) {
+            $stmt->bindValue(':search', "%{$search}%");
+        }
+
+        $stmt->execute();
+        return $stmt->fetchAll();
+    }
+
+    // count students without user accounts
+    public function getTotalStudentsWithoutUserAccountCount($search = '')
+    {
+        $sql = "SELECT COUNT(*) as count FROM students WHERE user_id IS NULL";
+        $params = [];
+
+        if (!empty($search)) {
+            $sql .= " AND (student_number LIKE ? OR first_name LIKE ? OR last_name LIKE ? OR lrn LIKE ?)";
+            $term = "%{$search}%";
+            $params = [$term, $term, $term, $term];
+        }
+
+        $stmt = $this->connection->prepare($sql);
+        $stmt->execute($params);
+        $result = $stmt->fetch();
+        return $result['count'];
+    }
+
+    // link existing student record to newly created user
+    public function linkStudentToUser($student_id, $user_id)
+    {
+        $stmt = $this->connection->prepare("UPDATE students SET user_id = ? WHERE student_id = ?");
+        return $stmt->execute([$user_id, $student_id]);
+    }
+
+    // create student record (for new enrollments without account)
+    public function createStudentRecord(array $student_data)
+    {
+        $stmt = $this->connection->prepare("
+            INSERT INTO students (
+                user_id, first_name, middle_name, last_name, student_number, lrn, 
+                section_id, year_level, education_level, strand_course, 
+                enrollment_status, guardian_contact, guardian
+            )
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        ");
+
+        return $stmt->execute([
+            $student_data['user_id'] ?? null,
+            $student_data['first_name'],
+            $student_data['middle_name'] ?? null,
+            $student_data['last_name'],
+            $student_data['student_number'],
+            $student_data['lrn'] ?? null,
+            $student_data['section_id'] ?? null,
+            $student_data['year_level'],
+            $student_data['education_level'],
+            $student_data['strand_course'],
+            $student_data['enrollment_status'] ?? 'active',
+            $student_data['guardian_contact'] ?? null,
+            $student_data['guardian'] ?? null
+        ]);
+    }
+
+    // check if student has user account
+    public function hasUserAccount($student_id)
+    {
+        $stmt = $this->connection->prepare("SELECT user_id FROM students WHERE student_id = ?");
+        $stmt->execute([$student_id]);
+        $result = $stmt->fetch();
+        return $result && $result['user_id'] !== null;
     }
 }
