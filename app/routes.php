@@ -13,6 +13,7 @@ require_once __DIR__ . '/controllers/UserManagementController.php';
 require_once __DIR__ . '/controllers/SuperAdminDashboardController.php';
 require_once __DIR__ . '/controllers/EnrollmentController.php';
 require_once __DIR__ . '/controllers/RegistrarDashboardController.php';
+require_once __DIR__ . '/controllers/PaymentController.php';
 
 $page = $_GET['page'] ?? 'login';
 $method = $_SERVER['REQUEST_METHOD'];
@@ -878,6 +879,68 @@ if ($page === 'enrollment_check_duplicate_name' && $method === 'GET') {
 
     $controller = new EnrollmentController();
     $controller->checkDuplicateName();
+    exit();
+}
+
+// PAYMENT ROUTES (registrar only)
+
+// main process payment page
+if ($page === 'payment_process' && $method === 'GET') {
+    if (!isLoggedIn() || !isRegistrar()) {
+        header('Location: index.php?page=login');
+        exit();
+    }
+
+    $controller = new PaymentController();
+    $controller->showPaymentPage();
+    exit();
+}
+
+// process cash payment submission
+if ($page === 'payment_store' && $method === 'POST') {
+    if (!isLoggedIn() || !isRegistrar()) {
+        header('Location: index.php?page=login');
+        exit();
+    }
+
+    $controller = new PaymentController();
+    $controller->store();
+    exit();
+}
+
+// ajax: search students for payment page
+if ($page === 'payment_search_students' && $method === 'GET') {
+    if (!isLoggedIn() || !isRegistrar()) {
+        header('Location: index.php?page=login');
+        exit();
+    }
+
+    $controller = new PaymentController();
+    $controller->searchStudents();
+    exit();
+}
+
+// ajax: get payment details for a student
+if ($page === 'payment_get_details' && $method === 'GET') {
+    if (!isLoggedIn() || !isRegistrar()) {
+        header('Location: index.php?page=login');
+        exit();
+    }
+
+    $controller = new PaymentController();
+    $controller->getPaymentDetails();
+    exit();
+}
+
+// ajax: get receipt data for a transaction
+if ($page === 'payment_get_receipt' && $method === 'GET') {
+    if (!isLoggedIn() || !isRegistrar()) {
+        header('Location: index.php?page=login');
+        exit();
+    }
+
+    $controller = new PaymentController();
+    $controller->getReceipt();
     exit();
 }
 

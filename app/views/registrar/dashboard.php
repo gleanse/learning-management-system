@@ -40,6 +40,12 @@
                     </a>
                 </li>
                 <li class="nav-item">
+                    <a class="nav-link" href="index.php?page=payment_process">
+                        <i class="bi bi-cash-stack"></i>
+                        <span>Process Payment</span>
+                    </a>
+                </li>
+                <li class="nav-item">
                     <a class="nav-link" href="index.php?page=logout">
                         <i class="bi bi-box-arrow-right"></i>
                         <span>Logout</span>

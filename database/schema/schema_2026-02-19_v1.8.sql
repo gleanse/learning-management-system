@@ -1,7 +1,3 @@
--- clean schema - final database structure
--- this represents the final state of all migrations
--- for quick recreation of fresh database
-
 CREATE TABLE users(
     id INT PRIMARY KEY AUTO_INCREMENT,
     username VARCHAR(50) NOT NULL UNIQUE,

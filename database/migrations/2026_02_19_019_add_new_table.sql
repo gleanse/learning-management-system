@@ -1,0 +1,11 @@
+CREATE TABLE school_settings (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    school_year VARCHAR(20) NOT NULL,
+    semester ENUM('First', 'Second') NOT NULL,
+    is_active BOOLEAN DEFAULT TRUE,
+    advanced_by INT NULL,
+    advanced_at TIMESTAMP NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    FOREIGN KEY (advanced_by) REFERENCES users(id) ON DELETE SET NULL
+);
