@@ -85,12 +85,17 @@ class Student
 
     public function getYearLevelsByStudentId($student_id, $school_year = '2025-2026')
     {
+        // pull year_level from sections via student_section_history
+        // so past school years show the correct year level, not the current one
         $stmt = $this->connection->prepare("
-            SELECT DISTINCT s.year_level
+            SELECT DISTINCT sec.year_level
             FROM student_subject_enrollments sse
-            INNER JOIN students s ON sse.student_id = s.student_id
+            INNER JOIN student_section_history ssh
+                ON ssh.student_id = sse.student_id
+                AND ssh.school_year = sse.school_year
+            INNER JOIN sections sec ON sec.section_id = ssh.section_id
             WHERE sse.student_id = ? AND sse.school_year = ?
-            ORDER BY s.year_level ASC
+            ORDER BY sec.year_level ASC
         ");
         $stmt->execute([$student_id, $school_year]);
         return $stmt->fetchAll();
@@ -98,12 +103,16 @@ class Student
 
     public function getSemestersByStudentIdAndYearLevel($student_id, $year_level, $school_year = '2025-2026')
     {
+        // join through student_section_history to match historical year_level, not current
         $stmt = $this->connection->prepare("
             SELECT DISTINCT sse.semester
             FROM student_subject_enrollments sse
-            INNER JOIN students s ON sse.student_id = s.student_id
-            WHERE sse.student_id = ? 
-                AND s.year_level = ?
+            INNER JOIN student_section_history ssh
+                ON ssh.student_id = sse.student_id
+                AND ssh.school_year = sse.school_year
+            INNER JOIN sections sec ON sec.section_id = ssh.section_id
+            WHERE sse.student_id = ?
+                AND sec.year_level = ?
                 AND sse.school_year = ?
             ORDER BY CASE sse.semester WHEN 'First' THEN 1 WHEN 'Second' THEN 2 END ASC
         ");
@@ -113,6 +122,7 @@ class Student
 
     public function getSubjectsByStudentIdYearLevelAndSemester($student_id, $year_level, $semester, $school_year = '2025-2026')
     {
+        // join through student_section_history so year_level matches the historical section, not current student record
         $stmt = $this->connection->prepare("
             SELECT DISTINCT
                 sub.subject_id,
@@ -120,10 +130,14 @@ class Student
                 sub.subject_name,
                 sub.description
             FROM student_subject_enrollments sse
-            INNER JOIN students s ON sse.student_id = s.student_id
+            INNER JOIN student_section_history ssh
+                ON ssh.student_id = sse.student_id
+                AND ssh.school_year = sse.school_year
+                AND ssh.semester = sse.semester
+            INNER JOIN sections sec ON sec.section_id = ssh.section_id
             INNER JOIN subjects sub ON sse.subject_id = sub.subject_id
-            WHERE sse.student_id = ? 
-                AND s.year_level = ?
+            WHERE sse.student_id = ?
+                AND sec.year_level = ?
                 AND sse.semester = ?
                 AND sse.school_year = ?
             ORDER BY sub.subject_name ASC
@@ -819,5 +833,19 @@ class Student
         $stmt->execute([$student_id]);
         $result = $stmt->fetch();
         return $result && $result['user_id'] !== null;
+    }
+
+    // get all distinct school years a student has subject enrollments in
+    // used by student views to power the school year toggle
+    public function getEnrolledSchoolYears($student_id)
+    {
+        $stmt = $this->connection->prepare("
+            SELECT DISTINCT school_year
+            FROM student_subject_enrollments
+            WHERE student_id = ?
+            ORDER BY school_year DESC
+        ");
+        $stmt->execute([$student_id]);
+        return $stmt->fetchAll(PDO::FETCH_COLUMN);
     }
 }

@@ -74,7 +74,7 @@
                         <div class="user-avatar">
                             <?php
                             $firstname = $_SESSION['user_firstname'] ?? 'S';
-                            $lastname = $_SESSION['user_lastname'] ?? 'T';
+                            $lastname  = $_SESSION['user_lastname']  ?? 'T';
                             echo strtoupper(substr($firstname, 0, 1) . substr($lastname, 0, 1));
                             ?>
                         </div>
@@ -93,19 +93,21 @@
                             </a>
                         </li>
                         <li class="breadcrumb-item">
-                            <a href="index.php?page=student_grades">My Grades</a>
+                            <a href="index.php?page=student_grades&school_year=<?= urlencode($school_year) ?>">My Grades</a>
                         </li>
                         <li class="breadcrumb-item">
-                            <a href="index.php?page=student_semesters&year_level=<?php echo urlencode($year_level); ?>">
-                                <?php echo htmlspecialchars($year_level); ?>
+                            <a href="index.php?page=student_semesters&year_level=<?= urlencode($year_level) ?>&school_year=<?= urlencode($school_year) ?>">
+                                <?= htmlspecialchars($year_level) ?>
                             </a>
                         </li>
                         <li class="breadcrumb-item">
-                            <a href="index.php?page=student_subjects&year_level=<?php echo urlencode($year_level); ?>&semester=<?php echo urlencode($semester); ?>">
-                                <?php echo htmlspecialchars($semester); ?>
+                            <a href="index.php?page=student_subjects&year_level=<?= urlencode($year_level) ?>&semester=<?= urlencode($semester) ?>&school_year=<?= urlencode($school_year) ?>">
+                                <?= htmlspecialchars($semester) ?> Semester
                             </a>
                         </li>
-                        <li class="breadcrumb-item active" aria-current="page"><?php echo htmlspecialchars($subject['subject_code'] ?? 'Subject'); ?></li>
+                        <li class="breadcrumb-item active" aria-current="page">
+                            <?= htmlspecialchars($subject['subject_code'] ?? 'Subject') ?>
+                        </li>
                     </ol>
                 </nav>
 
@@ -116,8 +118,12 @@
                             <i class="bi bi-journal-check"></i>
                         </div>
                         <div class="header-text">
-                            <h2 class="header-title"><?php echo htmlspecialchars($subject['subject_code'] ?? 'Subject'); ?></h2>
-                            <p class="header-subtitle"><?php echo htmlspecialchars($subject['subject_name'] ?? 'Subject Name'); ?></p>
+                            <h2 class="header-title"><?= htmlspecialchars($subject['subject_code'] ?? 'Subject') ?></h2>
+                            <p class="header-subtitle">
+                                <?= htmlspecialchars($subject['subject_name'] ?? '') ?> &bull;
+                                <?= htmlspecialchars($semester) ?> Semester &bull;
+                                <?= htmlspecialchars($school_year) ?>
+                            </p>
                         </div>
                     </div>
                 </div>
@@ -131,10 +137,7 @@
                         </h5>
                     </div>
                     <div class="card-body">
-                        <?php
-                        // Define all grading periods in order
-                        $grading_periods = ['Prelim', 'Midterm', 'Prefinal', 'Final'];
-                        ?>
+                        <?php $grading_periods = ['Prelim', 'Midterm', 'Prefinal', 'Final']; ?>
                         <div class="table-responsive">
                             <table class="table table-hover">
                                 <thead>
@@ -148,33 +151,31 @@
                                 </thead>
                                 <tbody>
                                     <?php foreach ($grading_periods as $period): ?>
-                                        <?php
-                                        $grade_data = $grades_by_period[$period] ?? null;
-                                        ?>
+                                        <?php $grade_data = $grades_by_period[$period] ?? null; ?>
                                         <tr>
                                             <td>
                                                 <span class="period-badge">
                                                     <i class="bi bi-bookmark-fill"></i>
-                                                    <?php echo htmlspecialchars($period); ?>
+                                                    <?= htmlspecialchars($period) ?>
                                                 </span>
                                             </td>
                                             <td>
                                                 <?php if ($grade_data): ?>
-                                                    <span class="grade-value"><?php echo number_format($grade_data['grade_value'], 2); ?></span>
+                                                    <span class="grade-value"><?= number_format($grade_data['grade_value'], 2) ?></span>
                                                 <?php else: ?>
                                                     <span class="text-muted">-</span>
                                                 <?php endif; ?>
                                             </td>
                                             <td>
                                                 <?php if ($grade_data && !empty($grade_data['remarks'])): ?>
-                                                    <span class="remarks-text"><?php echo htmlspecialchars($grade_data['remarks']); ?></span>
+                                                    <span class="remarks-text"><?= htmlspecialchars($grade_data['remarks']) ?></span>
                                                 <?php else: ?>
                                                     <span class="text-muted">-</span>
                                                 <?php endif; ?>
                                             </td>
                                             <td>
                                                 <?php if ($grade_data): ?>
-                                                    <span class="date-text"><?php echo date('M d, Y', strtotime($grade_data['graded_date'])); ?></span>
+                                                    <span class="date-text"><?= date('M d, Y', strtotime($grade_data['graded_date'])) ?></span>
                                                 <?php else: ?>
                                                     <span class="text-muted">-</span>
                                                 <?php endif; ?>
@@ -182,7 +183,7 @@
                                             <td>
                                                 <?php if ($grade_data): ?>
                                                     <span class="teacher-text">
-                                                        <?php echo htmlspecialchars($grade_data['teacher_first_name'] . ' ' . $grade_data['teacher_last_name']); ?>
+                                                        <?= htmlspecialchars($grade_data['teacher_first_name'] . ' ' . $grade_data['teacher_last_name']) ?>
                                                     </span>
                                                 <?php else: ?>
                                                     <span class="text-muted">-</span>

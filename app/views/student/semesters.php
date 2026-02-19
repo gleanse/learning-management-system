@@ -74,7 +74,7 @@
                         <div class="user-avatar">
                             <?php
                             $firstname = $_SESSION['user_firstname'] ?? 'S';
-                            $lastname = $_SESSION['user_lastname'] ?? 'T';
+                            $lastname  = $_SESSION['user_lastname']  ?? 'T';
                             echo strtoupper(substr($firstname, 0, 1) . substr($lastname, 0, 1));
                             ?>
                         </div>
@@ -93,9 +93,11 @@
                             </a>
                         </li>
                         <li class="breadcrumb-item">
-                            <a href="index.php?page=student_grades">My Grades</a>
+                            <a href="index.php?page=student_grades&school_year=<?= urlencode($school_year) ?>">My Grades</a>
                         </li>
-                        <li class="breadcrumb-item active" aria-current="page"><?php echo htmlspecialchars($year_level ?? 'Year Level'); ?></li>
+                        <li class="breadcrumb-item active" aria-current="page">
+                            <?= htmlspecialchars($year_level ?? 'Year Level') ?>
+                        </li>
                     </ol>
                 </nav>
 
@@ -107,7 +109,9 @@
                         </div>
                         <div class="header-text">
                             <h2 class="header-title">Select Semester</h2>
-                            <p class="header-subtitle">Choose a semester for <?php echo htmlspecialchars($year_level ?? 'Year Level'); ?></p>
+                            <p class="header-subtitle">
+                                <?= htmlspecialchars($year_level ?? 'Year Level') ?> &bull; <?= htmlspecialchars($school_year) ?>
+                            </p>
                         </div>
                     </div>
                 </div>
@@ -126,19 +130,19 @@
                                 <div class="empty-state-icon">
                                     <i class="bi bi-inbox"></i>
                                 </div>
-                                <p class="empty-state-text">No semesters available yet.</p>
-                                <p class="empty-state-subtext">Semesters will appear here once you are enrolled.</p>
+                                <p class="empty-state-text">No semesters available.</p>
+                                <p class="empty-state-subtext">No enrollment records found for this year level.</p>
                             </div>
                         <?php else: ?>
                             <div class="year-levels-grid">
-                                <?php foreach ($semesters as $semester): ?>
-                                    <a href="index.php?page=student_subjects&year_level=<?php echo urlencode($year_level); ?>&semester=<?php echo urlencode($semester['semester']); ?>"
+                                <?php foreach ($semesters as $sem): ?>
+                                    <a href="index.php?page=student_subjects&year_level=<?= urlencode($year_level) ?>&semester=<?= urlencode($sem['semester']) ?>&school_year=<?= urlencode($school_year) ?>"
                                         class="year-level-card">
                                         <div class="year-level-icon">
                                             <i class="bi bi-calendar-check-fill"></i>
                                         </div>
                                         <div class="year-level-content">
-                                            <h5 class="year-level-title"><?php echo htmlspecialchars($semester['semester']); ?> Semester</h5>
+                                            <h5 class="year-level-title"><?= htmlspecialchars($sem['semester']) ?> Semester</h5>
                                             <p class="year-level-description">View subjects for this semester</p>
                                         </div>
                                         <div class="year-level-arrow">

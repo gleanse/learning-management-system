@@ -74,7 +74,7 @@
                         <div class="user-avatar">
                             <?php
                             $firstname = $_SESSION['user_firstname'] ?? 'S';
-                            $lastname = $_SESSION['user_lastname'] ?? 'T';
+                            $lastname  = $_SESSION['user_lastname']  ?? 'T';
                             echo strtoupper(substr($firstname, 0, 1) . substr($lastname, 0, 1));
                             ?>
                         </div>
@@ -93,14 +93,16 @@
                             </a>
                         </li>
                         <li class="breadcrumb-item">
-                            <a href="index.php?page=student_grades">My Grades</a>
+                            <a href="index.php?page=student_grades&school_year=<?= urlencode($school_year) ?>">My Grades</a>
                         </li>
                         <li class="breadcrumb-item">
-                            <a href="index.php?page=student_semesters&year_level=<?php echo urlencode($year_level); ?>">
-                                <?php echo htmlspecialchars($year_level); ?>
+                            <a href="index.php?page=student_semesters&year_level=<?= urlencode($year_level) ?>&school_year=<?= urlencode($school_year) ?>">
+                                <?= htmlspecialchars($year_level) ?>
                             </a>
                         </li>
-                        <li class="breadcrumb-item active" aria-current="page"><?php echo htmlspecialchars($semester ?? 'Semester'); ?></li>
+                        <li class="breadcrumb-item active" aria-current="page">
+                            <?= htmlspecialchars($semester ?? 'Semester') ?> Semester
+                        </li>
                     </ol>
                 </nav>
 
@@ -112,7 +114,11 @@
                         </div>
                         <div class="header-text">
                             <h2 class="header-title">My Subjects</h2>
-                            <p class="header-subtitle"><?php echo htmlspecialchars($year_level ?? 'Year Level'); ?> • <?php echo htmlspecialchars($semester ?? 'Semester'); ?> Semester</p>
+                            <p class="header-subtitle">
+                                <?= htmlspecialchars($year_level ?? 'Year Level') ?> &bull;
+                                <?= htmlspecialchars($semester ?? 'Semester') ?> Semester &bull;
+                                <?= htmlspecialchars($school_year) ?>
+                            </p>
                         </div>
                     </div>
                 </div>
@@ -131,20 +137,20 @@
                                 <div class="empty-state-icon">
                                     <i class="bi bi-inbox"></i>
                                 </div>
-                                <p class="empty-state-text">No subjects available yet.</p>
-                                <p class="empty-state-subtext">Subjects will appear here once you are enrolled.</p>
+                                <p class="empty-state-text">No subjects available.</p>
+                                <p class="empty-state-subtext">No subjects found for this semester.</p>
                             </div>
                         <?php else: ?>
                             <div class="year-levels-grid">
                                 <?php foreach ($subjects as $subject): ?>
-                                    <a href="index.php?page=student_grades_view&subject_id=<?php echo urlencode($subject['subject_id']); ?>&year_level=<?php echo urlencode($year_level); ?>&semester=<?php echo urlencode($semester); ?>"
+                                    <a href="index.php?page=student_grades_view&subject_id=<?= urlencode($subject['subject_id']) ?>&year_level=<?= urlencode($year_level) ?>&semester=<?= urlencode($semester) ?>&school_year=<?= urlencode($school_year) ?>"
                                         class="year-level-card">
                                         <div class="year-level-icon">
                                             <i class="bi bi-journal-bookmark-fill"></i>
                                         </div>
                                         <div class="year-level-content">
-                                            <h5 class="year-level-title"><?php echo htmlspecialchars($subject['subject_code']); ?></h5>
-                                            <p class="year-level-description"><?php echo htmlspecialchars($subject['subject_name']); ?></p>
+                                            <h5 class="year-level-title"><?= htmlspecialchars($subject['subject_code']) ?></h5>
+                                            <p class="year-level-description"><?= htmlspecialchars($subject['subject_name']) ?></p>
                                         </div>
                                         <div class="year-level-arrow">
                                             <i class="bi bi-arrow-right"></i>
