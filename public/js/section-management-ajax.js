@@ -122,6 +122,7 @@ document.addEventListener('DOMContentLoaded', function () {
       setButtonLoading(submitButton, false);
     }
   });
+  fetchSections(1);
 });
 
 // utility functions

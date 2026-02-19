@@ -14,6 +14,7 @@ require_once __DIR__ . '/controllers/SuperAdminDashboardController.php';
 require_once __DIR__ . '/controllers/EnrollmentController.php';
 require_once __DIR__ . '/controllers/RegistrarDashboardController.php';
 require_once __DIR__ . '/controllers/PaymentController.php';
+require_once __DIR__ . '/controllers/AcademicPeriodController.php';
 
 $page = $_GET['page'] ?? 'login';
 $method = $_SERVER['REQUEST_METHOD'];
@@ -82,6 +83,40 @@ if ($page === 'ajax_dashboard_stats' && $method === 'GET') {
 
     $controller = new SuperAdminDashboardController();
     $controller->ajaxGetDashboardStats();
+    exit();
+}
+
+// ACADEMIC PERIOD ROUTES (admin only)
+
+if ($page === 'academic_period' && $method === 'GET') {
+    if (!isLoggedIn() || (!isAdmin() && !isSuperAdmin())) {
+        header('Location: index.php?page=login');
+        exit();
+    }
+    $controller = new AcademicPeriodController();
+    $controller->showDashboard();
+    exit();
+}
+
+// ajax: initialize first academic period
+if ($page === 'ajax_academic_period_initialize' && $method === 'POST') {
+    if (!isLoggedIn() || (!isAdmin() && !isSuperAdmin())) {
+        header('Location: index.php?page=login');
+        exit();
+    }
+    $controller = new AcademicPeriodController();
+    $controller->ajaxInitialize();
+    exit();
+}
+
+// ajax: advance to next academic period
+if ($page === 'ajax_academic_period_advance' && $method === 'POST') {
+    if (!isLoggedIn() || (!isAdmin() && !isSuperAdmin())) {
+        header('Location: index.php?page=login');
+        exit();
+    }
+    $controller = new AcademicPeriodController();
+    $controller->ajaxAdvance();
     exit();
 }
 

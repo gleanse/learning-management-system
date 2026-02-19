@@ -35,6 +35,12 @@
                 <li class="nav-item"><a class="nav-link" href="index.php?page=student_sections"><i class="bi bi-people-fill"></i><span>Assign Students</span></a></li>
                 <li class="nav-item"><a class="nav-link" href="index.php?page=teacher_assignments"><i class="bi bi-person-plus-fill"></i><span>Teacher Assignments</span></a></li>
                 <li class="nav-item"><a class="nav-link active" href="index.php?page=teacher_schedules"><i class="bi bi-calendar-week-fill"></i><span>Manage Schedules</span></a></li>
+                <li class="nav-item">
+                    <a class="nav-link" href="index.php?page=academic_period">
+                        <i class="bi bi-calendar2-range-fill"></i>
+                        <span>Academic Period</span>
+                    </a>
+                </li>
                 <li class="nav-item"><a class="nav-link" href="index.php?page=logout"><i class="bi bi-box-arrow-right"></i><span>Logout</span></a></li>
             </ul>
         </div>

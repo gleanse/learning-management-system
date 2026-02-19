@@ -2,16 +2,19 @@
 
 require_once __DIR__ . '/../models/Section.php';
 require_once __DIR__ . '/../models/Student.php';
+require_once __DIR__ . '/../models/AcademicPeriod.php';
 
 class SectionController
 {
     private $section_model;
     private $student_model;
+    private $academic_model;
 
     public function __construct()
     {
-        $this->section_model = new Section();
-        $this->student_model = new Student();
+        $this->section_model  = new Section();
+        $this->student_model  = new Student();
+        $this->academic_model = new AcademicPeriod();
     }
 
     private function isAjax()
@@ -61,17 +64,21 @@ class SectionController
             $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
         }
 
-        $page = isset($_GET['p']) ? (int)$_GET['p'] : 1;
-        $limit = 10;
-        $offset = ($page - 1) * $limit;
-        $search = $_GET['search'] ?? '';
-        $school_year = $_GET['school_year'] ?? '2025-2026';
+        $page        = isset($_GET['p']) ? (int) $_GET['p'] : 1;
+        $limit       = 10;
+        $offset      = ($page - 1) * $limit;
+        $search      = $_GET['search'] ?? '';
 
-        $sections = $this->section_model->getWithPagination($limit, $offset, $search, $school_year);
-        $total_sections = $this->section_model->getTotalCount($search, $school_year);
-        $total_pages = ceil($total_sections / $limit);
+        // pull school year from active period instead of hardcoding
+        $current     = $this->academic_model->getCurrentPeriod();
+        $school_year = $_GET['school_year'] ?? ($current['school_year'] ?? '');
 
-        $errors = $_SESSION['section_errors'] ?? [];
+        $sections        = $this->section_model->getWithPagination($limit, $offset, $search, $school_year);
+        $total_sections  = $this->section_model->getTotalCount($search, $school_year);
+        $total_pages     = ceil($total_sections / $limit);
+        $available_years = $this->section_model->getDistinctSchoolYears();
+
+        $errors          = $_SESSION['section_errors']  ?? [];
         $success_message = $_SESSION['section_success'] ?? null;
         unset($_SESSION['section_errors'], $_SESSION['section_success']);
 
@@ -84,15 +91,18 @@ class SectionController
         header('Content-Type: application/json');
         $this->requireAdmin();
 
-        $page = isset($_GET['p']) ? (int)$_GET['p'] : 1;
-        $limit = 10;
+        $page   = isset($_GET['p']) ? (int) $_GET['p'] : 1;
+        $limit  = 10;
         $offset = ($page - 1) * $limit;
         $search = $_GET['search'] ?? '';
-        $school_year = $_GET['school_year'] ?? '2025-2026';
 
-        $sections = $this->section_model->getWithPagination($limit, $offset, $search, $school_year);
+        // pull school year from active period as default
+        $current     = $this->academic_model->getCurrentPeriod();
+        $school_year = $_GET['school_year'] ?? ($current['school_year'] ?? '');
+
+        $sections       = $this->section_model->getWithPagination($limit, $offset, $search, $school_year);
         $total_sections = $this->section_model->getTotalCount($search, $school_year);
-        $total_pages = ceil($total_sections / $limit);
+        $total_pages    = ceil($total_sections / $limit);
 
         ob_start();
 ?>
@@ -165,7 +175,6 @@ class SectionController
                 </table>
             </div>
 
-            <!-- pagination -->
             <?php if ($total_pages > 1): ?>
                 <div class="pagination-wrapper mt-3">
                     <nav aria-label="Page navigation">
@@ -175,20 +184,15 @@ class SectionController
                                     <i class="bi bi-chevron-left"></i>
                                 </a>
                             </li>
-
                             <?php
                             $start_page = max(1, $page - 2);
-                            $end_page = min($total_pages, $page + 2);
-
+                            $end_page   = min($total_pages, $page + 2);
                             for ($i = $start_page; $i <= $end_page; $i++):
                             ?>
                                 <li class="page-item <?= ($i == $page) ? 'active' : '' ?>">
-                                    <a class="page-link" href="#" data-page="<?= $i ?>">
-                                        <?= $i ?>
-                                    </a>
+                                    <a class="page-link" href="#" data-page="<?= $i ?>"><?= $i ?></a>
                                 </li>
                             <?php endfor; ?>
-
                             <li class="page-item <?= ($page >= $total_pages) ? 'disabled' : '' ?>">
                                 <a class="page-link" href="#" data-page="<?= $page + 1 ?>">
                                     <i class="bi bi-chevron-right"></i>
@@ -207,11 +211,11 @@ class SectionController
         $html = ob_get_clean();
 
         echo json_encode([
-            'success' => true,
-            'html' => $html,
+            'success'        => true,
+            'html'           => $html,
             'total_sections' => $total_sections,
-            'current_page' => $page,
-            'total_pages' => $total_pages
+            'current_page'   => $page,
+            'total_pages'    => $total_pages,
         ]);
         exit();
     }
@@ -223,6 +227,10 @@ class SectionController
         if (empty($_SESSION['csrf_token'])) {
             $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
         }
+
+        // get active period — passes $current_school_year to view
+        $current             = $this->academic_model->getCurrentPeriod();
+        $current_school_year = $current['school_year'] ?? '';
 
         require __DIR__ . '/../views/admin/create_section.php';
     }
@@ -259,14 +267,21 @@ class SectionController
         $this->requireAdmin();
         $this->validateCsrf();
 
-        $section_name = trim($_POST['section_name'] ?? '');
-        $education_level = $_POST['education_level'] ?? '';
-        $year_level = trim($_POST['year_level'] ?? '');
-        $strand_course = trim($_POST['strand_course'] ?? '');
-        $max_capacity = trim($_POST['max_capacity'] ?? '');
-        $school_year = $_POST['school_year'] ?? '2025-2026';
+        $section_name    = trim($_POST['section_name']    ?? '');
+        $education_level = $_POST['education_level']      ?? '';
+        $year_level      = trim($_POST['year_level']      ?? '');
+        $strand_course   = trim($_POST['strand_course']   ?? '');
+        $max_capacity    = trim($_POST['max_capacity']    ?? '');
+
+        // always use the active period school year — ignore any client-submitted value
+        $current     = $this->academic_model->getCurrentPeriod();
+        $school_year = $current['school_year'] ?? '';
 
         $errors = [];
+
+        if (empty($school_year)) {
+            $errors['general'] = 'No active academic period found. Please initialize a period first.';
+        }
 
         if (empty($section_name)) {
             $errors['section_name'] = 'Section name is required.';
@@ -338,13 +353,16 @@ class SectionController
         $this->requireAdmin();
         $this->validateCsrf();
 
-        $section_id = isset($_POST['section_id']) ? intval($_POST['section_id']) : null;
-        $section_name = trim($_POST['section_name'] ?? '');
-        $education_level = $_POST['education_level'] ?? '';
-        $year_level = trim($_POST['year_level'] ?? '');
-        $strand_course = trim($_POST['strand_course'] ?? '');
-        $max_capacity = trim($_POST['max_capacity'] ?? '');
-        $school_year = $_POST['school_year'] ?? '2025-2026';
+        $section_id      = isset($_POST['section_id']) ? intval($_POST['section_id']) : null;
+        $section_name    = trim($_POST['section_name']    ?? '');
+        $education_level = $_POST['education_level']      ?? '';
+        $year_level      = trim($_POST['year_level']      ?? '');
+        $strand_course   = trim($_POST['strand_course']   ?? '');
+        $max_capacity    = trim($_POST['max_capacity']    ?? '');
+
+        // always use the active period school year
+        $current     = $this->academic_model->getCurrentPeriod();
+        $school_year = $current['school_year'] ?? '';
 
         $errors = [];
 
@@ -457,10 +475,10 @@ class SectionController
         $this->requireAdmin();
 
         $section_id = isset($_GET['section_id']) ? intval($_GET['section_id']) : null;
-        $search = $_GET['search'] ?? '';
-        $page = isset($_GET['p']) ? (int)$_GET['p'] : 1;
-        $limit = 10;
-        $offset = ($page - 1) * $limit;
+        $search     = $_GET['search'] ?? '';
+        $page       = isset($_GET['p']) ? (int) $_GET['p'] : 1;
+        $limit      = 10;
+        $offset     = ($page - 1) * $limit;
 
         if (empty($section_id)) {
             $_SESSION['section_errors'] = ['general' => 'Invalid section.'];
@@ -476,9 +494,9 @@ class SectionController
             exit();
         }
 
-        $students = $this->student_model->getStudentsBySectionWithPagination($section_id, $limit, $offset, $search);
+        $students      = $this->student_model->getStudentsBySectionWithPagination($section_id, $limit, $offset, $search);
         $total_students = $this->student_model->getTotalStudentsInSectionCount($section_id, $search);
-        $total_pages = ceil($total_students / $limit);
+        $total_pages   = ceil($total_students / $limit);
 
         require __DIR__ . '/../views/admin/view_section.php';
     }
@@ -489,19 +507,19 @@ class SectionController
         $this->requireAdmin();
 
         $section_id = isset($_GET['section_id']) ? intval($_GET['section_id']) : null;
-        $page = isset($_GET['p']) ? (int)$_GET['p'] : 1;
-        $limit = 10;
-        $offset = ($page - 1) * $limit;
-        $search = $_GET['search'] ?? '';
+        $page       = isset($_GET['p']) ? (int) $_GET['p'] : 1;
+        $limit      = 10;
+        $offset     = ($page - 1) * $limit;
+        $search     = $_GET['search'] ?? '';
 
         if (!$section_id) {
             echo json_encode(['success' => false, 'message' => 'missing section id']);
             exit();
         }
 
-        $students = $this->student_model->getStudentsBySectionWithPagination($section_id, $limit, $offset, $search);
+        $students       = $this->student_model->getStudentsBySectionWithPagination($section_id, $limit, $offset, $search);
         $total_students = $this->student_model->getTotalStudentsInSectionCount($section_id, $search);
-        $total_pages = ceil($total_students / $limit);
+        $total_pages    = ceil($total_students / $limit);
 
         ob_start();
         if (empty($students)): ?>
@@ -536,21 +554,13 @@ class SectionController
                     </td>
                     <td>
                         <?php
-                        $statusClass = '';
-                        $statusText = ucfirst($student['enrollment_status']);
-                        switch ($student['enrollment_status']) {
-                            case 'active':
-                                $statusClass = 'badge-shs';
-                                break;
-                            case 'inactive':
-                                $statusClass = 'badge-college';
-                                break;
-                            default:
-                                $statusClass = 'badge-college';
-                        }
+                        $statusClass = match ($student['enrollment_status']) {
+                            'active'   => 'badge-shs',
+                            default    => 'badge-college',
+                        };
                         ?>
                         <span class="education-level-badge <?= $statusClass ?>">
-                            <?= $statusText ?>
+                            <?= ucfirst($student['enrollment_status']) ?>
                         </span>
                     </td>
                 </tr>
@@ -569,13 +579,11 @@ class SectionController
                     </li>
                     <?php
                     $start_page = max(1, $page - 2);
-                    $end_page = min($total_pages, $page + 2);
+                    $end_page   = min($total_pages, $page + 2);
                     for ($i = $start_page; $i <= $end_page; $i++):
                     ?>
                         <li class="page-item <?= ($i == $page) ? 'active' : '' ?>">
-                            <a class="page-link" href="#" data-page="<?= $i ?>">
-                                <?= $i ?>
-                            </a>
+                            <a class="page-link" href="#" data-page="<?= $i ?>"><?= $i ?></a>
                         </li>
                     <?php endfor; ?>
                     <li class="page-item <?= ($page >= $total_pages) ? 'disabled' : '' ?>">
@@ -592,10 +600,10 @@ class SectionController
         $pagination_html = ob_get_clean();
 
         echo json_encode([
-            'success' => true,
-            'table_html' => $table_html,
+            'success'         => true,
+            'table_html'      => $table_html,
             'pagination_html' => $pagination_html,
-            'total_students' => $total_students
+            'total_students'  => $total_students,
         ]);
         exit();
     }

@@ -68,6 +68,12 @@
                     </a>
                 </li>
                 <li class="nav-item">
+                    <a class="nav-link" href="index.php?page=academic_period">
+                        <i class="bi bi-calendar2-range-fill"></i>
+                        <span>Academic Period</span>
+                    </a>
+                </li>
+                <li class="nav-item">
                     <a class="nav-link" href="index.php?page=logout">
                         <i class="bi bi-box-arrow-right"></i>
                         <span>Logout</span>
@@ -100,7 +106,7 @@
                         <div class="user-avatar">
                             <?php
                             $firstname = $_SESSION['user_firstname'] ?? 'A';
-                            $lastname = $_SESSION['user_lastname'] ?? 'U';
+                            $lastname  = $_SESSION['user_lastname']  ?? 'U';
                             echo strtoupper(substr($firstname, 0, 1) . substr($lastname, 0, 1));
                             ?>
                         </div>
@@ -119,9 +125,7 @@
                             </a>
                         </li>
                         <li class="breadcrumb-item">
-                            <a href="index.php?page=manage_sections">
-                                Section Management
-                            </a>
+                            <a href="index.php?page=manage_sections">Section Management</a>
                         </li>
                         <li class="breadcrumb-item active" aria-current="page">
                             Create Section
@@ -141,6 +145,13 @@
                         </div>
                     </div>
                 </div>
+
+                <?php if (!$current_school_year): ?>
+                    <div class="alert alert-warning mb-4">
+                        <i class="bi bi-exclamation-triangle-fill me-2"></i>
+                        No active academic period found. Please <a href="index.php?page=academic_period">initialize a period</a> before creating sections.
+                    </div>
+                <?php endif; ?>
 
                 <!-- create form card -->
                 <div class="card subject-form-card">
@@ -165,6 +176,7 @@
                                         class="form-control"
                                         name="section_name"
                                         placeholder="e.g., Grade 11 - Section A"
+                                        <?= !$current_school_year ? 'disabled' : '' ?>
                                         required>
                                     <div class="invalid-feedback"></div>
                                 </div>
@@ -175,7 +187,8 @@
                                         Education Level
                                         <span class="text-danger">*</span>
                                     </label>
-                                    <select class="form-select" name="education_level" id="educationLevel" required>
+                                    <select class="form-select" name="education_level" id="educationLevel"
+                                        <?= !$current_school_year ? 'disabled' : '' ?> required>
                                         <option value="">Select education level</option>
                                         <option value="senior_high">Senior High School</option>
                                         <option value="college">College</option>
@@ -191,7 +204,8 @@
                                         Year Level
                                         <span class="text-danger">*</span>
                                     </label>
-                                    <select class="form-select" name="year_level" id="yearLevel" required>
+                                    <select class="form-select" name="year_level" id="yearLevel"
+                                        <?= !$current_school_year ? 'disabled' : '' ?> required>
                                         <option value="">Select education level first</option>
                                     </select>
                                     <div class="invalid-feedback"></div>
@@ -203,7 +217,8 @@
                                         <span id="strandCourseLabel">Strand/Course</span>
                                         <span class="text-danger">*</span>
                                     </label>
-                                    <select class="form-select" name="strand_course" id="strandCourse" required>
+                                    <select class="form-select" name="strand_course" id="strandCourse"
+                                        <?= !$current_school_year ? 'disabled' : '' ?> required>
                                         <option value="">Select education level first</option>
                                     </select>
                                     <div class="invalid-feedback"></div>
@@ -222,6 +237,7 @@
                                         name="max_capacity"
                                         placeholder="e.g., 35"
                                         min="1"
+                                        <?= !$current_school_year ? 'disabled' : '' ?>
                                         required>
                                     <div class="invalid-feedback"></div>
                                 </div>
@@ -235,7 +251,7 @@
                                     <input type="text"
                                         class="form-control"
                                         name="school_year"
-                                        value="2025-2026"
+                                        value="<?= htmlspecialchars($current_school_year) ?>"
                                         readonly>
                                     <div class="invalid-feedback"></div>
                                 </div>
@@ -246,7 +262,7 @@
                                     <i class="bi bi-x-circle"></i>
                                     Cancel
                                 </a>
-                                <button type="submit" class="btn btn-primary">
+                                <button type="submit" class="btn btn-primary" <?= !$current_school_year ? 'disabled' : '' ?>>
                                     <span class="spinner-border spinner-border-sm d-none me-1" role="status"></span>
                                     <i class="bi bi-check-circle-fill"></i>
                                     Create Section
@@ -304,7 +320,7 @@
                 },
                 {
                     value: 'BSOA',
-                    text: 'BSHM (Bachelor Of Science In Office Administration)'
+                    text: 'BSOA (Bachelor Of Science In Office Administration)'
                 }
             ]
         };
@@ -340,7 +356,6 @@
 
         function updateDropdowns() {
             const selectedLevel = educationLevelSelect.value;
-            const selectedCourse = strandCourseSelect.value;
 
             // update strand/course label
             if (selectedLevel === 'senior_high') {
@@ -351,12 +366,11 @@
                 strandCourseLabel.textContent = 'Strand/Course';
             }
 
-            // update strand/course options (only if education level changed)
+            // update strand/course options only if education level changed
             if (educationLevelSelect.dataset.lastLevel !== selectedLevel) {
                 strandCourseSelect.innerHTML = '<option value="">Select strand/course</option>';
                 if (selectedLevel) {
-                    const options = strandOptions[selectedLevel] || [];
-                    options.forEach(option => {
+                    (strandOptions[selectedLevel] || []).forEach(option => {
                         const opt = document.createElement('option');
                         opt.value = option.value;
                         opt.textContent = option.text;
@@ -364,7 +378,7 @@
                     });
                 }
                 educationLevelSelect.dataset.lastLevel = selectedLevel;
-                strandCourseSelect.value = "";
+                strandCourseSelect.value = '';
             }
 
             // update year level options
@@ -374,7 +388,7 @@
             if (selectedLevel) {
                 let options = yearOptions[selectedLevel] || [];
 
-                // ACT LOGIC
+                // ACT is only 2 years
                 if (selectedLevel === 'college' && strandCourseSelect.value === 'ACT') {
                     options = options.filter(y => y.value === '1st Year' || y.value === '2nd Year');
                 }
@@ -393,8 +407,8 @@
             }
         }
 
-        educationLevelSelect.addEventListener('change', updateDropdowns);
-        strandCourseSelect.addEventListener('change', updateDropdowns);
+        if (educationLevelSelect) educationLevelSelect.addEventListener('change', updateDropdowns);
+        if (strandCourseSelect) strandCourseSelect.addEventListener('change', updateDropdowns);
     </script>
     <script src="js/create-section-ajax.js"></script>
 

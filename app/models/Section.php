@@ -30,7 +30,7 @@ class Section
         return $stmt->fetchAll();
     }
 
-    public function getAllSectionsWithStudentCount($school_year = '2025-2026')
+    public function getAllSectionsWithStudentCount($school_year = '')
     {
         $stmt = $this->connection->prepare("
             SELECT 
@@ -59,7 +59,7 @@ class Section
         return $stmt->fetchAll();
     }
 
-    public function getSectionsByEducationLevel($education_level, $school_year = '2025-2026')
+    public function getSectionsByEducationLevel($education_level, $school_year = '')
     {
         $stmt = $this->connection->prepare("
             SELECT section_id, section_name, education_level, year_level, strand_course, max_capacity, school_year
@@ -98,6 +98,18 @@ class Section
         return $stmt->fetch();
     }
 
+    // returns all distinct school years that exist in sections table, newest first
+    public function getDistinctSchoolYears()
+    {
+        $stmt = $this->connection->prepare("
+            SELECT DISTINCT school_year
+            FROM sections
+            ORDER BY school_year DESC
+        ");
+        $stmt->execute();
+        return $stmt->fetchAll(PDO::FETCH_COLUMN);
+    }
+
     public function create($section_name, $education_level, $year_level, $strand_course, $max_capacity, $school_year)
     {
         $stmt = $this->connection->prepare("
@@ -119,7 +131,7 @@ class Section
 
     public function delete($section_id)
     {
-        // Enforce Referential Integrity Check (PHP Side, though DB ON DELETE RESTRICT also handles it)
+        // check for enrolled students before deleting
         $check_stmt = $this->connection->prepare("SELECT COUNT(*) as student_count FROM students WHERE section_id = ?");
         $check_stmt->execute([$section_id]);
         $result = $check_stmt->fetch();
@@ -145,7 +157,7 @@ class Section
         return $result['count'] > 0;
     }
 
-    public function getWithPagination($limit, $offset, $search = '', $school_year = '2025-2026')
+    public function getWithPagination($limit, $offset, $search = '', $school_year = '')
     {
         $sql = "
             SELECT 
@@ -167,8 +179,8 @@ class Section
 
         $stmt = $this->connection->prepare($sql);
         $stmt->bindValue(':school_year', $school_year);
-        $stmt->bindValue(':limit', (int)$limit, PDO::PARAM_INT);
-        $stmt->bindValue(':offset', (int)$offset, PDO::PARAM_INT);
+        $stmt->bindValue(':limit', (int) $limit, PDO::PARAM_INT);
+        $stmt->bindValue(':offset', (int) $offset, PDO::PARAM_INT);
 
         if (!empty($search)) {
             $stmt->bindValue(':search', "%{$search}%");
@@ -178,23 +190,24 @@ class Section
         return $stmt->fetchAll();
     }
 
-    public function getTotalCount($search = '', $school_year = '2025-2026')
+    public function getTotalCount($search = '', $school_year = '')
     {
-        $sql = "SELECT COUNT(*) as count FROM sections WHERE school_year = ?";
+        $sql    = "SELECT COUNT(*) as count FROM sections WHERE school_year = ?";
         $params = [$school_year];
 
         if (!empty($search)) {
-            $sql .= " AND (section_name LIKE ? OR strand_course LIKE ?)";
+            $sql     .= " AND (section_name LIKE ? OR strand_course LIKE ?)";
             $params[] = "%{$search}%";
             $params[] = "%{$search}%";
         }
+
         $stmt = $this->connection->prepare($sql);
         $stmt->execute($params);
         $result = $stmt->fetch();
         return $result['count'];
     }
 
-    public function getSectionsWithAvailability($school_year = '2025-2026', $year_level = null, $education_level = null)
+    public function getSectionsWithAvailability($school_year = '', $year_level = null, $education_level = null)
     {
         $sql = "
             SELECT 
@@ -210,12 +223,12 @@ class Section
         $params = [$school_year];
 
         if ($year_level !== null) {
-            $sql .= " AND sec.year_level = ?";
+            $sql     .= " AND sec.year_level = ?";
             $params[] = $year_level;
         }
 
         if ($education_level !== null) {
-            $sql .= " AND sec.education_level = ?";
+            $sql     .= " AND sec.education_level = ?";
             $params[] = $education_level;
         }
 

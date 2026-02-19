@@ -67,6 +67,12 @@
                     </a>
                 </li>
                 <li class="nav-item">
+                    <a class="nav-link" href="index.php?page=academic_period">
+                        <i class="bi bi-calendar2-range-fill"></i>
+                        <span>Academic Period</span>
+                    </a>
+                </li>
+                <li class="nav-item">
                     <a class="nav-link" href="index.php?page=logout">
                         <i class="bi bi-box-arrow-right"></i>
                         <span>Logout</span>
@@ -97,7 +103,7 @@
                         <div class="user-avatar">
                             <?php
                             $firstname = $_SESSION['user_firstname'] ?? 'A';
-                            $lastname = $_SESSION['user_lastname'] ?? 'U';
+                            $lastname  = $_SESSION['user_lastname']  ?? 'U';
                             echo strtoupper(substr($firstname, 0, 1) . substr($lastname, 0, 1));
                             ?>
                         </div>
@@ -139,7 +145,9 @@
                                     <span class="input-group-text">
                                         <i class="bi bi-search"></i>
                                     </span>
-                                    <input type="text" class="form-control" id="searchInput" placeholder="Search sections..." value="<?= htmlspecialchars($search ?? '') ?>">
+                                    <input type="text" class="form-control" id="searchInput"
+                                        placeholder="Search sections..."
+                                        value="<?= htmlspecialchars($search ?? '') ?>">
                                 </div>
                             </div>
                             <div class="action-buttons">
@@ -152,6 +160,7 @@
                     </div>
                 </div>
 
+                <!-- school year filter — options pulled from actual sections in db -->
                 <div class="card filter-card mb-3">
                     <div class="card-body">
                         <div class="filter-bar">
@@ -160,9 +169,16 @@
                                 School Year:
                             </label>
                             <select class="form-select school-year-select" id="schoolYearFilter">
-                                <option value="2025-2026" <?= ($school_year ?? '') === '2025-2026' ? 'selected' : '' ?>>2025-2026</option>
-                                <option value="2024-2025" <?= ($school_year ?? '') === '2024-2025' ? 'selected' : '' ?>>2024-2025</option>
-                                <option value="2023-2024" <?= ($school_year ?? '') === '2023-2024' ? 'selected' : '' ?>>2023-2024</option>
+                                <?php if (!empty($available_years)): ?>
+                                    <?php foreach ($available_years as $year): ?>
+                                        <option value="<?= htmlspecialchars($year) ?>"
+                                            <?= ($school_year ?? '') === $year ? 'selected' : '' ?>>
+                                            <?= htmlspecialchars($year) ?>
+                                        </option>
+                                    <?php endforeach; ?>
+                                <?php else: ?>
+                                    <option value="">No school years found</option>
+                                <?php endif; ?>
                             </select>
                         </div>
                     </div>
@@ -253,11 +269,9 @@
                                                     <i class="bi bi-chevron-left"></i>
                                                 </a>
                                             </li>
-
                                             <?php
                                             $start_page = max(1, $page - 2);
-                                            $end_page = min($total_pages, $page + 2);
-
+                                            $end_page   = min($total_pages, $page + 2);
                                             for ($i = $start_page; $i <= $end_page; $i++):
                                             ?>
                                                 <li class="page-item <?= ($i == $page) ? 'active' : '' ?>">
@@ -266,7 +280,6 @@
                                                     </a>
                                                 </li>
                                             <?php endfor; ?>
-
                                             <li class="page-item <?= ($page >= $total_pages) ? 'disabled' : '' ?>">
                                                 <a class="page-link" href="#" data-page="<?= $page + 1 ?>">
                                                     <i class="bi bi-chevron-right"></i>
@@ -286,6 +299,7 @@
         </div>
     </div>
 
+    <!-- delete confirmation modal -->
     <div class="modal fade" id="deleteSectionModal" tabindex="-1" aria-labelledby="deleteSectionModalLabel" aria-hidden="true">
         <div class="modal-dialog modal-dialog-centered">
             <div class="modal-content">
@@ -333,7 +347,7 @@
     <script src="bootstrap/js/bootstrap.bundle.min.js"></script>
     <script>
         const csrfToken = '<?= htmlspecialchars($_SESSION['csrf_token']) ?>';
-        let currentPage = <?= (int)($page ?? 1) ?>;
+        let currentPage = <?= (int) ($page ?? 1) ?>;
     </script>
     <script src="js/section-management-ajax.js"></script>
 
