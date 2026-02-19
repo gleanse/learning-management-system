@@ -110,17 +110,6 @@ class Enrollment
         return $stmt->fetchAll();
     }
 
-    public function getAllSubjects()
-    {
-        $stmt = $this->connection->prepare("
-            SELECT subject_id, subject_code, subject_name
-            FROM subjects
-            ORDER BY subject_code ASC
-        ");
-        $stmt->execute();
-        return $stmt->fetchAll();
-    }
-
     public function getActiveSchoolYears()
     {
         $stmt = $this->connection->prepare("
@@ -145,11 +134,7 @@ class Enrollment
 
             // regular = auto enroll all section subjects, irregular = manual subject pick
             $semester = $data['semester'] ?? 'First';
-            if (!empty($data['is_irregular'])) {
-                $this->enrollSubjectsManual($student_id, $data['subject_ids'] ?? [], $data['school_year'], $semester);
-            } else {
-                $this->enrollSubjectsFromSection($student_id, $data['section_id'], $data['school_year'], $semester);
-            }
+            $this->enrollSubjectsFromSection($student_id, $data['section_id'], $data['school_year'], $semester);
 
             $payment_id = $this->insertEnrollmentPayment($student_id, $data, $registrar_id);
 
@@ -259,22 +244,6 @@ class Enrollment
 
         foreach ($subjects as $subject) {
             $stmt->execute([$student_id, $subject['subject_id'], $school_year, $semester]);
-        }
-    }
-
-    // enroll only in manually selected subjects for irregular students
-    public function enrollSubjectsManual($student_id, $subject_ids, $school_year, $semester)
-    {
-        if (empty($subject_ids)) return;
-
-        $stmt = $this->connection->prepare("
-            INSERT IGNORE INTO student_subject_enrollments
-                (student_id, subject_id, school_year, semester, enrolled_date)
-            VALUES (?, ?, ?, ?, CURDATE())
-        ");
-
-        foreach ($subject_ids as $subject_id) {
-            $stmt->execute([$student_id, (int)$subject_id, $school_year, $semester]);
         }
     }
 

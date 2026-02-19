@@ -25,7 +25,6 @@ class EnrollmentController
 
         $draft        = $this->enrollment_model->getDraft();
         $school_years = $this->enrollment_model->getActiveSchoolYears();
-        $all_subjects = $this->enrollment_model->getAllSubjects();
 
         // only show draft toast if this isnt a validation error redirect
         $is_validation_error = !empty($_SESSION['enrollment_errors']);
@@ -236,11 +235,6 @@ class EnrollmentController
         if (empty($data['strand_course']))    $errors['strand_course']   = 'Strand or course is required';
         if (empty($data['school_year']))      $errors['school_year']     = 'School year is required';
         if (empty($data['semester']))         $errors['semester']        = 'Semester is required';
-
-        // irregular must pick at least one subject
-        if (!empty($data['is_irregular']) && empty($data['subject_ids'])) {
-            $errors['subject_ids'] = 'Please select at least one subject for irregular enrollment';
-        }
 
         // total amount must be greater than zero — means fee config exists for this course
         if (empty($data['total_amount']) || (float) $data['total_amount'] <= 0) {

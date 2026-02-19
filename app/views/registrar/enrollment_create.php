@@ -438,53 +438,6 @@
                                         </div>
                                     </div>
 
-                                    <!-- irregular enrollment toggle -->
-                                    <div class="irregular-toggle-wrapper mb-3">
-                                        <div class="form-check form-switch">
-                                            <input class="form-check-input" type="checkbox"
-                                                id="is_irregular" name="is_irregular" value="1"
-                                                <?= !empty($form_data['is_irregular']) ? 'checked' : '' ?>>
-                                            <label class="form-check-label" for="is_irregular">
-                                                <i class="bi bi-shuffle"></i>
-                                                Irregular Enrollment
-                                                <span class="irregular-badge">Manually select subjects</span>
-                                            </label>
-                                        </div>
-                                    </div>
-
-                                    <!-- irregular subject picker — shown only when toggle is on -->
-                                    <div class="subject-picker-wrapper d-none" id="subjectPickerWrapper">
-                                        <div class="subject-picker-header">
-                                            <i class="bi bi-book-fill"></i>
-                                            Select Subjects
-                                            <?php if (isset($errors['subject_ids'])): ?>
-                                                <span class="text-danger ms-2 fw-normal" style="font-size:0.85rem;">
-                                                    <?= htmlspecialchars($errors['subject_ids']) ?>
-                                                </span>
-                                            <?php endif; ?>
-                                        </div>
-                                        <div class="subject-search-wrapper">
-                                            <i class="bi bi-search"></i>
-                                            <input type="text" class="form-control" id="subjectSearch" placeholder="Search subjects...">
-                                        </div>
-                                        <div class="subject-list" id="subjectList">
-                                            <?php foreach ($all_subjects as $subject): ?>
-                                                <label class="subject-item">
-                                                    <input type="checkbox" name="subject_ids[]"
-                                                        value="<?= $subject['subject_id'] ?>"
-                                                        <?= in_array($subject['subject_id'], $form_data['subject_ids'] ?? []) ? 'checked' : '' ?>>
-                                                    <div class="subject-info">
-                                                        <span class="subject-code"><?= htmlspecialchars($subject['subject_code']) ?></span>
-                                                        <span class="subject-name"><?= htmlspecialchars($subject['subject_name']) ?></span>
-                                                    </div>
-                                                </label>
-                                            <?php endforeach; ?>
-                                        </div>
-                                        <div class="subject-picker-footer">
-                                            <span id="selectedSubjectCount">0 subjects selected</span>
-                                        </div>
-                                    </div>
-
                                     <div class="mb-3">
                                         <label class="form-label" for="previous_school">
                                             <i class="bi bi-building"></i>

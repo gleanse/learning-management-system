@@ -310,6 +310,10 @@
                 {
                     value: 'BSHM',
                     text: 'BSHM (Bachelor of Science in Hospitality Management)'
+                },
+                {
+                    value: 'BSOA',
+                    text: 'BSHM (Bachelor Of Science In Office Administration)'
                 }
             ]
         };

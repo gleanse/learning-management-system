@@ -131,17 +131,6 @@ document.addEventListener('DOMContentLoaded', function () {
       if (!getValue('semester'))
         errors.push({ field: 'semester', msg: 'Semester is required' });
 
-      const isIrregular = document.getElementById('is_irregular').checked;
-      if (isIrregular) {
-        const picked = document.querySelectorAll(
-          '.subject-item input:checked'
-        ).length;
-        if (picked === 0)
-          errors.push({
-            field: 'subject_picker',
-            msg: 'Please select at least one subject for irregular enrollment',
-          });
-      }
     }
 
     // step 3 — no required fields, registrar just records what was paid
@@ -416,57 +405,6 @@ document.addEventListener('DOMContentLoaded', function () {
 
   document.getElementById('school_year').addEventListener('change', fetchFees);
 
-  const irregularToggle = document.getElementById('is_irregular');
-  const subjectPickerWrapper = document.getElementById('subjectPickerWrapper');
-  const sectionWrapper = document.getElementById('sectionWrapper');
-
-  irregularToggle.addEventListener('change', function () {
-    if (this.checked) {
-      subjectPickerWrapper.classList.remove('d-none');
-      sectionWrapper.style.opacity = '0.4';
-      sectionWrapper.style.pointerEvents = 'none';
-    } else {
-      subjectPickerWrapper.classList.add('d-none');
-      sectionWrapper.style.opacity = '';
-      sectionWrapper.style.pointerEvents = '';
-    }
-  });
-
-  if (irregularToggle.checked) {
-    subjectPickerWrapper.classList.remove('d-none');
-    sectionWrapper.style.opacity = '0.4';
-    sectionWrapper.style.pointerEvents = 'none';
-  }
-
-  document
-    .getElementById('subjectSearch')
-    .addEventListener('input', function () {
-      const term = this.value.toLowerCase();
-      document.querySelectorAll('.subject-item').forEach((item) => {
-        const text =
-          item.querySelector('.subject-name').textContent.toLowerCase() +
-          item.querySelector('.subject-code').textContent.toLowerCase();
-        item.style.display = text.includes(term) ? '' : 'none';
-      });
-    });
-
-  document
-    .querySelectorAll('.subject-item input[type="checkbox"]')
-    .forEach((cb) => {
-      cb.addEventListener('change', updateSubjectCount);
-    });
-
-  function updateSubjectCount() {
-    const count = document.querySelectorAll(
-      '.subject-item input:checked'
-    ).length;
-    document.getElementById(
-      'selectedSubjectCount'
-    ).textContent = `${count} subject${count !== 1 ? 's' : ''} selected`;
-  }
-
-  updateSubjectCount();
-
   document
     .getElementById('initial_amount_paid')
     .addEventListener('input', updatePaymentSummary);
@@ -536,7 +474,6 @@ document.addEventListener('DOMContentLoaded', function () {
         [],
         'To be assigned'
       );
-      subjectPickerWrapper.classList.add('d-none');
       hideDuplicateAlert();
       goToStep(1);
       updatePaymentSummary();
