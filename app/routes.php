@@ -11,6 +11,8 @@ require_once __DIR__ . '/controllers/StudentSectionController.php';
 require_once __DIR__ . '/controllers/ScheduleManagementController.php';
 require_once __DIR__ . '/controllers/UserManagementController.php';
 require_once __DIR__ . '/controllers/SuperAdminDashboardController.php';
+require_once __DIR__ . '/controllers/EnrollmentController.php';
+require_once __DIR__ . '/controllers/RegistrarDashboardController.php';
 
 $page = $_GET['page'] ?? 'login';
 $method = $_SERVER['REQUEST_METHOD'];
@@ -769,15 +771,113 @@ if ($page === 'student_grades_view' && $method === 'GET') {
     exit();
 }
 
-// REGISTRAR ROUTES (registrar only)
+// REGISTRAR ENROLLMENT ROUTES (registrar only)
+
+// registrar dashboard
 if ($page === 'registrar_dashboard' && $method === 'GET') {
     if (!isLoggedIn() || !isRegistrar()) {
         header('Location: index.php?page=login');
         exit();
     }
 
-    // TODO: view here for the registrar dashboard
-    // include __DIR__ . '';
+    $controller = new RegistrarDashboardController();
+    $controller->showDashboard();
+    exit();
+}
+
+// show enrollment form
+if ($page === 'enrollment_create' && $method === 'GET') {
+    if (!isLoggedIn() || !isRegistrar()) {
+        header('Location: index.php?page=login');
+        exit();
+    }
+
+    $controller = new EnrollmentController();
+    $controller->showEnrollmentForm();
+    exit();
+}
+
+// process enrollment form submission
+if ($page === 'enrollment_store' && $method === 'POST') {
+    if (!isLoggedIn() || !isRegistrar()) {
+        header('Location: index.php?page=login');
+        exit();
+    }
+
+    $controller = new EnrollmentController();
+    $controller->store();
+    exit();
+}
+
+// success page after enrollment
+if ($page === 'enrollment_success' && $method === 'GET') {
+    if (!isLoggedIn() || !isRegistrar()) {
+        header('Location: index.php?page=login');
+        exit();
+    }
+
+    $controller = new EnrollmentController();
+    $controller->showSuccess();
+    exit();
+}
+
+// save draft via ajax
+if ($page === 'enrollment_save_draft' && $method === 'POST') {
+    if (!isLoggedIn() || !isRegistrar()) {
+        header('Location: index.php?page=login');
+        exit();
+    }
+
+    $controller = new EnrollmentController();
+    $controller->saveDraft();
+    exit();
+}
+
+// ajax: fetch sections based on academic dropdowns
+if ($page === 'enrollment_get_sections' && $method === 'GET') {
+    if (!isLoggedIn() || !isRegistrar()) {
+        header('Location: index.php?page=login');
+        exit();
+    }
+
+    $controller = new EnrollmentController();
+    $controller->getSections();
+    exit();
+}
+
+// ajax: fetch subjects for selected section
+if ($page === 'enrollment_get_subjects' && $method === 'GET') {
+    if (!isLoggedIn() || !isRegistrar()) {
+        header('Location: index.php?page=login');
+        exit();
+    }
+
+    $controller = new EnrollmentController();
+    $controller->getSubjects();
+    exit();
+}
+
+// ajax: fetch fee config for payment tab
+if ($page === 'enrollment_get_fees' && $method === 'GET') {
+    if (!isLoggedIn() || !isRegistrar()) {
+        header('Location: index.php?page=login');
+        exit();
+    }
+
+    $controller = new EnrollmentController();
+    $controller->getFees();
+    exit();
+}
+
+// ajax: soft duplicate name check before enrollment
+if ($page === 'enrollment_check_duplicate_name' && $method === 'GET') {
+    if (!isLoggedIn() || !isRegistrar()) {
+        header('Location: index.php?page=login');
+        exit();
+    }
+
+    $controller = new EnrollmentController();
+    $controller->checkDuplicateName();
     exit();
 }
 
