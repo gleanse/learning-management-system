@@ -146,3 +146,84 @@ VALUES
     (SELECT id FROM users WHERE role = 'admin' LIMIT 1),
     NOW()
 );
+
+-- student profiles seed for all 5 students
+
+INSERT INTO student_profiles (
+    student_id,
+    email,
+    date_of_birth,
+    gender,
+    contact_number,
+    home_address,
+    previous_school,
+    special_notes,
+    created_at,
+    updated_at
+)
+VALUES
+-- nicka garcia reyes
+(
+    (SELECT student_id FROM students WHERE student_number = '2025-00001'),
+    'nicka.reyes@email.com',
+    '2003-05-15',
+    'female',
+    '09171234567',
+    '123 Rizal St., Quezon City',
+    'Quezon City Science High School',
+    NULL,
+    NOW(),
+    NOW()
+),
+-- pedro cruz ramos
+(
+    (SELECT student_id FROM students WHERE student_number = '2025-00002'),
+    'pedro.ramos@email.com',
+    '2003-08-22',
+    'male',
+    NULL,
+    '456 Mabini Ave., Manila',
+    'Manila High School',
+    NULL,
+    NOW(),
+    NOW()
+),
+-- ana marie torres
+(
+    (SELECT student_id FROM students WHERE student_number = '2025-00003'),
+    'ana.torres@email.com',
+    '2007-02-10',
+    'female',
+    '09981234567',
+    '789 Bonifacio St., Makati',
+    'Makati Science High School',
+    NULL,
+    NOW(),
+    NOW()
+),
+-- carlos david gonzales
+(
+    (SELECT student_id FROM students WHERE student_number = '2025-00004'),
+    NULL,
+    '2006-11-30',
+    'male',
+    NULL,
+    '321 Luna St., Pasig',
+    'Pasig High School',
+    NULL,
+    NOW(),
+    NOW()
+),
+-- john michael dela cruz
+(
+    (SELECT student_id FROM students WHERE student_number = '2025-00005'),
+    NULL,
+    '2007-07-04',
+    'male',
+    '09181234567',
+    '654 Aguinaldo St., Caloocan',
+    'Caloocan National High School',
+    NULL,
+    NOW(),
+    NOW()
+);

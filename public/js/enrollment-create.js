@@ -108,7 +108,6 @@ document.addEventListener('DOMContentLoaded', function () {
           'LRN is required for Senior High School enrollment'
         );
 
-        // also update the lrn label to show the required indicator
         document.querySelector('.lrn-required-indicator').style.display = '';
         document.querySelector('.lrn-optional-badge').style.display = 'none';
         return false;
@@ -126,10 +125,8 @@ document.addEventListener('DOMContentLoaded', function () {
           field: 'strand_course',
           msg: 'Strand or course is required',
         });
-      if (!getValue('school_year'))
-        errors.push({ field: 'school_year', msg: 'School year is required' });
-      if (!getValue('semester'))
-        errors.push({ field: 'semester', msg: 'Semester is required' });
+
+      // school_year and semester are now auto-set from active period — skip validation
     }
 
     // step 3 — no required fields, registrar just records what was paid
@@ -190,7 +187,7 @@ document.addEventListener('DOMContentLoaded', function () {
   });
 
   // duplicate name check — fires on blur of last_name, or middle_name if filled
-  // soft warning only — registrar can still proceeD
+  // soft warning only — registrar can still proceed
   const firstNameInput = document.getElementById('first_name');
   const middleNameInput = document.getElementById('middle_name');
   const lastNameInput = document.getElementById('last_name');
@@ -201,7 +198,6 @@ document.addEventListener('DOMContentLoaded', function () {
     const last = lastNameInput.value.trim();
     const middle = middleNameInput.value.trim();
 
-    // need at least first + last to check
     if (!first || !last) return;
 
     const params = new URLSearchParams({
@@ -219,7 +215,7 @@ document.addEventListener('DOMContentLoaded', function () {
         }
         showDuplicateAlert(res.matches);
       })
-      .catch(() => {}); // fail silently — duplicate check is non-critical
+      .catch(() => {});
   }
 
   function showDuplicateAlert(matches) {
@@ -257,15 +253,12 @@ document.addEventListener('DOMContentLoaded', function () {
     duplicateAlert.innerHTML = '';
   }
 
-  // trigger check when last name blurs (most likely final name field filled)
   lastNameInput.addEventListener('blur', runDuplicateCheck);
 
-  // re-check if middle name is filled and then blurred
   middleNameInput.addEventListener('blur', function () {
     if (this.value.trim()) runDuplicateCheck();
   });
 
-  // clear alert when first name is cleared
   firstNameInput.addEventListener('input', function () {
     if (!this.value.trim()) hideDuplicateAlert();
   });
@@ -309,7 +302,6 @@ document.addEventListener('DOMContentLoaded', function () {
     }
   });
 
-  // fetch fees when strand changes since fees are now per course
   strandCourseSelect.addEventListener('change', fetchFees);
   yearLevelSelect.addEventListener('change', fetchFees);
 
@@ -323,11 +315,8 @@ document.addEventListener('DOMContentLoaded', function () {
     });
   }
 
-  [
-    yearLevelSelect,
-    strandCourseSelect,
-    document.getElementById('school_year'),
-  ].forEach((el) => {
+  // school_year is now a hidden input — no change listener needed
+  [yearLevelSelect, strandCourseSelect].forEach((el) => {
     el.addEventListener('change', fetchSections);
   });
 
@@ -343,7 +332,7 @@ document.addEventListener('DOMContentLoaded', function () {
       education_level: educationLevel,
       year_level: yearLevel,
       strand_course: strandCourse,
-      school_year: schoolYear,
+      // school_year still sent for reference but controller uses active period
     });
 
     fetch(`${ENROLLMENT_DATA.ajaxUrls.getSections}&${params}`)
@@ -470,7 +459,6 @@ document.addEventListener('DOMContentLoaded', function () {
       goToStep(1);
       updatePaymentSummary();
       updateDocCount();
-      updateSubjectCount();
     });
 
   goToStep(1);

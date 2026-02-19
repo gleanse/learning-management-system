@@ -50,6 +50,12 @@
                     </a>
                 </li>
                 <li class="nav-item">
+                    <a class="nav-link" href="index.php?page=student_profiles">
+                        <i class="bi bi-people-fill"></i>
+                        <span>Student Profiles</span>
+                    </a>
+                </li>
+                <li class="nav-item">
                     <a class="nav-link" href="index.php?page=logout">
                         <i class="bi bi-box-arrow-right"></i>
                         <span>Logout</span>
@@ -361,7 +367,7 @@
                                                 id="education_level" name="education_level">
                                                 <option value="">Select education level</option>
                                                 <option value="senior_high" <?= ($form_data['education_level'] ?? '') === 'senior_high' ? 'selected' : '' ?>>Senior High School</option>
-                                                <option value="college" <?= ($form_data['education_level'] ?? '') === 'college'     ? 'selected' : '' ?>>College</option>
+                                                <option value="college" <?= ($form_data['education_level'] ?? '') === 'college' ? 'selected' : '' ?>>College</option>
                                             </select>
                                             <?php if (isset($errors['education_level'])): ?>
                                                 <div class="invalid-feedback"><?= htmlspecialchars($errors['education_level']) ?></div>
@@ -397,41 +403,29 @@
                                             <?php endif; ?>
                                         </div>
                                         <div class="col-md-6 mb-3">
-                                            <label class="form-label" for="school_year">
+                                            <!-- school year — auto set from active period, read only display -->
+                                            <label class="form-label">
                                                 <i class="bi bi-calendar-range"></i>
-                                                School Year <span class="text-danger">*</span>
+                                                School Year
                                             </label>
-                                            <select class="form-select <?= isset($errors['school_year']) ? 'is-invalid' : '' ?>"
-                                                id="school_year" name="school_year">
-                                                <option value="">Select school year</option>
-                                                <?php foreach ($school_years as $sy): ?>
-                                                    <option value="<?= htmlspecialchars($sy['school_year']) ?>"
-                                                        <?= ($form_data['school_year'] ?? '') === $sy['school_year'] ? 'selected' : '' ?>>
-                                                        <?= htmlspecialchars($sy['school_year']) ?>
-                                                    </option>
-                                                <?php endforeach; ?>
-                                            </select>
-                                            <?php if (isset($errors['school_year'])): ?>
-                                                <div class="invalid-feedback"><?= htmlspecialchars($errors['school_year']) ?></div>
-                                            <?php endif; ?>
+                                            <input type="text" class="form-control bg-light"
+                                                value="<?= htmlspecialchars($form_data['school_year']) ?>" readonly>
+                                            <input type="hidden" name="school_year" id="school_year"
+                                                value="<?= htmlspecialchars($form_data['school_year']) ?>">
                                         </div>
                                     </div>
 
                                     <div class="row">
                                         <div class="col-md-6 mb-3">
-                                            <label class="form-label" for="semester">
+                                            <!-- semester — auto set from active period, read only display -->
+                                            <label class="form-label">
                                                 <i class="bi bi-calendar2-week"></i>
-                                                Semester <span class="text-danger">*</span>
+                                                Semester
                                             </label>
-                                            <select class="form-select <?= isset($errors['semester']) ? 'is-invalid' : '' ?>"
-                                                id="semester" name="semester">
-                                                <option value="">Select semester</option>
-                                                <option value="First" <?= ($form_data['semester'] ?? '') === 'First'  ? 'selected' : '' ?>>First Semester</option>
-                                                <option value="Second" <?= ($form_data['semester'] ?? '') === 'Second' ? 'selected' : '' ?>>Second Semester</option>
-                                            </select>
-                                            <?php if (isset($errors['semester'])): ?>
-                                                <div class="invalid-feedback"><?= htmlspecialchars($errors['semester']) ?></div>
-                                            <?php endif; ?>
+                                            <input type="text" class="form-control bg-light"
+                                                value="<?= htmlspecialchars($form_data['semester']) ?> Semester" readonly>
+                                            <input type="hidden" name="semester" id="semester"
+                                                value="<?= htmlspecialchars($form_data['semester']) ?>">
                                         </div>
                                         <div class="col-md-6 mb-3" id="sectionWrapper">
                                             <label class="form-label" for="section_id">
@@ -474,7 +468,7 @@
                                         Payment
                                     </div>
 
-                                    <!-- fee breakdown — auto-loaded based on course and school year -->
+                                    <!-- fee breakdown — auto-loaded based on course -->
                                     <div class="fee-breakdown mb-4">
                                         <div class="fee-breakdown-title">
                                             <i class="bi bi-receipt"></i>

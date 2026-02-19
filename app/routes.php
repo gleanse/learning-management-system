@@ -15,6 +15,7 @@ require_once __DIR__ . '/controllers/EnrollmentController.php';
 require_once __DIR__ . '/controllers/RegistrarDashboardController.php';
 require_once __DIR__ . '/controllers/PaymentController.php';
 require_once __DIR__ . '/controllers/AcademicPeriodController.php';
+require_once __DIR__ . '/controllers/StudentProfileController.php';
 
 $page = $_GET['page'] ?? 'login';
 $method = $_SERVER['REQUEST_METHOD'];
@@ -987,6 +988,74 @@ if ($page === 'payment_get_receipt' && $method === 'GET') {
 
     $controller = new PaymentController();
     $controller->getReceipt();
+    exit();
+}
+
+// STUDENT PROFILE ROUTES (registrar only)
+
+// main student profiles list
+if ($page === 'student_profiles' && $method === 'GET') {
+    if (!isLoggedIn() || !isRegistrar()) {
+        header('Location: index.php?page=login');
+        exit();
+    }
+    $controller = new StudentProfileController();
+    $controller->showProfiles();
+    exit();
+}
+
+// view single student profile
+if ($page === 'view_student_profile' && $method === 'GET') {
+    if (!isLoggedIn() || !isRegistrar()) {
+        header('Location: index.php?page=login');
+        exit();
+    }
+    $controller = new StudentProfileController();
+    $controller->showViewProfile();
+    exit();
+}
+
+// show edit profile form
+if ($page === 'edit_student_profile' && $method === 'GET') {
+    if (!isLoggedIn() || !isRegistrar()) {
+        header('Location: index.php?page=login');
+        exit();
+    }
+    $controller = new StudentProfileController();
+    $controller->showEditProfile();
+    exit();
+}
+
+// process save profile
+if ($page === 'save_student_profile' && $method === 'POST') {
+    if (!isLoggedIn() || !isRegistrar()) {
+        header('Location: index.php?page=login');
+        exit();
+    }
+    $controller = new StudentProfileController();
+    $controller->processSaveProfile();
+    exit();
+}
+
+// export students to csv
+if ($page === 'export_student_profiles' && $method === 'GET') {
+    if (!isLoggedIn() || !isRegistrar()) {
+        header('Location: index.php?page=login');
+        exit();
+    }
+    $controller = new StudentProfileController();
+    $controller->exportCsv();
+    exit();
+}
+
+// ajax: search students
+if ($page === 'ajax_search_student_profiles' && $method === 'GET') {
+    if (!isLoggedIn() || !isRegistrar()) {
+        header('Location: index.php?page=login');
+        exit();
+    }
+    $controller = new StudentProfileController();
+    $controller->ajaxSearch();
     exit();
 }
 

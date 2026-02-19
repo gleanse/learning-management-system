@@ -1,14 +1,17 @@
 <?php
 
 require_once __DIR__ . '/../models/Enrollment.php';
+require_once __DIR__ . '/../models/AcademicPeriod.php';
 
 class EnrollmentController
 {
     private $enrollment_model;
+    private $academic_model;
 
     public function __construct()
     {
         $this->enrollment_model = new Enrollment();
+        $this->academic_model   = new AcademicPeriod();
     }
 
     private function requireRegistrar()
@@ -23,23 +26,27 @@ class EnrollmentController
     {
         $this->requireRegistrar();
 
-        $draft        = $this->enrollment_model->getDraft();
-        $school_years = $this->enrollment_model->getActiveSchoolYears();
+        $draft = $this->enrollment_model->getDraft();
 
-        // only show draft toast if this isnt a validation error redirect
+        // get active academic period
+        $current     = $this->academic_model->getCurrentPeriod();
+        $school_year = $current['school_year'] ?? '';
+        $semester    = $current['semester']    ?? 'First';
+
         $is_validation_error = !empty($_SESSION['enrollment_errors']);
 
-        // pull any errors or old form data from session
         $errors    = $_SESSION['enrollment_errors'] ?? [];
         $form_data = $_SESSION['enrollment_form_data'] ?? [];
         unset($_SESSION['enrollment_errors'], $_SESSION['enrollment_form_data']);
 
-        // restore draft into form_data if no validation error data exists
         if (empty($form_data) && !empty($draft)) {
             $form_data = $draft;
         }
 
-        // default fee config — zeros until registrar selects school year + level + course
+        // always override with active period — registrar cant change these
+        $form_data['school_year'] = $school_year;
+        $form_data['semester']    = $semester;
+
         $fee_config = $this->buildFeeConfig(
             $form_data['year_level']      ?? '',
             $form_data['education_level'] ?? '',
@@ -52,13 +59,15 @@ class EnrollmentController
     public function getSections()
     {
         $this->requireRegistrar();
-
         header('Content-Type: application/json');
 
         $education_level = $_GET['education_level'] ?? '';
         $year_level      = $_GET['year_level']      ?? '';
         $strand_course   = $_GET['strand_course']   ?? '';
-        $school_year     = $_GET['school_year']     ?? '';
+
+        // school_year from active period, not from client
+        $current     = $this->academic_model->getCurrentPeriod();
+        $school_year = $current['school_year'] ?? '';
 
         if (!$education_level || !$year_level || !$strand_course || !$school_year) {
             echo json_encode(['success' => false, 'message' => 'Missing parameters']);
