@@ -130,7 +130,6 @@ document.addEventListener('DOMContentLoaded', function () {
         errors.push({ field: 'school_year', msg: 'School year is required' });
       if (!getValue('semester'))
         errors.push({ field: 'semester', msg: 'Semester is required' });
-
     }
 
     // step 3 — no required fields, registrar just records what was paid
@@ -281,13 +280,7 @@ document.addEventListener('DOMContentLoaded', function () {
   };
 
   const strandOptions = {
-    senior_high: [
-      'STEM',
-      'ABM',
-      'HUMSS',
-      'GAS',
-      'ICT',
-    ],
+    senior_high: ['STEM', 'ABM', 'HUMSS', 'GAS', 'ICT'],
     college: ['BSIT', 'BSHM', 'BSOA', 'ACT'],
   };
 
@@ -318,6 +311,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
   // fetch fees when strand changes since fees are now per course
   strandCourseSelect.addEventListener('change', fetchFees);
+  yearLevelSelect.addEventListener('change', fetchFees);
 
   function populateSelect(selectEl, options, placeholder) {
     selectEl.innerHTML = `<option value="">${placeholder}</option>`;
@@ -372,14 +366,14 @@ document.addEventListener('DOMContentLoaded', function () {
   }
 
   function fetchFees() {
-    const schoolYear = document.getElementById('school_year').value;
+    const yearLevel = yearLevelSelect.value;
     const educationLevel = educationLevelSelect.value;
     const strandCourse = strandCourseSelect.value;
 
-    if (!schoolYear || !educationLevel || !strandCourse) return;
+    if (!yearLevel || !educationLevel || !strandCourse) return;
 
     const params = new URLSearchParams({
-      school_year: schoolYear,
+      year_level: yearLevel,
       education_level: educationLevel,
       strand_course: strandCourse,
     });
@@ -402,8 +396,6 @@ document.addEventListener('DOMContentLoaded', function () {
       })
       .catch(() => showToast('danger', 'Failed to load fee configuration.'));
   }
-
-  document.getElementById('school_year').addEventListener('change', fetchFees);
 
   document
     .getElementById('initial_amount_paid')

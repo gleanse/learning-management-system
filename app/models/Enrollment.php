@@ -37,17 +37,17 @@ class Enrollment
     }
 
     // fetch one row — tuition, miscellaneous, other_fees for the given school year + level + course
-    public function getFeeConfig($school_year, $education_level, $strand_course)
+    public function getFeeConfig($year_level, $education_level, $strand_course)
     {
         $stmt = $this->connection->prepare("
-            SELECT tuition_fee, miscellaneous, other_fees
-            FROM fee_config
-            WHERE school_year    = ?
-            AND education_level  = ?
-            AND strand_course    = ?
-            LIMIT 1
-        ");
-        $stmt->execute([$school_year, $education_level, $strand_course]);
+        SELECT tuition_fee, miscellaneous, other_fees
+        FROM fee_config
+        WHERE school_year   = ?
+        AND education_level = ?
+        AND strand_course   = ?
+        LIMIT 1
+    ");
+        $stmt->execute([$year_level, $education_level, $strand_course]);
         return $stmt->fetch();
     }
 
@@ -232,18 +232,27 @@ class Enrollment
     // bulk enroll into all subjects tied to the section
     public function enrollSubjectsFromSection($student_id, $section_id, $school_year, $semester)
     {
-        $subjects = $this->getSubjectsBySection($section_id, $school_year);
+        $stmt = $this->connection->prepare("
+        SELECT DISTINCT subject_id
+        FROM teacher_subject_assignments
+        WHERE section_id = ?
+            AND school_year = ?
+            AND semester = ?
+            AND status = 'active'
+    ");
+        $stmt->execute([$section_id, $school_year, $semester]);
+        $subjects = $stmt->fetchAll();
 
         if (empty($subjects)) return;
 
-        $stmt = $this->connection->prepare("
-            INSERT IGNORE INTO student_subject_enrollments
-                (student_id, subject_id, school_year, semester, enrolled_date)
-            VALUES (?, ?, ?, ?, CURDATE())
-        ");
+        $insertStmt = $this->connection->prepare("
+        INSERT IGNORE INTO student_subject_enrollments
+            (student_id, subject_id, school_year, semester, enrolled_date)
+        VALUES (?, ?, ?, ?, CURDATE())
+    ");
 
         foreach ($subjects as $subject) {
-            $stmt->execute([$student_id, $subject['subject_id'], $school_year, $semester]);
+            $insertStmt->execute([$student_id, $subject['subject_id'], $school_year, $semester]);
         }
     }
 

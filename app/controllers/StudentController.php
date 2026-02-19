@@ -53,9 +53,38 @@ class StudentController
     {
         $student_info = $this->requireStudent();
 
+        $current         = $this->academic_model->getCurrentPeriod();
         $school_year     = $this->resolveSchoolYear();
+        $semester        = $current['semester'] ?? 'First';
         $available_years = $this->getStudentSchoolYears($student_info['student_id']);
         $year_levels     = $this->student_model->getYearLevelsByStudentId($student_info['student_id'], $school_year);
+
+        // balance always uses current active period, not selected school year
+        $current_school_year = $current['school_year'] ?? '';
+        $balance = $this->student_model->getStudentBalance(
+            $student_info['student_id'],
+            $current_school_year,
+            $semester
+        );
+
+        // today's schedule — based on student's current section_id
+        $raw_schedule = [];
+        if (!empty($student_info['section_id'])) {
+            $raw_schedule = $this->student_model->getTodayScheduleBySection(
+                $student_info['section_id'],
+                $current['school_year'] ?? $school_year,
+                $semester
+            );
+        }
+
+        // format time_range and room display for the view
+        $today_schedule = array_map(function ($class) {
+            $class['time_range']    = date('g:i A', strtotime($class['start_time']))
+                . ' – '
+                . date('g:i A', strtotime($class['end_time']));
+            $class['room_display']  = !empty($class['room']) ? $class['room'] : 'TBA';
+            return $class;
+        }, $raw_schedule);
 
         require __DIR__ . '/../views/student/student_dashboard.php';
     }

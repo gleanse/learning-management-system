@@ -232,4 +232,18 @@ class TeacherAssignment
         $stmt->execute([$teacher_id, $section_id, $school_year, $semester, $status]);
         return $stmt->fetch(PDO::FETCH_ASSOC);
     }
+    
+    public function getSubjectIdsBySection($section_id, $school_year, $semester)
+    {
+        $stmt = $this->connection->prepare("
+        SELECT DISTINCT subject_id 
+        FROM teacher_subject_assignments
+        WHERE section_id = ? 
+            AND school_year = ? 
+            AND semester = ?
+            AND status = 'active'
+    ");
+        $stmt->execute([$section_id, $school_year, $semester]);
+        return $stmt->fetchAll(PDO::FETCH_COLUMN);
+    }
 }

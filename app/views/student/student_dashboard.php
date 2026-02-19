@@ -74,7 +74,7 @@
                         <div class="user-avatar">
                             <?php
                             $firstname = $_SESSION['user_firstname'] ?? 'S';
-                            $lastname = $_SESSION['user_lastname'] ?? 'T';
+                            $lastname  = $_SESSION['user_lastname']  ?? 'T';
                             echo strtoupper(substr($firstname, 0, 1) . substr($lastname, 0, 1));
                             ?>
                         </div>
@@ -96,38 +96,125 @@
                 <!-- welcome banner -->
                 <div class="welcome-banner mb-4">
                     <div class="welcome-content">
-                        <div class="welcome-text">
-                            <h2 class="welcome-title">Good <?php date_default_timezone_set('Asia/Manila');
-                                                            echo (date('H') < 12) ? 'Morning' : ((date('H') < 18) ? 'Afternoon' : 'Evening'); ?>, <?php echo htmlspecialchars($_SESSION['user_firstname']) . ' ' . htmlspecialchars($_SESSION['user_lastname']); ?></h2>
-                            <p class="welcome-subtitle">Student • <?php echo htmlspecialchars($student_info['student_number'] ?? 'N/A'); ?> • <?php echo htmlspecialchars($student_info['section_name'] ?? 'N/A'); ?></p>
+                        <h2 class="welcome-title">
+                            Good <?php
+                                    date_default_timezone_set('Asia/Manila');
+                                    $hour = (int) date('H');
+                                    echo $hour < 12 ? 'Morning' : ($hour < 18 ? 'Afternoon' : 'Evening');
+                                    ?>, <?= htmlspecialchars($_SESSION['user_firstname'] . ' ' . $_SESSION['user_lastname']) ?>
+                        </h2>
+                        <p class="welcome-subtitle">
+                            Student &bull;
+                            <?= htmlspecialchars($student_info['student_number'] ?? 'N/A') ?> &bull;
+                            <?= htmlspecialchars($student_info['section_name'] ?? 'No Section') ?>
+                        </p>
+                    </div>
+                </div>
+
+                <div class="row g-4 mb-4">
+                    <!-- balance card -->
+                    <div class="col-md-4">
+                        <div class="card h-100 balance-card">
+                            <div class="card-header">
+                                <h5 class="mb-0">
+                                    <i class="bi bi-wallet2"></i>
+                                    My Balance
+                                </h5>
+                            </div>
+                            <div class="card-body d-flex flex-column justify-content-center align-items-center text-center py-4">
+                                <?php if ($balance): ?>
+                                    <div class="balance-status-badge mb-2">
+                                        <?php if ($balance['status'] === 'paid'): ?>
+                                            <span class="badge bg-success"><i class="bi bi-check-circle-fill"></i> Paid</span>
+                                        <?php elseif ($balance['status'] === 'partial'): ?>
+                                            <span class="badge bg-warning text-dark"><i class="bi bi-clock-fill"></i> Partial</span>
+                                        <?php else: ?>
+                                            <span class="badge bg-danger"><i class="bi bi-exclamation-circle-fill"></i> Pending</span>
+                                        <?php endif; ?>
+                                    </div>
+                                    <div class="balance-amount <?= $balance['remaining'] > 0 ? 'text-danger' : 'text-success' ?>">
+                                        ₱<?= number_format($balance['remaining'], 2) ?>
+                                    </div>
+                                    <p class="balance-label">Remaining Balance</p>
+                                    <div class="balance-meta mt-2">
+                                        <small class="text-muted">
+                                            Total: ₱<?= number_format($balance['net_amount'], 2) ?><br>
+                                            Paid: ₱<?= number_format($balance['total_paid'], 2) ?>
+                                        </small>
+                                    </div>
+                                <?php else: ?>
+                                    <div class="empty-state py-2">
+                                        <div class="empty-state-icon" style="width:64px;height:64px;margin-bottom:1rem;">
+                                            <i class="bi bi-wallet2" style="font-size:1.75rem;"></i>
+                                        </div>
+                                        <p class="empty-state-text" style="font-size:0.938rem;">No payment record found.</p>
+                                    </div>
+                                <?php endif; ?>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- today's schedule card -->
+                    <div class="col-md-8">
+                        <div class="card h-100">
+                            <div class="card-header">
+                                <h5 class="mb-0">
+                                    <i class="bi bi-calendar-day-fill"></i>
+                                    Today's Classes
+                                    <span class="schedule-date-badge ms-2">
+                                        <?= date('l, F j', strtotime('today')) ?>
+                                    </span>
+                                </h5>
+                            </div>
+                            <div class="card-body">
+                                <?php if (empty($today_schedule)): ?>
+                                    <div class="empty-state py-2">
+                                        <div class="empty-state-icon" style="width:64px;height:64px;margin-bottom:1rem;">
+                                            <i class="bi bi-calendar-x" style="font-size:1.75rem;"></i>
+                                        </div>
+                                        <p class="empty-state-text" style="font-size:0.938rem;">No classes scheduled today.</p>
+                                        <p class="empty-state-subtext">Enjoy your free day!</p>
+                                    </div>
+                                <?php else: ?>
+                                    <div class="schedule-list">
+                                        <?php foreach ($today_schedule as $class): ?>
+                                            <div class="schedule-item">
+                                                <div class="schedule-time">
+                                                    <i class="bi bi-clock"></i>
+                                                    <?= htmlspecialchars($class['time_range']) ?>
+                                                </div>
+                                                <div class="schedule-info">
+                                                    <div class="schedule-subject"><?= htmlspecialchars($class['subject_name']) ?></div>
+                                                    <div class="schedule-meta">
+                                                        <span><i class="bi bi-code-square"></i> <?= htmlspecialchars($class['subject_code']) ?></span>
+                                                        <span><i class="bi bi-door-open"></i> <?= htmlspecialchars($class['room_display']) ?></span>
+                                                    </div>
+                                                </div>
+                                                <div class="schedule-status">
+                                                    <?php
+                                                    date_default_timezone_set('Asia/Manila');
+                                                    $now       = strtotime(date('H:i:s'));
+                                                    $start     = strtotime($class['start_time']);
+                                                    $end       = strtotime($class['end_time']);
+                                                    ?>
+                                                    <?php if ($now >= $start && $now <= $end): ?>
+                                                        <span class="badge bg-success"><i class="bi bi-dot"></i> Ongoing</span>
+                                                    <?php elseif ($now < $start): ?>
+                                                        <span class="badge bg-primary"><i class="bi bi-hourglass-split"></i> Upcoming</span>
+                                                    <?php else: ?>
+                                                        <span class="badge bg-secondary"><i class="bi bi-check2"></i> Done</span>
+                                                    <?php endif; ?>
+                                                </div>
+                                            </div>
+                                        <?php endforeach; ?>
+                                    </div>
+                                <?php endif; ?>
+                            </div>
                         </div>
                     </div>
                 </div>
 
-                <div class="card mb-4">
-                    <div class="card-header d-flex justify-content-between align-items-center">
-                        <h5 class="mb-0">
-                            <i class="bi bi-calendar-event"></i> My Schedule & Payments
-                        </h5>
-                        <div>
-                            <button class="btn btn-sm btn-outline-secondary" id="prevMonth">‹</button>
-                            <span id="currentMonth" class="mx-2 fw-bold"></span>
-                            <button class="btn btn-sm btn-outline-secondary" id="nextMonth">›</button>
-                        </div>
-                    </div>
-
-                    <div class="card-body">
-                        <div class="calendar-grid" id="calendar"></div>
-
-                        <div class="mt-3">
-                            <p class="mb-1"><strong>Payment:</strong> ₱1,750 / 28 days</p>
-                            <p class="mb-0 text-danger"><strong>Penalty:</strong> ₱100 if unpaid on due date</p>
-                        </div>
-                    </div>
-                </div>
-
-
-                <!-- quick links section -->
+                <!-- quick links to grades -->
                 <div class="card">
                     <div class="card-header">
                         <h5 class="mb-0">
@@ -146,127 +233,22 @@
                         <?php else: ?>
                             <div class="list-group">
                                 <?php foreach ($year_levels as $level): ?>
-                                    <a href="index.php?page=student_semesters&year_level=<?php echo urlencode($level['year_level']); ?>"
+                                    <a href="index.php?page=student_semesters&year_level=<?= urlencode($level['year_level']) ?>&school_year=<?= urlencode($school_year) ?>"
                                         class="list-group-item list-group-item-action">
                                         <i class="bi bi-mortarboard-fill"></i>
-                                        <?php echo htmlspecialchars($level['year_level']); ?>
+                                        <?= htmlspecialchars($level['year_level']) ?>
                                     </a>
                                 <?php endforeach; ?>
                             </div>
                         <?php endif; ?>
                     </div>
                 </div>
+
             </div>
         </div>
     </div>
 
     <script src="bootstrap/js/bootstrap.bundle.min.js"></script>
-    <script>
-        let currentDate = new Date();
-        const today = new Date();
-        today.setDate(1);
-        today.setHours(0, 0, 0, 0);
-
-        const scheduleDays = ['Mon', 'Wed', 'Fri'];
-        const paymentInterval = 28;
-
-        const calendarEl = document.getElementById('calendar');
-        const monthLabel = document.getElementById('currentMonth');
-        const prevBtn = document.getElementById('prevMonth');
-        const nextBtn = document.getElementById('nextMonth');
-
-        function updateButtonStates() {
-            // Create normalized version of currentDate for comparison
-            const viewingDate = new Date(currentDate.getFullYear(), currentDate.getMonth(), 1);
-
-            // Disable "next" button if we're viewing current month or future
-            if (viewingDate >= today) {
-                nextBtn.disabled = true;
-                nextBtn.style.opacity = '0.5';
-                nextBtn.style.cursor = 'not-allowed';
-            } else {
-                nextBtn.disabled = false;
-                nextBtn.style.opacity = '1';
-                nextBtn.style.cursor = 'pointer';
-            }
-        }
-
-        function renderCalendar() {
-            calendarEl.innerHTML = '';
-
-            const year = currentDate.getFullYear();
-            const month = currentDate.getMonth();
-
-            monthLabel.textContent = currentDate.toLocaleDateString('en-US', {
-                month: 'long',
-                year: 'numeric'
-            });
-
-            const firstDay = new Date(year, month, 1);
-            const lastDay = new Date(year, month + 1, 0);
-
-            for (let i = 0; i < firstDay.getDay(); i++) {
-                calendarEl.innerHTML += `<div></div>`;
-            }
-
-            for (let day = 1; day <= lastDay.getDate(); day++) {
-                const date = new Date(year, month, day);
-                const dayName = date.toLocaleDateString('en-US', {
-                    weekday: 'short'
-                });
-
-                let classes = 'calendar-day';
-
-                if (scheduleDays.includes(dayName)) {
-                    classes += ' class-day';
-                }
-
-                if (date.toDateString() === new Date().toDateString()) {
-                    classes += ' today';
-                }
-
-                // payment every 28 days (example base date)
-                const baseDate = new Date('2025-01-01');
-                const basePaymentFriday = new Date('2025-01-03'); // MUST be a Friday
-
-                const diffDays = Math.floor(
-                    (date - basePaymentFriday) / (1000 * 60 * 60 * 24)
-                );
-
-                let receiptIcon = '';
-
-                if (
-                    date.getDay() === 5 && // Friday (0=Sun, 5=Fri)
-                    diffDays >= 0 &&
-                    diffDays % 28 === 0
-                ) {
-                    receiptIcon = `<span class="receipt-icon">₱</span>`;
-                }
-
-                calendarEl.innerHTML += `
-            <div class="${classes}">
-                ${receiptIcon}
-                <strong>${day}</strong><br>
-                <small>${dayName}</small>
-            </div>
-        `;
-            }
-
-            updateButtonStates();
-        }
-
-        prevBtn.onclick = () => {
-            currentDate.setMonth(currentDate.getMonth() - 1);
-            renderCalendar();
-        };
-
-        nextBtn.onclick = () => {
-            currentDate.setMonth(currentDate.getMonth() + 1);
-            renderCalendar();
-        };
-
-        renderCalendar();
-    </script>
 </body>
 
 </html>

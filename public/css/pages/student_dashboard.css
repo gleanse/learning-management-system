@@ -1,6 +1,6 @@
 /* STUDENT DASHBOARD STYLES */
 
-/* welcome banner */
+/* ── welcome banner ── */
 .welcome-banner {
   background: linear-gradient(135deg, var(--secondary) 0%, #3a2f6b 100%);
   border-radius: 1rem;
@@ -26,7 +26,6 @@
   );
   border-radius: 50%;
   pointer-events: none;
-  transition: opacity 0.3s ease;
 }
 
 .welcome-content {
@@ -51,27 +50,12 @@
   letter-spacing: 0.02em;
 }
 
-/* BOOTSTRAP overrides for this page */
-
-.card-header .btn-outline-secondary {
-  color: #ffffff;
-  border-color: rgba(255, 255, 255, 0.5);
-}
-
-.card-header .btn-outline-secondary:hover {
-  color: var(--secondary);
-  background-color: #ffffff;
-  border-color: #ffffff;
-}
-
-.card-header #currentMonth {
-  color: #ffffff;
-}
-
+/* ── BOOTSTRAP overrides ── */
 .breadcrumb {
   background-color: transparent;
   padding: 0;
   margin-bottom: 1.5rem;
+  flex-wrap: wrap;
 }
 
 .breadcrumb-item {
@@ -139,6 +123,7 @@
   display: flex;
   align-items: center;
   gap: 0.5rem;
+  flex-wrap: wrap;
 }
 
 .card-header h5 i {
@@ -151,9 +136,7 @@
   background: #ffffff;
 }
 
-/* PAGE specific components */
-
-/* page header */
+/* ── page header ── */
 .page-header {
   position: relative;
 }
@@ -201,19 +184,17 @@
   font-weight: 500;
 }
 
-/* year levels card */
+/* ── year levels grid ── */
 .year-levels-card {
   animation: slideUp 0.5s ease-out;
 }
 
-/* year levels grid */
 .year-levels-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
   gap: 1.25rem;
 }
 
-/* year level card */
 .year-level-card {
   display: flex;
   align-items: center;
@@ -284,6 +265,7 @@
 
 .year-level-content {
   flex: 1;
+  min-width: 0;
 }
 
 .year-level-title {
@@ -293,6 +275,9 @@
   margin: 0 0 0.25rem 0;
   letter-spacing: -0.01em;
   transition: color 0.3s ease;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .year-level-card:hover .year-level-title {
@@ -328,15 +313,14 @@
   color: var(--gray-500);
   transition: color 0.3s ease;
 }
-
 .year-level-card:hover .year-level-arrow i {
   color: #ffffff;
 }
 
-/* empty state */
+/* ── empty state ── */
 .empty-state {
   text-align: center;
-  padding: 4rem 2rem;
+  padding: 3rem 1.5rem;
 }
 
 .empty-state-icon {
@@ -370,7 +354,7 @@
   margin: 0;
 }
 
-/* quick links list enhancement */
+/* ── quick links list ── */
 .list-group {
   border-radius: 0.75rem;
   overflow: hidden;
@@ -426,17 +410,15 @@
 .list-group-item:hover i {
   transform: scale(1.1);
 }
-
 .list-group-item:last-child {
   border-bottom: none;
 }
 
-/* grades table styles */
+/* ── grades table ── */
 .table-responsive {
   border-radius: 0.5rem;
   overflow: hidden;
 }
-
 .table {
   margin-bottom: 0;
 }
@@ -453,6 +435,7 @@
   text-transform: uppercase;
   letter-spacing: 0.5px;
   padding: 1rem 1.25rem;
+  white-space: nowrap;
 }
 
 .table tbody tr {
@@ -466,7 +449,6 @@
 
 .table tbody tr:hover {
   background: linear-gradient(135deg, #fef6f6 0%, #fef2f2 100%);
-  transform: scale(1.01);
 }
 
 .table tbody td {
@@ -487,203 +469,136 @@
   font-weight: 600;
   font-size: 0.813rem;
   border: 1px solid #e2e8f0;
+  white-space: nowrap;
 }
 
 .period-badge i {
   font-size: 0.75rem;
 }
-
 .grade-value {
   font-weight: 700;
   font-size: 1.125rem;
   color: var(--primary);
 }
-
 .remarks-text {
   color: var(--gray-700);
   font-weight: 500;
 }
-
 .date-text {
   color: var(--gray-600);
   font-weight: 500;
+  white-space: nowrap;
 }
-
 .teacher-text {
   color: var(--secondary);
   font-weight: 500;
 }
 
-/* ANIMATIONS */
-@keyframes slideUp {
-  from {
-    opacity: 0;
-    transform: translateY(20px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
+/* ── balance card ── */
+.balance-card .card-body {
+  min-height: 180px;
 }
 
-.welcome-banner {
-  animation: slideUp 0.4s ease-out;
+.balance-amount {
+  font-size: 2.25rem;
+  font-weight: 800;
+  letter-spacing: -0.03em;
+  line-height: 1;
+  margin-bottom: 0.25rem;
 }
 
-.page-header {
-  animation: slideUp 0.4s ease-out;
+.balance-label {
+  font-size: 0.813rem;
+  font-weight: 600;
+  color: var(--gray-500);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin: 0;
 }
 
-.card {
-  animation: slideUp 0.5s ease-out;
+.balance-meta small {
+  line-height: 1.8;
 }
 
-.card:nth-child(1) {
-  animation-delay: 0.05s;
+/* ── today's schedule ── */
+.schedule-date-badge {
+  font-size: 0.7rem;
+  font-weight: 500;
+  opacity: 0.8;
+  letter-spacing: 0.01em;
 }
 
-.card:nth-child(2) {
-  animation-delay: 0.1s;
+.schedule-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
 }
 
-.year-level-card {
-  animation: slideUp 0.5s ease-out backwards;
+.schedule-item {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 1rem 1.25rem;
+  background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+  border-radius: 0.75rem;
+  border-left: 4px solid var(--primary);
+  transition: all 0.25s ease;
 }
 
-.year-level-card:nth-child(1) {
-  animation-delay: 0.05s;
+.schedule-item:hover {
+  background: linear-gradient(135deg, #fef6f6 0%, #fef2f2 100%);
+  border-left-color: var(--secondary);
+  transform: translateX(4px);
 }
 
-.year-level-card:nth-child(2) {
-  animation-delay: 0.1s;
+.schedule-time {
+  display: flex;
+  align-items: center;
+  gap: 0.375rem;
+  font-size: 0.813rem;
+  font-weight: 700;
+  color: var(--secondary);
+  white-space: nowrap;
+  min-width: 130px;
 }
 
-.year-level-card:nth-child(3) {
-  animation-delay: 0.15s;
+.schedule-time i {
+  color: var(--primary);
+  font-size: 0.875rem;
 }
 
-.year-level-card:nth-child(4) {
-  animation-delay: 0.2s;
+.schedule-info {
+  flex: 1;
+  min-width: 0;
 }
 
-.year-level-card:nth-child(5) {
-  animation-delay: 0.25s;
+.schedule-subject {
+  font-size: 0.938rem;
+  font-weight: 700;
+  color: var(--secondary);
+  margin-bottom: 0.25rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
-.year-level-card:nth-child(6) {
-  animation-delay: 0.3s;
+.schedule-meta {
+  display: flex;
+  gap: 0.75rem;
+  flex-wrap: wrap;
 }
 
-/* RESPONSIVE adjustments */
-@media (max-width: 992px) {
-  .year-levels-grid {
-    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-  }
+.schedule-meta span {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  font-size: 0.8rem;
+  color: var(--gray-500);
+  font-weight: 500;
 }
 
-@media (max-width: 768px) {
-  .welcome-banner {
-    padding: 1.5rem;
-  }
-
-  .welcome-title {
-    font-size: 1.5rem;
-  }
-
-  .welcome-subtitle {
-    font-size: 0.875rem;
-  }
-
-  .header-content {
-    gap: 1rem;
-  }
-
-  .header-icon {
-    width: 56px;
-    height: 56px;
-  }
-
-  .header-icon i {
-    font-size: 1.75rem;
-  }
-
-  .header-title {
-    font-size: 1.5rem;
-  }
-
-  .header-subtitle {
-    font-size: 0.875rem;
-  }
-
-  .year-levels-grid {
-    grid-template-columns: 1fr;
-    gap: 1rem;
-  }
-
-  .year-level-card {
-    padding: 1.25rem;
-  }
-
-  .card-body {
-    padding: 1rem;
-  }
-
-  .table thead th,
-  .table tbody td {
-    padding: 0.75rem 1rem;
-  }
-}
-
-@media (max-width: 576px) {
-  .header-content {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 0.75rem;
-  }
-
-  .header-icon {
-    width: 48px;
-    height: 48px;
-  }
-
-  .header-icon i {
-    font-size: 1.5rem;
-  }
-}
-
-.calendar-grid {
-  display: grid;
-  grid-template-columns: repeat(7, 1fr);
-  gap: 8px;
-}
-
-.calendar-day {
-  border: 1px solid #dee2e6;
-  border-radius: 0.5rem;
-  padding: 6px;
-  height: 90px;
-  position: relative;
-  font-size: 0.85rem;
-}
-
-.calendar-day.class-day {
-  background-color: #e7f1ff;
-}
-
-.calendar-day.today {
-  border: 2px solid #0d6efd;
-}
-
-.receipt-icon {
-  position: absolute;
-  top: 4px;
-  right: 6px;
-  color: #198754;
-  font-weight: bold;
-}
-
-.overdue {
-  background-color: #ffe5e5;
+.schedule-status {
+  flex-shrink: 0;
 }
 
 /* ── school year filter bar ── */
@@ -693,6 +608,7 @@
   gap: 12px;
   padding: 8px 4px;
   animation: slideUp 0.4s ease-out;
+  flex-wrap: wrap;
 }
 
 .sy-filter-label {
@@ -747,8 +663,220 @@
   font-weight: 500;
 }
 
+/* ── ANIMATIONS ── */
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.welcome-banner {
+  animation: slideUp 0.4s ease-out;
+}
+.page-header {
+  animation: slideUp 0.4s ease-out;
+}
+.card {
+  animation: slideUp 0.5s ease-out;
+}
+.card:nth-child(1) {
+  animation-delay: 0.05s;
+}
+.card:nth-child(2) {
+  animation-delay: 0.1s;
+}
+
+.year-level-card {
+  animation: slideUp 0.5s ease-out backwards;
+}
+.year-level-card:nth-child(1) {
+  animation-delay: 0.05s;
+}
+.year-level-card:nth-child(2) {
+  animation-delay: 0.1s;
+}
+.year-level-card:nth-child(3) {
+  animation-delay: 0.15s;
+}
+.year-level-card:nth-child(4) {
+  animation-delay: 0.2s;
+}
+.year-level-card:nth-child(5) {
+  animation-delay: 0.25s;
+}
+.year-level-card:nth-child(6) {
+  animation-delay: 0.3s;
+}
+
+/* ── RESPONSIVE ── */
+
+/* tablet */
+@media (max-width: 992px) {
+  .year-levels-grid {
+    grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  }
+}
+
+/* mobile landscape / small tablet */
 @media (max-width: 768px) {
-  .sy-filter-bar {
+  .welcome-banner {
+    padding: 1.5rem;
+  }
+  .welcome-title {
+    font-size: 1.375rem;
+  }
+  .welcome-subtitle {
+    font-size: 0.85rem;
+  }
+
+  .header-content {
+    gap: 1rem;
+  }
+  .header-icon {
+    width: 52px;
+    height: 52px;
+  }
+  .header-icon i {
+    font-size: 1.625rem;
+  }
+  .header-title {
+    font-size: 1.375rem;
+  }
+  .header-subtitle {
+    font-size: 0.85rem;
+  }
+
+  .year-levels-grid {
+    grid-template-columns: 1fr;
+    gap: 0.875rem;
+  }
+  .year-level-card {
+    padding: 1.125rem;
+  }
+
+  .card-body {
+    padding: 1rem;
+  }
+
+  /* stack balance + schedule vertically */
+  .row.g-4 > .col-md-4,
+  .row.g-4 > .col-md-8 {
+    width: 100% !important;
+    max-width: 100% !important;
+    flex: 0 0 100% !important;
+  }
+
+  .balance-amount {
+    font-size: 2rem;
+  }
+
+  /* schedule items go vertical on mobile */
+  .schedule-item {
     flex-wrap: wrap;
+    gap: 0.5rem;
+    padding: 0.875rem 1rem;
+  }
+
+  .schedule-time {
+    min-width: unset;
+  }
+
+  .schedule-status {
+    width: 100%;
+    display: flex;
+    justify-content: flex-end;
+  }
+
+  .table thead th,
+  .table tbody td {
+    padding: 0.75rem 0.875rem;
+  }
+
+  .list-group-item {
+    padding: 1rem 1.25rem;
+  }
+}
+
+/* mobile portrait */
+@media (max-width: 576px) {
+  .welcome-banner {
+    padding: 1.25rem;
+  }
+  .welcome-title {
+    font-size: 1.2rem;
+  }
+
+  .header-content {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.75rem;
+  }
+
+  .header-icon {
+    width: 44px;
+    height: 44px;
+  }
+  .header-icon i {
+    font-size: 1.375rem;
+  }
+  .header-title {
+    font-size: 1.25rem;
+  }
+
+  .card-body {
+    padding: 0.875rem;
+  }
+
+  .schedule-item {
+    padding: 0.75rem;
+  }
+
+  .schedule-time {
+    font-size: 0.75rem;
+  }
+  .schedule-subject {
+    font-size: 0.875rem;
+  }
+
+  .balance-amount {
+    font-size: 1.75rem;
+  }
+
+  /* hide less-important table columns on very small screens */
+  .table thead th:nth-child(4),
+  .table tbody td:nth-child(4),
+  .table thead th:nth-child(5),
+  .table tbody td:nth-child(5) {
+    display: none;
+  }
+
+  .year-level-card {
+    padding: 1rem;
+  }
+  .year-level-icon {
+    width: 44px;
+    height: 44px;
+  }
+  .year-level-icon i {
+    font-size: 1.25rem;
+  }
+  .year-level-title {
+    font-size: 1rem;
+  }
+
+  .sy-filter-bar {
+    gap: 8px;
+  }
+  .sy-dropdown-btn {
+    min-width: 120px;
+    font-size: 0.85rem;
+  }
+  .sy-year-count {
+    display: none;
   }
 }

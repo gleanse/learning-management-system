@@ -1,5 +1,6 @@
 <?php
 require_once __DIR__ . '/../../config/db_connection.php';
+require_once __DIR__ . '/AcademicPeriod.php';
 
 class Student
 {
@@ -11,39 +12,54 @@ class Student
         $this->connection = $connection;
     }
 
-    // fetch enrolled students for the grade students page
-    // uses student_section_history instead of students.section_id so historical school years still work
+    // fetch students enrolled in a subject for a given section and period
+    // joins directly on student_subject_enrollments + sections to avoid
+    // depending on student_section_history which may be missing for older records
     public function getEnrolledStudentsInSubject($subject_id, $section_id, $school_year, $semester)
     {
-        $stmt = $this->connection->prepare("
+        $current = (new AcademicPeriod())->getCurrentPeriod();
+        $is_history = $current && $school_year !== $current['school_year'];
+
+        if ($is_history) {
+            $sql = "
             SELECT 
-                s.student_id,
-                s.student_number,
-                s.lrn,
-                s.first_name,
-                s.middle_name,
-                s.last_name,
-                s.year_level,
-                s.education_level,
-                sec.section_name,
-                sec.strand_course
+                s.student_id, s.student_number, s.lrn, s.first_name, s.middle_name,
+                s.last_name, s.year_level, s.education_level, sec.section_name, sec.strand_course
             FROM student_subject_enrollments sse
             INNER JOIN students s ON sse.student_id = s.student_id
             INNER JOIN student_section_history ssh
                 ON ssh.student_id = s.student_id
-                AND ssh.section_id = ?
                 AND ssh.school_year = ?
                 AND ssh.semester = ?
+                AND ssh.section_id = ?
             INNER JOIN sections sec ON sec.section_id = ssh.section_id
             WHERE sse.subject_id = ?
                 AND sse.school_year = ?
                 AND sse.semester = ?
             GROUP BY s.student_id
             ORDER BY s.last_name ASC, s.first_name ASC
-        ");
+        ";
+            $params = [$school_year, $semester, $section_id, $subject_id, $school_year, $semester];
+        } else {
+            $sql = "
+            SELECT 
+                s.student_id, s.student_number, s.lrn, s.first_name, s.middle_name,
+                s.last_name, s.year_level, s.education_level, sec.section_name, sec.strand_course
+            FROM student_subject_enrollments sse
+            INNER JOIN students s ON sse.student_id = s.student_id
+            INNER JOIN sections sec ON sec.section_id = s.section_id
+            WHERE sse.subject_id = ?
+                AND sse.school_year = ?
+                AND sse.semester = ?
+                AND s.section_id = ?
+            GROUP BY s.student_id
+            ORDER BY s.last_name ASC, s.first_name ASC
+        ";
+            $params = [$subject_id, $school_year, $semester, $section_id];
+        }
 
-        $stmt->execute([$section_id, $school_year, $semester, $subject_id, $school_year, $semester]);
-
+        $stmt = $this->connection->prepare($sql);
+        $stmt->execute($params);
         return $stmt->fetchAll();
     }
 
@@ -85,9 +101,11 @@ class Student
 
     public function getYearLevelsByStudentId($student_id, $school_year = '2025-2026')
     {
-        // pull year_level from sections via student_section_history
-        // so past school years show the correct year level, not the current one
-        $stmt = $this->connection->prepare("
+        $current = (new AcademicPeriod())->getCurrentPeriod();
+        $is_history = $current && $school_year !== $current['school_year'];
+
+        if ($is_history) {
+            $sql = "
             SELECT DISTINCT sec.year_level
             FROM student_subject_enrollments sse
             INNER JOIN student_section_history ssh
@@ -96,39 +114,69 @@ class Student
             INNER JOIN sections sec ON sec.section_id = ssh.section_id
             WHERE sse.student_id = ? AND sse.school_year = ?
             ORDER BY sec.year_level ASC
-        ");
+        ";
+        } else {
+            $sql = "
+            SELECT DISTINCT sec.year_level
+            FROM student_subject_enrollments sse
+            INNER JOIN students s ON s.student_id = sse.student_id
+            INNER JOIN sections sec ON sec.section_id = s.section_id
+            WHERE sse.student_id = ? AND sse.school_year = ?
+            ORDER BY sec.year_level ASC
+        ";
+        }
+
+        $stmt = $this->connection->prepare($sql);
         $stmt->execute([$student_id, $school_year]);
         return $stmt->fetchAll();
     }
 
     public function getSemestersByStudentIdAndYearLevel($student_id, $year_level, $school_year = '2025-2026')
     {
-        // join through student_section_history to match historical year_level, not current
-        $stmt = $this->connection->prepare("
+        $current = (new AcademicPeriod())->getCurrentPeriod();
+        $is_history = $current && $school_year !== $current['school_year'];
+
+        if ($is_history) {
+            $sql = "
             SELECT DISTINCT sse.semester
             FROM student_subject_enrollments sse
             INNER JOIN student_section_history ssh
                 ON ssh.student_id = sse.student_id
                 AND ssh.school_year = sse.school_year
+                AND ssh.semester = sse.semester
             INNER JOIN sections sec ON sec.section_id = ssh.section_id
             WHERE sse.student_id = ?
                 AND sec.year_level = ?
                 AND sse.school_year = ?
             ORDER BY CASE sse.semester WHEN 'First' THEN 1 WHEN 'Second' THEN 2 END ASC
-        ");
+        ";
+        } else {
+            $sql = "
+            SELECT DISTINCT sse.semester
+            FROM student_subject_enrollments sse
+            INNER JOIN students s ON s.student_id = sse.student_id
+            INNER JOIN sections sec ON sec.section_id = s.section_id
+            WHERE sse.student_id = ?
+                AND sec.year_level = ?
+                AND sse.school_year = ?
+            ORDER BY CASE sse.semester WHEN 'First' THEN 1 WHEN 'Second' THEN 2 END ASC
+        ";
+        }
+
+        $stmt = $this->connection->prepare($sql);
         $stmt->execute([$student_id, $year_level, $school_year]);
         return $stmt->fetchAll();
     }
 
     public function getSubjectsByStudentIdYearLevelAndSemester($student_id, $year_level, $semester, $school_year = '2025-2026')
     {
-        // join through student_section_history so year_level matches the historical section, not current student record
-        $stmt = $this->connection->prepare("
+        $current = (new AcademicPeriod())->getCurrentPeriod();
+        $is_history = $current && $school_year !== $current['school_year'];
+
+        if ($is_history) {
+            $sql = "
             SELECT DISTINCT
-                sub.subject_id,
-                sub.subject_code,
-                sub.subject_name,
-                sub.description
+                sub.subject_id, sub.subject_code, sub.subject_name, sub.description
             FROM student_subject_enrollments sse
             INNER JOIN student_section_history ssh
                 ON ssh.student_id = sse.student_id
@@ -141,7 +189,24 @@ class Student
                 AND sse.semester = ?
                 AND sse.school_year = ?
             ORDER BY sub.subject_name ASC
-        ");
+        ";
+        } else {
+            $sql = "
+            SELECT DISTINCT
+                sub.subject_id, sub.subject_code, sub.subject_name, sub.description
+            FROM student_subject_enrollments sse
+            INNER JOIN students s ON s.student_id = sse.student_id
+            INNER JOIN sections sec ON sec.section_id = s.section_id
+            INNER JOIN subjects sub ON sse.subject_id = sub.subject_id
+            WHERE sse.student_id = ?
+                AND sec.year_level = ?
+                AND sse.semester = ?
+                AND sse.school_year = ?
+            ORDER BY sub.subject_name ASC
+        ";
+        }
+
+        $stmt = $this->connection->prepare($sql);
         $stmt->execute([$student_id, $year_level, $semester, $school_year]);
         return $stmt->fetchAll();
     }
@@ -506,12 +571,17 @@ class Student
     // enroll a student into all subjects linked to a section
     private function enrollStudentInSectionSubjects($student_id, $section_id)
     {
+        // get subjects and school_year/semester from teacher assignments for this section
+        // this way students are auto-enrolled in whatever subjects teachers are assigned to teach
         $stmt = $this->connection->prepare("
-            SELECT ss.subject_id, sec.school_year
-            FROM section_subjects ss
-            INNER JOIN sections sec ON sec.section_id = ss.section_id
-            WHERE ss.section_id = ?
-        ");
+        SELECT DISTINCT 
+            tsa.subject_id, 
+            tsa.school_year,
+            tsa.semester
+        FROM teacher_subject_assignments tsa
+        WHERE tsa.section_id = ?
+            AND tsa.status = 'active'
+    ");
         $stmt->execute([$section_id]);
         $subjects = $stmt->fetchAll();
 
@@ -519,37 +589,37 @@ class Student
             return;
         }
 
-        $school_year = $subjects[0]['school_year'];
-
-        $semStmt = $this->connection->prepare("
-            SELECT semester FROM enrollment_payments
-            WHERE student_id = ? AND school_year = ?
-            LIMIT 1
-        ");
-        $semStmt->execute([$student_id, $school_year]);
-        $semResult = $semStmt->fetch();
-        $semester = $semResult ? $semResult['semester'] : 'First';
-
         $checkStmt = $this->connection->prepare("
-            SELECT 1 FROM student_subject_enrollments 
-            WHERE student_id = ? AND subject_id = ? AND school_year = ? AND semester = ?
-        ");
+        SELECT 1 FROM student_subject_enrollments 
+        WHERE student_id = ? AND subject_id = ? AND school_year = ? AND semester = ?
+    ");
 
         $insertStmt = $this->connection->prepare("
-            INSERT INTO student_subject_enrollments
-                (student_id, subject_id, school_year, semester, enrolled_date)
-            VALUES (?, ?, ?, ?, CURDATE())
-        ");
+        INSERT INTO student_subject_enrollments
+            (student_id, subject_id, school_year, semester, enrolled_date)
+        VALUES (?, ?, ?, ?, CURDATE())
+    ");
 
         foreach ($subjects as $subject) {
-            $checkStmt->execute([$student_id, $subject['subject_id'], $school_year, $semester]);
-            if (!$checkStmt->fetch()) {
-                $insertStmt->execute([$student_id, $subject['subject_id'], $school_year, $semester]);
-            }
-        }
+            $checkStmt->execute([
+                $student_id,
+                $subject['subject_id'],
+                $subject['school_year'],
+                $subject['semester']
+            ]);
 
-        // write a section history snapshot so past school years remain queryable
-        $this->writeSectionHistory($student_id, $section_id, $school_year, $semester);
+            if (!$checkStmt->fetch()) {
+                $insertStmt->execute([
+                    $student_id,
+                    $subject['subject_id'],
+                    $subject['school_year'],
+                    $subject['semester']
+                ]);
+            }
+
+            // snapshot section history per semester
+            $this->writeSectionHistory($student_id, $section_id, $subject['school_year'], $subject['semester']);
+        }
     }
 
     // write or ignore a student_section_history row for the given period
@@ -835,6 +905,53 @@ class Student
         return $result && $result['user_id'] !== null;
     }
 
+    // get student's remaining balance for the current school year and semester
+    public function getStudentBalance($student_id, $school_year, $semester)
+    {
+        $stmt = $this->connection->prepare("
+            SELECT 
+                ep.payment_id,
+                ep.net_amount,
+                ep.status,
+                COALESCE(SUM(pt.amount_paid), 0) as total_paid,
+                ep.net_amount - COALESCE(SUM(pt.amount_paid), 0) as remaining
+            FROM enrollment_payments ep
+            LEFT JOIN payment_transactions pt ON pt.payment_id = ep.payment_id
+            WHERE ep.student_id = ?
+                AND ep.school_year = ?
+                AND ep.semester = ?
+            GROUP BY ep.payment_id, ep.net_amount, ep.status
+            LIMIT 1
+        ");
+        $stmt->execute([$student_id, $school_year, $semester]);
+        return $stmt->fetch();
+    }
+
+    // get today's class schedule for a student based on their section
+    public function getTodayScheduleBySection($section_id, $school_year, $semester)
+    {
+        $today = date('l'); // full day name e.g. Monday
+        $stmt  = $this->connection->prepare("
+            SELECT 
+                cs.schedule_id,
+                cs.start_time,
+                cs.end_time,
+                cs.room,
+                sub.subject_name,
+                sub.subject_code
+            FROM class_schedules cs
+            INNER JOIN subjects sub ON cs.subject_id = sub.subject_id
+            WHERE cs.section_id = ?
+                AND cs.school_year = ?
+                AND cs.semester = ?
+                AND cs.day_of_week = ?
+                AND cs.status = 'active'
+            ORDER BY cs.start_time ASC
+        ");
+        $stmt->execute([$section_id, $school_year, $semester, $today]);
+        return $stmt->fetchAll();
+    }
+
     // get all distinct school years a student has subject enrollments in
     // used by student views to power the school year toggle
     public function getEnrolledSchoolYears($student_id)
@@ -847,5 +964,29 @@ class Student
         ");
         $stmt->execute([$student_id]);
         return $stmt->fetchAll(PDO::FETCH_COLUMN);
+    }
+
+    // public wrapper so controllers can write history directly
+    public function writeSectionHistoryPublic($student_id, $section_id, $school_year, $semester)
+    {
+        $this->writeSectionHistory($student_id, $section_id, $school_year, $semester);
+    }
+
+    public function enrollInSubjectIfNotExists($student_id, $subject_id, $school_year, $semester)
+    {
+        $checkStmt = $this->connection->prepare("
+        SELECT 1 FROM student_subject_enrollments
+        WHERE student_id = ? AND subject_id = ? AND school_year = ? AND semester = ?
+    ");
+        $checkStmt->execute([$student_id, $subject_id, $school_year, $semester]);
+
+        if (!$checkStmt->fetch()) {
+            $insertStmt = $this->connection->prepare("
+            INSERT INTO student_subject_enrollments
+                (student_id, subject_id, school_year, semester, enrolled_date)
+            VALUES (?, ?, ?, ?, CURDATE())
+        ");
+            $insertStmt->execute([$student_id, $subject_id, $school_year, $semester]);
+        }
     }
 }

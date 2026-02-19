@@ -4,6 +4,7 @@ require_once __DIR__ . '/../models/TeacherAssignment.php';
 require_once __DIR__ . '/../models/Teacher.php';
 require_once __DIR__ . '/../models/Section.php';
 require_once __DIR__ . '/../models/Subject.php';
+require_once __DIR__ . '/../models/Student.php';
 
 class TeacherAssignmentController
 {
@@ -11,13 +12,43 @@ class TeacherAssignmentController
     private $teacher_model;
     private $section_model;
     private $subject_model;
+    private $student_model;
 
     public function __construct()
     {
         $this->assignment_model = new TeacherAssignment();
-        $this->teacher_model = new Teacher();
-        $this->section_model = new Section();
-        $this->subject_model = new Subject();
+        $this->teacher_model    = new Teacher();
+        $this->section_model    = new Section();
+        $this->subject_model    = new Subject();
+        $this->student_model    = new Student();
+    }
+
+    private function enrollSectionStudentsInSubjects($section_id, $subject_ids, $school_year, $semester)
+    {
+        $students = $this->student_model->getStudentsBySection($section_id);
+
+        if (empty($students)) {
+            return;
+        }
+
+        foreach ($students as $student) {
+            foreach ($subject_ids as $subject_id) {
+                $this->student_model->enrollInSubjectIfNotExists(
+                    $student['student_id'],
+                    $subject_id,
+                    $school_year,
+                    $semester
+                );
+
+                // write history snapshot if not exists
+                $this->student_model->writeSectionHistoryPublic(
+                    $student['student_id'],
+                    $section_id,
+                    $school_year,
+                    $semester
+                );
+            }
+        }
     }
 
     private function isAjax()
@@ -121,13 +152,13 @@ class TeacherAssignmentController
         $this->requireAdmin();
         $this->validateCsrf();
 
-        $teacher_id = isset($_POST['teacher_id']) ? (int) $_POST['teacher_id'] : null;
-        $section_id = isset($_POST['section_id']) ? (int) $_POST['section_id'] : null;
+        $teacher_id  = isset($_POST['teacher_id']) ? (int) $_POST['teacher_id'] : null;
+        $section_id  = isset($_POST['section_id']) ? (int) $_POST['section_id'] : null;
         $subject_ids = isset($_POST['subject_ids']) && is_array($_POST['subject_ids'])
             ? array_map('intval', $_POST['subject_ids'])
             : [];
         $school_year = $_POST['school_year'] ?? '';
-        $semester = $_POST['semester'] ?? 'First';
+        $semester    = $_POST['semester']    ?? 'First';
 
         $errors = [];
         $valid_school_years = $this->generateSchoolYearOptions();
@@ -178,8 +209,10 @@ class TeacherAssignmentController
         );
 
         if ($result === true) {
+            // auto-enroll existing students in section into newly assigned subjects
+            $this->enrollSectionStudentsInSubjects($section_id, $subject_ids, $school_year, $semester);
+
             if ($this->isAjax()) {
-                // fetch the full updated active state (merges new subjects with existing ones)
                 $activeData = $this->assignment_model->getGroupedAssignmentByTeacherSection(
                     $teacher_id,
                     $section_id,
@@ -187,8 +220,6 @@ class TeacherAssignmentController
                     $semester,
                     'active'
                 );
-
-                // fetch the full updated inactive state (in case some subjects remain removed)
                 $inactiveData = $this->assignment_model->getGroupedAssignmentByTeacherSection(
                     $teacher_id,
                     $section_id,
@@ -204,7 +235,6 @@ class TeacherAssignmentController
                     'inactive_data' => $inactiveData
                 ];
 
-                // merge active data into response so js has full subject list
                 if ($activeData) {
                     $response = array_merge($response, $activeData);
                 }
@@ -233,13 +263,13 @@ class TeacherAssignmentController
         $this->requireAdmin();
         $this->validateCsrf();
 
-        $teacher_id = isset($_POST['teacher_id']) ? (int) $_POST['teacher_id'] : null;
-        $section_id = isset($_POST['section_id']) ? (int) $_POST['section_id'] : null;
+        $teacher_id  = isset($_POST['teacher_id']) ? (int) $_POST['teacher_id'] : null;
+        $section_id  = isset($_POST['section_id']) ? (int) $_POST['section_id'] : null;
         $subject_ids = isset($_POST['subject_ids']) && is_array($_POST['subject_ids'])
             ? array_map('intval', $_POST['subject_ids'])
             : [];
         $school_year = $_POST['school_year'] ?? null;
-        $semester = $_POST['semester'] ?? 'First';
+        $semester    = $_POST['semester']    ?? 'First';
 
         $errors = [];
 
@@ -287,6 +317,9 @@ class TeacherAssignmentController
         );
 
         if ($result) {
+            // auto-enroll existing students in section into reassigned subjects
+            $this->enrollSectionStudentsInSubjects($section_id, $subject_ids, $school_year, $semester);
+
             if ($this->isAjax()) {
                 $updatedAssignment = $this->assignment_model->getGroupedAssignmentByTeacherSection(
                     $teacher_id,
@@ -304,7 +337,6 @@ class TeacherAssignmentController
                         $semester,
                         'inactive'
                     );
-
                     $this->jsonResponse([
                         'success'       => true,
                         'message'       => 'Teacher assignment updated successfully.',
@@ -321,12 +353,11 @@ class TeacherAssignmentController
                         $semester,
                         'inactive'
                     );
-
                     $this->jsonResponse([
-                        'success'   => true,
-                        'message'   => 'Teacher assignment updated successfully.',
-                        'action'    => 'remove',
-                        'row_key'   => "{$teacher_id}_{$section_id}_{$school_year}_{$semester}",
+                        'success'       => true,
+                        'message'       => 'Teacher assignment updated successfully.',
+                        'action'        => 'remove',
+                        'row_key'       => "{$teacher_id}_{$section_id}_{$school_year}_{$semester}",
                         'inactive_data' => $inactiveAssignment
                     ]);
                 }
@@ -435,10 +466,10 @@ class TeacherAssignmentController
         $this->requireAdmin();
         $this->validateCsrf();
 
-        $teacher_id = isset($_POST['teacher_id']) ? (int) $_POST['teacher_id'] : null;
-        $section_id = isset($_POST['section_id']) ? (int) $_POST['section_id'] : null;
+        $teacher_id  = isset($_POST['teacher_id']) ? (int) $_POST['teacher_id'] : null;
+        $section_id  = isset($_POST['section_id']) ? (int) $_POST['section_id'] : null;
         $school_year = $_POST['school_year'] ?? null;
-        $semester = $_POST['semester'] ?? 'First';
+        $semester    = $_POST['semester']    ?? 'First';
 
         $errors = [];
 
@@ -464,6 +495,12 @@ class TeacherAssignmentController
         $result = $this->assignment_model->reactivateAssignments($teacher_id, $section_id, $school_year, $semester);
 
         if ($result) {
+            // get restored subject ids and re-enroll students
+            $restoredSubjects = $this->assignment_model->getSubjectIdsBySection($section_id, $school_year, $semester);
+            if (!empty($restoredSubjects)) {
+                $this->enrollSectionStudentsInSubjects($section_id, $restoredSubjects, $school_year, $semester);
+            }
+
             if ($this->isAjax()) {
                 $restoredAssignment = $this->assignment_model->getGroupedAssignmentByTeacherSection(
                     $teacher_id,
@@ -475,10 +512,10 @@ class TeacherAssignmentController
 
                 if ($restoredAssignment) {
                     $this->jsonResponse([
-                        'success'   => true,
-                        'message'   => 'Teacher assignment restored successfully.',
-                        'action'    => 'add',
-                        'data'      => $restoredAssignment
+                        'success' => true,
+                        'message' => 'Teacher assignment restored successfully.',
+                        'action'  => 'add',
+                        'data'    => $restoredAssignment
                     ]);
                 }
             }

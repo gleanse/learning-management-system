@@ -1,6 +1,7 @@
 <?php
 
 require_once __DIR__ . '/../../config/db_connection.php';
+require_once __DIR__ . '/AcademicPeriod.php';
 
 class Teacher
 {
@@ -85,31 +86,54 @@ class Teacher
     // counts from student_section_history so past school years show correct numbers
     public function getSectionsBySubject($teacher_id, $subject_id, $year_level, $school_year)
     {
-        $stmt = $this->connection->prepare("
-            SELECT 
-                sec.section_id,
-                sec.section_name,
-                sec.education_level,
-                sec.year_level,
-                sec.strand_course,
-                sec.max_capacity,
-                sec.school_year,
-                COUNT(DISTINCT ssh.student_id) as student_count
-            FROM teacher_subject_assignments tsa
-            INNER JOIN sections sec ON tsa.section_id = sec.section_id
-            LEFT JOIN student_section_history ssh
-                ON ssh.section_id = sec.section_id
+        $current = (new AcademicPeriod())->getCurrentPeriod();
+        $is_history = $current && $school_year !== $current['school_year'];
+
+        if ($is_history) {
+            $count_sql = "
+            SELECT COUNT(DISTINCT ssh.student_id)
+            FROM student_section_history ssh
+            INNER JOIN student_subject_enrollments sse
+                ON sse.student_id = ssh.student_id
+                AND sse.subject_id = ?
+                AND sse.school_year = ?
+                AND sse.semester = tsa.semester
+            WHERE ssh.section_id = sec.section_id
                 AND ssh.school_year = ?
-            WHERE tsa.teacher_id = ? 
+                AND ssh.semester = tsa.semester
+        ";
+            $subparams = [$subject_id, $school_year, $school_year];
+        } else {
+            $count_sql = "
+            SELECT COUNT(DISTINCT s.student_id)
+            FROM students s
+            INNER JOIN student_subject_enrollments sse
+                ON sse.student_id = s.student_id
+                AND sse.subject_id = ?
+                AND sse.school_year = ?
+                AND sse.semester = tsa.semester
+            WHERE s.section_id = sec.section_id
+        ";
+            $subparams = [$subject_id, $school_year];
+        }
+
+        $stmt = $this->connection->prepare("
+        SELECT 
+            sec.section_id, sec.section_name, sec.education_level, sec.year_level,
+            sec.strand_course, sec.max_capacity, sec.school_year,
+            ($count_sql) as student_count
+        FROM teacher_subject_assignments tsa
+        INNER JOIN sections sec ON tsa.section_id = sec.section_id
+        WHERE tsa.teacher_id = ? 
             AND tsa.subject_id = ? 
             AND tsa.year_level = ? 
             AND tsa.school_year = ?
             AND tsa.status = 'active'
-            GROUP BY sec.section_id, sec.section_name, sec.education_level, sec.year_level, sec.strand_course, sec.max_capacity, sec.school_year
-            ORDER BY sec.section_name ASC
-        ");
+        GROUP BY sec.section_id, sec.section_name, sec.education_level, sec.year_level, sec.strand_course, sec.max_capacity, sec.school_year
+        ORDER BY sec.section_name ASC
+    ");
 
-        $stmt->execute([$school_year, $teacher_id, $subject_id, $year_level, $school_year]);
+        $stmt->execute(array_merge($subparams, [$teacher_id, $subject_id, $year_level, $school_year]));
         return $stmt->fetchAll();
     }
 

@@ -181,13 +181,12 @@ class AcademicPeriod
         $stmt->execute([$school_year, $semester]);
     }
 
-    // promote active students to next year level and clear their section
     private function promoteStudents()
     {
         $year_level_map = [
-            '1st Year' => '2nd Year',
-            '2nd Year' => '3rd Year',
             '3rd Year' => '4th Year',
+            '2nd Year' => '3rd Year',
+            '1st Year' => '2nd Year',
             'Grade 11' => 'Grade 12',
         ];
 
@@ -199,8 +198,6 @@ class AcademicPeriod
         ");
             $stmt->execute([$next_level, $current_level]);
         }
-
-        // graduation is handled manually by admin — not automatic
     }
 
     // creates enrollment_payments for all active students that don't have one yet for this period

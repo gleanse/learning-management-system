@@ -74,27 +74,79 @@ class Payment
     public function getActiveEnrollmentPayment($student_id, $school_year, $semester)
     {
         $stmt = $this->connection->prepare("
-            SELECT
-                ep.payment_id,
-                ep.student_id,
-                ep.school_year,
-                ep.semester,
-                ep.total_amount,
-                ep.net_amount,
-                ep.status,
-                ep.created_at,
-                COALESCE(SUM(pt.amount_paid), 0) AS total_paid
-            FROM enrollment_payments ep
-            LEFT JOIN payment_transactions pt ON ep.payment_id = pt.payment_id
-            WHERE ep.student_id = ?
-                AND ep.school_year = ?
-                AND ep.semester = ?
-            GROUP BY ep.payment_id
-        ");
+        SELECT
+            ep.payment_id, ep.student_id, ep.school_year, ep.semester,
+            ep.total_amount, ep.net_amount, ep.status, ep.created_at,
+            COALESCE(SUM(pt.amount_paid), 0) AS total_paid
+        FROM enrollment_payments ep
+        LEFT JOIN payment_transactions pt ON ep.payment_id = pt.payment_id
+        WHERE ep.student_id = ?
+            AND ep.school_year = ?
+            AND ep.semester = ?
+        GROUP BY ep.payment_id
+    ");
 
         $stmt->execute([$student_id, $school_year, $semester]);
-        return $stmt->fetch();
+        $payment = $stmt->fetch();
+
+        // auto-create payment record if none exists for current period
+        if (!$payment) {
+            $payment_id = $this->createEnrollmentPayment($student_id, $school_year, $semester);
+            if ($payment_id) {
+                $stmt->execute([$student_id, $school_year, $semester]);
+                $payment = $stmt->fetch();
+            }
+        }
+
+        return $payment;
     }
+
+    // create enrollment_payment from fee_config based on student's year level
+    private function createEnrollmentPayment($student_id, $school_year, $semester)
+    {
+        // get student year level, education level, strand
+        $stmt = $this->connection->prepare("
+        SELECT year_level, education_level, strand_course 
+        FROM students WHERE student_id = ?
+    ");
+        $stmt->execute([$student_id]);
+        $student = $stmt->fetch();
+
+        if (!$student) {
+            return false;
+        }
+
+        // lookup fee using year_level as the key (school_year column repurposed)
+        $stmt = $this->connection->prepare("
+        SELECT tuition_fee, miscellaneous, other_fees
+        FROM fee_config
+        WHERE education_level = ?
+            AND school_year = ?
+            AND strand_course = ?
+    ");
+        $stmt->execute([
+            $student['education_level'],
+            $student['year_level'],
+            $student['strand_course']
+        ]);
+        $fee = $stmt->fetch();
+
+        if (!$fee) {
+            return false;
+        }
+
+        $total = $fee['tuition_fee'] + $fee['miscellaneous'] + $fee['other_fees'];
+
+        $insert = $this->connection->prepare("
+        INSERT INTO enrollment_payments 
+            (student_id, school_year, semester, total_amount, discount_amount, net_amount, status, created_by)
+        VALUES (?, ?, ?, ?, 0.00, ?, 'pending', 1)
+    ");
+        $insert->execute([$student_id, $school_year, $semester, $total, $total]);
+
+        return $this->connection->lastInsertId();
+    }
+
 
     // get all payment transactions for a given enrollment_payment
     public function getTransactionsByPaymentId($payment_id)
@@ -211,10 +263,11 @@ class Payment
     public function getCurrentSchoolYear()
     {
         $stmt = $this->connection->prepare("
-            SELECT school_year FROM enrollment_payments
-            ORDER BY created_at DESC
-            LIMIT 1
-        ");
+        SELECT school_year FROM school_settings
+        WHERE is_active = 1
+        ORDER BY id DESC
+        LIMIT 1
+    ");
         $stmt->execute();
         $result = $stmt->fetch();
         return $result ? $result['school_year'] : date('Y') . '-' . (date('Y') + 1);

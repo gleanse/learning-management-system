@@ -41,7 +41,7 @@ class EnrollmentController
 
         // default fee config — zeros until registrar selects school year + level + course
         $fee_config = $this->buildFeeConfig(
-            $form_data['school_year']     ?? ($school_years[0]['school_year'] ?? ''),
+            $form_data['year_level']      ?? '',
             $form_data['education_level'] ?? '',
             $form_data['strand_course']   ?? ''
         );
@@ -90,19 +90,18 @@ class EnrollmentController
     public function getFees()
     {
         $this->requireRegistrar();
-
         header('Content-Type: application/json');
 
-        $school_year     = $_GET['school_year']     ?? '';
+        $year_level      = $_GET['year_level']      ?? '';
         $education_level = $_GET['education_level'] ?? '';
         $strand_course   = $_GET['strand_course']   ?? '';
 
-        if (!$school_year || !$education_level || !$strand_course) {
+        if (!$year_level || !$education_level || !$strand_course) {
             echo json_encode(['success' => false, 'message' => 'Missing parameters']);
             return;
         }
 
-        $fee_config = $this->buildFeeConfig($school_year, $education_level, $strand_course);
+        $fee_config = $this->buildFeeConfig($year_level, $education_level, $strand_course);
         echo json_encode(['success' => true, 'data' => $fee_config]);
     }
 
@@ -246,7 +245,7 @@ class EnrollmentController
 
     // builds fee config array — now requires strand_course since fees are per course
     // returns zeros if no config found for that combination
-    private function buildFeeConfig($school_year, $education_level, $strand_course)
+    private function buildFeeConfig($year_level, $education_level, $strand_course)
     {
         $config = [
             'tuition_fee'   => 0,
@@ -255,11 +254,11 @@ class EnrollmentController
             'total'         => 0,
         ];
 
-        if (!$school_year || !$education_level || !$strand_course) {
+        if (!$year_level || !$education_level || !$strand_course) {
             return $config;
         }
 
-        $row = $this->enrollment_model->getFeeConfig($school_year, $education_level, $strand_course);
+        $row = $this->enrollment_model->getFeeConfig($year_level, $education_level, $strand_course);
 
         if ($row) {
             $config['tuition_fee']   = (float) $row['tuition_fee'];

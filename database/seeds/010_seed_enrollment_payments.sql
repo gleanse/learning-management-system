@@ -12,7 +12,7 @@ FROM students s
 INNER JOIN fee_config fc 
     ON fc.education_level = s.education_level 
     AND fc.strand_course = s.strand_course
-    AND fc.school_year = '2025-2026'
+    AND fc.school_year = s.year_level
 WHERE s.enrollment_status = 'active'
 AND s.student_id NOT IN (
     SELECT student_id FROM enrollment_payments WHERE school_year = '2025-2026'
