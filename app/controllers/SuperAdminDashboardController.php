@@ -22,6 +22,19 @@ class SuperAdminDashboardController
         }
     }
 
+    private function isAjax()
+    {
+        return isset($_SERVER['HTTP_X_REQUESTED_WITH']) && $_SERVER['HTTP_X_REQUESTED_WITH'] === 'XMLHttpRequest';
+    }
+
+    private function jsonResponse($data, $status_code = 200)
+    {
+        http_response_code($status_code);
+        header('Content-Type: application/json');
+        echo json_encode($data);
+        exit();
+    }
+
     public function showDashboard()
     {
         $this->requireSuperAdmin();
@@ -38,5 +51,35 @@ class SuperAdminDashboardController
         $recent_users = $this->user_model->getRecentUsers(10);
 
         require __DIR__ . '/../views/superadmin/dashboard.php';
+    }
+
+    // ajax endpoint for dashboard stats refresh
+    public function ajaxGetDashboardStats()
+    {
+        $this->requireSuperAdmin();
+
+        // users by role counts
+        $users_by_role = $this->user_model->getTotalUsersByRole();
+        $total_users = array_sum($users_by_role);
+
+        // student account stats
+        $total_students          = $this->student_model->getTotalActiveStudents();
+        $students_without_account = $this->student_model->getTotalStudentsWithoutUserAccountCount();
+        $students_with_account   = $total_students - $students_without_account;
+
+        // recent user creations
+        $recent_users = $this->user_model->getRecentUsers(10);
+
+        $this->jsonResponse([
+            'success' => true,
+            'stats' => [
+                'users_by_role' => $users_by_role,
+                'total_users' => $total_users,
+                'total_students' => $total_students,
+                'students_with_account' => $students_with_account,
+                'students_without_account' => $students_without_account,
+                'recent_users' => $recent_users
+            ]
+        ]);
     }
 }

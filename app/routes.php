@@ -70,6 +70,18 @@ if ($page === 'superadmin_dashboard' && $method === 'GET') {
     exit();
 }
 
+// ajax: dashboard stats refresh
+if ($page === 'ajax_dashboard_stats' && $method === 'GET') {
+    if (!isLoggedIn() || !isSuperAdmin()) {
+        header('Location: index.php?page=login');
+        exit();
+    }
+
+    $controller = new SuperAdminDashboardController();
+    $controller->ajaxGetDashboardStats();
+    exit();
+}
+
 // SUBJECT MANAGEMENT ROUTES (admin only)
 if ($page === 'subjects' && $method === 'GET') {
     if (!isLoggedIn() || (!isAdmin() && !isSuperAdmin())) {
