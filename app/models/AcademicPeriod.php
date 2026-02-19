@@ -105,14 +105,12 @@ class AcademicPeriod
         try {
             $this->connection->beginTransaction();
 
-            // insert the first school_settings record
             $stmt = $this->connection->prepare("
                 INSERT INTO school_settings (school_year, semester, is_active, advanced_by, advanced_at)
                 VALUES (?, ?, TRUE, ?, NOW())
             ");
             $stmt->execute([$school_year, $semester, $admin_id]);
 
-            // create enrollment_payments for all active students
             $created = $this->createEnrollmentPayments($school_year, $semester, $admin_id);
 
             $this->connection->commit();
@@ -124,7 +122,6 @@ class AcademicPeriod
         }
     }
 
-    // advance to next semester or school year
     public function advancePeriod($admin_id)
     {
         try {
@@ -136,23 +133,29 @@ class AcademicPeriod
                 throw new Exception('No active period found.');
             }
 
-            // determine next period
             $next = $this->resolveNextPeriod($current['school_year'], $current['semester']);
+
+            // snapshot section assignments before anything gets wiped
+            $this->snapshotSectionHistory($current['school_year'], $current['semester']);
 
             // deactivate current
             $stmt = $this->connection->prepare("
-                UPDATE school_settings SET is_active = FALSE WHERE is_active = TRUE
-            ");
+            UPDATE school_settings SET is_active = FALSE WHERE is_active = TRUE
+        ");
             $stmt->execute();
 
             // insert new active period
             $stmt = $this->connection->prepare("
-                INSERT INTO school_settings (school_year, semester, is_active, advanced_by, advanced_at)
-                VALUES (?, ?, TRUE, ?, NOW())
-            ");
+            INSERT INTO school_settings (school_year, semester, is_active, advanced_by, advanced_at)
+            VALUES (?, ?, TRUE, ?, NOW())
+        ");
             $stmt->execute([$next['school_year'], $next['semester'], $admin_id]);
 
-            // create enrollment_payments for all active students for new period
+            // only promote students when rolling over to a new school year
+            if ($next['school_year'] !== $current['school_year']) {
+                $this->promoteStudents();
+            }
+
             $created = $this->createEnrollmentPayments($next['school_year'], $next['semester'], $admin_id);
 
             $this->connection->commit();
@@ -162,6 +165,42 @@ class AcademicPeriod
             error_log('[AcademicPeriod::advancePeriod] ' . $e->getMessage());
             return ['success' => false, 'error' => $e->getMessage()];
         }
+    }
+
+    // snapshot section assignments before they get wiped on advancement
+    private function snapshotSectionHistory($school_year, $semester)
+    {
+        $stmt = $this->connection->prepare("
+        INSERT IGNORE INTO student_section_history (student_id, section_id, section_name, school_year, semester)
+        SELECT s.student_id, s.section_id, sec.section_name, ?, ?
+        FROM students s
+        INNER JOIN sections sec ON sec.section_id = s.section_id
+        WHERE s.section_id IS NOT NULL
+          AND s.enrollment_status = 'active'
+    ");
+        $stmt->execute([$school_year, $semester]);
+    }
+
+    // promote active students to next year level and clear their section
+    private function promoteStudents()
+    {
+        $year_level_map = [
+            '1st Year' => '2nd Year',
+            '2nd Year' => '3rd Year',
+            '3rd Year' => '4th Year',
+            'Grade 11' => 'Grade 12',
+        ];
+
+        foreach ($year_level_map as $current_level => $next_level) {
+            $stmt = $this->connection->prepare("
+            UPDATE students
+            SET year_level = ?, section_id = NULL
+            WHERE year_level = ? AND enrollment_status = 'active'
+        ");
+            $stmt->execute([$next_level, $current_level]);
+        }
+
+        // graduation is handled manually by admin — not automatic
     }
 
     // creates enrollment_payments for all active students that don't have one yet for this period
@@ -205,7 +244,6 @@ class AcademicPeriod
             ];
         }
 
-        // second semester → next school year first semester
         $parts      = explode('-', $school_year);
         $next_start = (int) ($parts[1] ?? date('Y'));
         $next_end   = $next_start + 1;
@@ -214,5 +252,34 @@ class AcademicPeriod
             'school_year' => $next_start . '-' . $next_end,
             'semester'    => 'First',
         ];
+    }
+
+    // get active students eligible for graduation
+    public function getGraduatableStudents()
+    {
+        $stmt = $this->connection->prepare("
+        SELECT student_id, first_name, middle_name, last_name, 
+               student_number, year_level, strand_course, education_level
+        FROM students
+        WHERE year_level IN ('4th Year', 'Grade 12')
+        AND enrollment_status = 'active'
+        ORDER BY year_level, last_name ASC
+    ");
+        $stmt->execute();
+        return $stmt->fetchAll();
+    }
+
+    // graduate selected students
+    public function graduateStudents(array $student_ids)
+    {
+        $placeholders = implode(',', array_fill(0, count($student_ids), '?'));
+        $stmt = $this->connection->prepare("
+        UPDATE students
+        SET enrollment_status = 'graduated', section_id = NULL
+        WHERE student_id IN ($placeholders)
+        AND year_level IN ('4th Year', 'Grade 12')
+        AND enrollment_status = 'active'
+    ");
+        return $stmt->execute($student_ids);
     }
 }

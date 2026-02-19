@@ -460,4 +460,135 @@ document.addEventListener('DOMContentLoaded', function () {
       this.value = val;
     });
   }
+
+  // select all graduates checkbox
+  const selectAllGraduates = document.getElementById('selectAllGraduates');
+  if (selectAllGraduates) {
+    selectAllGraduates.addEventListener('change', function () {
+      document.querySelectorAll('.graduate-checkbox').forEach((cb) => {
+        cb.checked = this.checked;
+        cb.closest('tr').classList.toggle('selected-row', this.checked);
+      });
+      updateGraduateCount();
+    });
+  }
+
+  // individual checkbox change
+  document.addEventListener('change', function (e) {
+    if (e.target.classList.contains('graduate-checkbox')) {
+      e.target.closest('tr').classList.toggle('selected-row', e.target.checked);
+      updateGraduateCount();
+    }
+  });
+
+  // update selected count and enable/disable graduate button
+  function updateGraduateCount() {
+    const checked = document.querySelectorAll('.graduate-checkbox:checked');
+    const countEl = document.getElementById('selectedGraduateCount');
+    const btn = document.getElementById('graduateBtn');
+
+    if (countEl) countEl.textContent = `${checked.length} selected`;
+    if (btn) btn.disabled = checked.length === 0;
+  }
+
+  // graduate button — show confirmation modal
+  const graduateBtn = document.getElementById('graduateBtn');
+  if (graduateBtn) {
+    const graduateModal = new bootstrap.Modal(
+      document.getElementById('graduateConfirmModal')
+    );
+
+    graduateBtn.addEventListener('click', function () {
+      const checked = document.querySelectorAll('.graduate-checkbox:checked');
+      const countEl = document.getElementById('graduateModalCount');
+      if (countEl) countEl.textContent = `${checked.length} student(s)`;
+      graduateModal.show();
+    });
+  }
+
+  // confirm graduate — ajax submit
+  const confirmGraduateBtn = document.getElementById('confirmGraduateBtn');
+  if (confirmGraduateBtn) {
+    confirmGraduateBtn.addEventListener('click', async function () {
+      const btn = this;
+      const graduateModal = bootstrap.Modal.getInstance(
+        document.getElementById('graduateConfirmModal')
+      );
+
+      const checked = document.querySelectorAll('.graduate-checkbox:checked');
+      const studentIds = Array.from(checked).map((cb) => cb.value);
+
+      if (studentIds.length === 0) {
+        graduateModal.hide();
+        showToast('danger', 'Please select at least one student.');
+        return;
+      }
+
+      btn.disabled = true;
+      btn.innerHTML =
+        '<span class="spinner-border spinner-border-sm me-2"></span>Processing...';
+
+      const formData = new FormData();
+      studentIds.forEach((id) => formData.append('student_ids[]', id));
+
+      try {
+        const res = await fetch('index.php?page=ajax_graduate_students', {
+          method: 'POST',
+          headers: { 'X-Requested-With': 'XMLHttpRequest' },
+          body: formData,
+        });
+        const data = await res.json();
+
+        if (data.success) {
+          graduateModal.hide();
+          showToast('success', data.message);
+
+          // update active students stat card
+          const activeEl = document.getElementById('statActiveCount');
+          if (activeEl) activeEl.textContent = formatNumber(data.active_count);
+
+          // remove graduated rows from table
+          studentIds.forEach((id) => {
+            const cb = document.querySelector(
+              `.graduate-checkbox[value="${id}"]`
+            );
+            if (cb) cb.closest('tr').remove();
+          });
+
+          // update eligible badge count
+          const remaining =
+            document.querySelectorAll('.graduate-checkbox').length;
+          const badge = document.querySelector(
+            '.graduation-card .card-header .badge'
+          );
+          if (badge) badge.textContent = `${remaining} eligible`;
+
+          // if no students left show empty state
+          if (remaining === 0) {
+            const tableWrapper = document.querySelector(
+              '.graduation-card .table-responsive'
+            );
+            const footer = document.querySelector('.graduation-card .d-flex');
+            if (tableWrapper)
+              tableWrapper.innerHTML = `
+                        <div class="empty-state py-3">
+                            <div class="empty-state-icon"><i class="bi bi-mortarboard"></i></div>
+                            <p class="empty-state-text">no students eligible for graduation</p>
+                        </div>`;
+            if (footer) footer.remove();
+          }
+
+          updateGraduateCount();
+        } else {
+          showToast('danger', data.message || 'Failed to graduate students.');
+        }
+      } catch (err) {
+        showToast('danger', 'An unexpected error occurred. Please try again.');
+      } finally {
+        btn.disabled = false;
+        btn.innerHTML =
+          '<i class="bi bi-mortarboard-fill"></i> Confirm Graduate';
+      }
+    });
+  }
 });

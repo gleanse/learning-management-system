@@ -116,6 +116,7 @@
 
             <!-- page content -->
             <div class="container-fluid p-4">
+
                 <!-- breadcrumbs -->
                 <nav aria-label="breadcrumb">
                     <ol class="breadcrumb">
@@ -222,6 +223,7 @@
                     </div>
                 </div>
 
+                <!-- action + history row -->
                 <div class="row">
                     <!-- left column: actions -->
                     <div class="col-lg-5 mb-4 mb-lg-0" id="actionColumn">
@@ -462,6 +464,100 @@
                         </div>
                     </div>
                 </div>
+
+                <!-- =====================================================
+                     GRADUATION SECTION — only shows during second semester
+                     ===================================================== -->
+                <?php if ($current && $current['semester'] === 'Second'): ?>
+                    <div class="row mt-4" id="graduationSection">
+                        <div class="col-12">
+                            <div class="card graduation-card">
+                                <div class="card-header d-flex align-items-center justify-content-between">
+                                    <h5 class="mb-0">
+                                        <i class="bi bi-mortarboard-fill"></i>
+                                        Graduate Students
+                                    </h5>
+                                    <?php if (!empty($graduatable_students)): ?>
+                                        <span class="badge bg-warning text-dark" id="graduatableCount">
+                                            <?= count($graduatable_students) ?> eligible
+                                        </span>
+                                    <?php endif; ?>
+                                </div>
+                                <div class="card-body">
+                                    <?php if (empty($graduatable_students)): ?>
+                                        <div class="empty-state py-3">
+                                            <div class="empty-state-icon">
+                                                <i class="bi bi-mortarboard"></i>
+                                            </div>
+                                            <p class="empty-state-text">no students eligible for graduation</p>
+                                        </div>
+                                    <?php else: ?>
+                                        <p class="text-muted mb-3" style="font-size: 0.875rem;">
+                                            the following students are in their final year (4th Year / Grade 12). select those who have completed their requirements to mark them as graduated.
+                                        </p>
+
+                                        <div class="table-responsive" id="graduationTableWrapper">
+                                            <table class="table table-hover mb-3" id="graduationTable">
+                                                <thead>
+                                                    <tr>
+                                                        <th style="width: 40px;">
+                                                            <input type="checkbox" class="form-check-input" id="selectAllGraduates">
+                                                        </th>
+                                                        <th>Student Number</th>
+                                                        <th>Name</th>
+                                                        <th>Year Level</th>
+                                                        <th>Course / Strand</th>
+                                                        <th>Education Level</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody id="graduationTableBody">
+                                                    <?php foreach ($graduatable_students as $student): ?>
+                                                        <tr>
+                                                            <td>
+                                                                <input type="checkbox" class="form-check-input graduate-checkbox"
+                                                                    value="<?= $student['student_id'] ?>">
+                                                            </td>
+                                                            <td>
+                                                                <span class="fw-semibold"><?= htmlspecialchars($student['student_number']) ?></span>
+                                                            </td>
+                                                            <td>
+                                                                <?= htmlspecialchars(
+                                                                    $student['first_name'] . ' ' .
+                                                                        ($student['middle_name'] ? $student['middle_name'] . ' ' : '') .
+                                                                        $student['last_name']
+                                                                ) ?>
+                                                            </td>
+                                                            <td>
+                                                                <span class="education-level-badge badge-shs">
+                                                                    <?= htmlspecialchars($student['year_level']) ?>
+                                                                </span>
+                                                            </td>
+                                                            <td><?= htmlspecialchars($student['strand_course']) ?></td>
+                                                            <td>
+                                                                <span class="education-level-badge <?= $student['education_level'] === 'senior_high' ? 'badge-shs' : 'badge-college' ?>">
+                                                                    <?= $student['education_level'] === 'senior_high' ? 'Senior High' : 'College' ?>
+                                                                </span>
+                                                            </td>
+                                                        </tr>
+                                                    <?php endforeach; ?>
+                                                </tbody>
+                                            </table>
+                                        </div>
+
+                                        <div class="d-flex align-items-center justify-content-between" id="graduationFooter">
+                                            <span class="text-muted small" id="selectedGraduateCount">0 selected</span>
+                                            <button type="button" class="btn btn-success btn-action" id="graduateBtn" disabled>
+                                                <i class="bi bi-mortarboard-fill"></i>
+                                                Graduate Selected
+                                            </button>
+                                        </div>
+                                    <?php endif; ?>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                <?php endif; ?>
+
             </div>
         </div>
     </div>
@@ -530,10 +626,41 @@
         </div>
     </div>
 
+    <!-- graduation confirmation modal -->
+    <div class="modal fade" id="graduateConfirmModal" tabindex="-1">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">
+                        <i class="bi bi-mortarboard-fill"></i>
+                        Confirm Graduation
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <p class="mb-1">You are about to graduate:</p>
+                    <p class="fw-bold fs-5 text-success mb-3" id="graduateModalCount"></p>
+                    <p class="mb-0 text-muted" style="font-size: 0.875rem;">
+                        Their enrollment status will be set to <strong>graduated</strong> and their section assignment will be cleared. This action cannot be undone.
+                    </p>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                        <i class="bi bi-x-circle"></i>
+                        Cancel
+                    </button>
+                    <button type="button" class="btn btn-success" id="confirmGraduateBtn">
+                        <i class="bi bi-mortarboard-fill"></i>
+                        Confirm Graduate
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <script src="bootstrap/js/bootstrap.bundle.min.js"></script>
 
     <script>
-        // pass php flash data to js
         const academicPeriodConfig = {
             success: <?= !empty($success) ? json_encode($success['message']) : 'null' ?>,
             error: <?= !empty($errors['general']) ? json_encode($errors['general']) : 'null' ?>

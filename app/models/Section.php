@@ -274,4 +274,53 @@ class Section
         if (!$result) return 0;
         return max(0, $result['max_capacity'] - $result['current_students']);
     }
+
+    // get historical students for a section from snapshot table
+    public function getHistoricalStudents($section_id, $limit, $offset, $search = '')
+    {
+        $search_param = '%' . $search . '%';
+        $stmt = $this->connection->prepare("
+        SELECT 
+            s.student_number,
+            s.first_name,
+            s.middle_name,
+            s.last_name,
+            sp.email,
+            s.year_level,
+            s.enrollment_status,
+            h.school_year,
+            h.semester
+        FROM student_section_history h
+        INNER JOIN students s ON s.student_id = h.student_id
+        LEFT JOIN student_profiles sp ON sp.student_id = s.student_id
+        WHERE h.section_id = :section_id
+          AND (s.first_name LIKE :search1 OR s.last_name LIKE :search2 OR s.student_number LIKE :search3)
+        ORDER BY s.last_name ASC
+        LIMIT :limit OFFSET :offset
+    ");
+        $stmt->bindValue(':section_id', $section_id,   PDO::PARAM_INT);
+        $stmt->bindValue(':search1',    $search_param);
+        $stmt->bindValue(':search2',    $search_param);
+        $stmt->bindValue(':search3',    $search_param);
+        $stmt->bindValue(':limit',      (int) $limit,  PDO::PARAM_INT);
+        $stmt->bindValue(':offset',     (int) $offset, PDO::PARAM_INT);
+        $stmt->execute();
+        return $stmt->fetchAll();
+    }
+
+    // total count of historical students for a section
+    public function getTotalHistoricalStudents($section_id, $search = '')
+    {
+        $search_param = '%' . $search . '%';
+        $stmt = $this->connection->prepare("
+        SELECT COUNT(*) as total
+        FROM student_section_history h
+        INNER JOIN students s ON s.student_id = h.student_id
+        WHERE h.section_id = ?
+          AND (s.first_name LIKE ? OR s.last_name LIKE ? OR s.student_number LIKE ?)
+    ");
+        $stmt->execute([$section_id, $search_param, $search_param, $search_param]);
+        $result = $stmt->fetch();
+        return (int) $result['total'];
+    }
 }

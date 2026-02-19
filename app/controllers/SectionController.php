@@ -494,9 +494,19 @@ class SectionController
             exit();
         }
 
-        $students      = $this->student_model->getStudentsBySectionWithPagination($section_id, $limit, $offset, $search);
-        $total_students = $this->student_model->getTotalStudentsInSectionCount($section_id, $search);
-        $total_pages   = ceil($total_students / $limit);
+        // determine if this is a historical section or current
+        $current    = $this->academic_model->getCurrentPeriod();
+        $is_history = $current && $section['school_year'] !== $current['school_year'];
+
+        if ($is_history) {
+            $students       = $this->section_model->getHistoricalStudents($section_id, $limit, $offset, $search);
+            $total_students = $this->section_model->getTotalHistoricalStudents($section_id, $search);
+        } else {
+            $students       = $this->student_model->getStudentsBySectionWithPagination($section_id, $limit, $offset, $search);
+            $total_students = $this->student_model->getTotalStudentsInSectionCount($section_id, $search);
+        }
+
+        $total_pages = ceil($total_students / $limit);
 
         require __DIR__ . '/../views/admin/view_section.php';
     }
@@ -517,9 +527,20 @@ class SectionController
             exit();
         }
 
-        $students       = $this->student_model->getStudentsBySectionWithPagination($section_id, $limit, $offset, $search);
-        $total_students = $this->student_model->getTotalStudentsInSectionCount($section_id, $search);
-        $total_pages    = ceil($total_students / $limit);
+        // check if historical
+        $section     = $this->section_model->getSectionWithStudentCount($section_id);
+        $current    = $this->academic_model->getCurrentPeriod();
+        $is_history = $current && $section['school_year'] !== $current['school_year'];
+
+        if ($is_history) {
+            $students       = $this->section_model->getHistoricalStudents($section_id, $limit, $offset, $search);
+            $total_students = $this->section_model->getTotalHistoricalStudents($section_id, $search);
+        } else {
+            $students       = $this->student_model->getStudentsBySectionWithPagination($section_id, $limit, $offset, $search);
+            $total_students = $this->student_model->getTotalStudentsInSectionCount($section_id, $search);
+        }
+
+        $total_pages = ceil($total_students / $limit);
 
         ob_start();
         if (empty($students)): ?>

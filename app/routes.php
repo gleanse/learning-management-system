@@ -120,6 +120,17 @@ if ($page === 'ajax_academic_period_advance' && $method === 'POST') {
     exit();
 }
 
+// ajax: graduate selected students
+if ($page === 'ajax_graduate_students' && $method === 'POST') {
+    if (!isLoggedIn() || (!isAdmin() && !isSuperAdmin())) {
+        header('Location: index.php?page=login');
+        exit();
+    }
+    $controller = new AcademicPeriodController();
+    $controller->ajaxGraduateStudents();
+    exit();
+}
+
 // SUBJECT MANAGEMENT ROUTES (admin only)
 if ($page === 'subjects' && $method === 'GET') {
     if (!isLoggedIn() || (!isAdmin() && !isSuperAdmin())) {

@@ -796,3 +796,59 @@
     gap: 0.5rem;
   }
 }
+
+.graduation-card {
+    border: none;
+    border-radius: 1rem;
+    box-shadow: 0 2px 12px rgba(0, 0, 0, 0.06);
+    overflow: hidden;
+}
+
+.graduation-card .card-header {
+    background: linear-gradient(135deg, #d4edda, #c3e6cb);
+    border-bottom: 1px solid #b8dacc;
+    padding: 1rem 1.25rem;
+}
+
+.graduation-card .card-header h5 {
+    color: #155724;
+    font-weight: 600;
+}
+
+.graduation-card .card-header h5 i {
+    color: #28a745;
+    margin-right: 0.5rem;
+}
+
+#graduationTable thead th {
+    background: #f8f9fa;
+    font-size: 0.8rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: #6c757d;
+    border-bottom: 2px solid #dee2e6;
+    padding: 0.75rem 1rem;
+}
+
+#graduationTable tbody tr {
+    transition: background 0.15s;
+}
+
+#graduationTable tbody tr:hover {
+    background: #f0fff4;
+}
+
+#graduationTable tbody tr.selected-row {
+    background: #d4edda;
+}
+
+#graduationTable tbody td {
+    padding: 0.75rem 1rem;
+    vertical-align: middle;
+    font-size: 0.875rem;
+}
+
+#selectedGraduateCount {
+    font-size: 0.875rem;
+}

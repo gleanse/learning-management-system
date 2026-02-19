@@ -56,6 +56,12 @@ class AcademicPeriodController
             $next_period = $this->resolveNextPeriodLabel($current['school_year'], $current['semester']);
         }
 
+        // fetch graduatable students only during second semester
+        $graduatable_students = [];
+        if ($current && $current['semester'] === 'Second') {
+            $graduatable_students = $this->academic_model->getGraduatableStudents();
+        }
+
         require __DIR__ . '/../views/admin/academic_period.php';
     }
 
@@ -170,5 +176,39 @@ class AcademicPeriodController
         $next_end   = $next_start + 1;
 
         return "First Semester {$next_start}-{$next_end}";
+    }
+
+    // ajax: graduate selected students
+    public function ajaxGraduateStudents()
+    {
+        $this->requireAdmin();
+
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            $this->jsonResponse(['success' => false, 'message' => 'Invalid request method.'], 405);
+        }
+
+        $student_ids = isset($_POST['student_ids']) && is_array($_POST['student_ids'])
+            ? array_map('intval', $_POST['student_ids'])
+            : [];
+
+        if (empty($student_ids)) {
+            $this->jsonResponse(['success' => false, 'message' => 'Please select at least one student.'], 422);
+        }
+
+        $result = $this->academic_model->graduateStudents($student_ids);
+
+        if (!$result) {
+            $this->jsonResponse(['success' => false, 'message' => 'Failed to graduate students. Please try again.'], 500);
+        }
+
+        $active_count = $this->academic_model->getActiveStudentCount();
+        $graduatable  = $this->academic_model->getGraduatableStudents();
+
+        $this->jsonResponse([
+            'success'      => true,
+            'message'      => count($student_ids) . ' student(s) graduated successfully.',
+            'active_count' => $active_count,
+            'graduatable'  => $graduatable,
+        ]);
     }
 }
