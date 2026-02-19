@@ -2,16 +2,19 @@
 
 require_once __DIR__ . '/../models/Student.php';
 require_once __DIR__ . '/../models/Section.php';
+require_once __DIR__ . '/../models/AcademicPeriod.php';
 
 class StudentSectionController
 {
     private $student_model;
     private $section_model;
+    private $academic_model;
 
     public function __construct()
     {
-        $this->student_model = new Student();
-        $this->section_model = new Section();
+        $this->student_model  = new Student();
+        $this->section_model  = new Section();
+        $this->academic_model = new AcademicPeriod();
     }
 
     private function isAjax()
@@ -61,8 +64,11 @@ class StudentSectionController
             $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
         }
 
-        $school_year = '2025-2026';
-        $sections = $this->section_model->getAllSectionsWithStudentCount($school_year);
+        // pull from active period instead of hardcoding
+        $current = $this->academic_model->getCurrentPeriod();
+        $school_year    = $current['school_year'] ?? '';
+
+        $sections           = $this->section_model->getAllSectionsWithStudentCount($school_year);
         $recent_assignments = $this->student_model->getRecentAssignments(15);
 
         $errors = $_SESSION['student_section_errors'] ?? [];

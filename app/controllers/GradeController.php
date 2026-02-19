@@ -6,6 +6,7 @@ require_once __DIR__ . '/../models/Grade.php';
 require_once __DIR__ . '/../models/GradingPeriod.php';
 require_once __DIR__ . '/../models/Subject.php';
 require_once __DIR__ . '/../models/Section.php';
+require_once __DIR__ . '/../models/AcademicPeriod.php';
 
 class GradeController
 {
@@ -15,20 +16,21 @@ class GradeController
     private $grading_period_model;
     private $subject_model;
     private $section_model;
+    private $academic_model;
 
     public function __construct()
     {
-        $this->teacher_model = new Teacher();
-        $this->student_model = new Student();
-        $this->grade_model = new Grade();
+        $this->teacher_model        = new Teacher();
+        $this->student_model        = new Student();
+        $this->grade_model          = new Grade();
         $this->grading_period_model = new GradingPeriod();
-        $this->subject_model = new Subject();
-        $this->section_model = new Section();
+        $this->subject_model        = new Subject();
+        $this->section_model        = new Section();
+        $this->academic_model       = new AcademicPeriod();
     }
 
     public function showTeacherDashboard()
     {
-        // check if teacher is logged in
         if (!isset($_SESSION['user_id']) || $_SESSION['user_role'] !== 'teacher') {
             header('Location: index.php?page=login');
             exit();
@@ -36,22 +38,22 @@ class GradeController
 
         $teacher_id = $_SESSION['user_id'];
 
-        // get year levels for quick links
-        $year_levels = $this->teacher_model->getAssignedYearLevels($teacher_id);
+        $current     = $this->academic_model->getCurrentPeriod();
+        $school_year = $current['school_year'] ?? '';
+        $semester    = $current['semester']    ?? 'First';
 
-        // get todays schedule
+        // year levels filtered to current period so dashboard stays relevant
+        $year_levels = $this->teacher_model->getAssignedYearLevels($teacher_id, $school_year);
+
         require_once __DIR__ . '/../models/Schedule.php';
         $schedule_model = new Schedule();
-        $school_year = '2025-2026'; // TODO: can be made dynamic later
-        $semester = 'First'; // TODO: can be made dynamic later
-        $current_date = date('l, F j, Y'); // example output "Monday, January 1, 2026"
+        $current_date   = date('l, F j, Y');
         $today_schedule = $schedule_model->getTodaySchedule($teacher_id, $school_year, $semester);
 
-        // format schedule data for display
         foreach ($today_schedule as $key => $schedule) {
-            $today_schedule[$key]['time_range'] = date('g:i A', strtotime($schedule['start_time'])) . ' - ' .
+            $today_schedule[$key]['time_range']    = date('g:i A', strtotime($schedule['start_time'])) . ' - ' .
                 date('g:i A', strtotime($schedule['end_time']));
-            $today_schedule[$key]['room_display'] = !empty($schedule['room']) ? $schedule['room'] : 'Not Assigned';
+            $today_schedule[$key]['room_display']  = !empty($schedule['room']) ? $schedule['room'] : 'Not Assigned';
         }
 
         require __DIR__ . '/../views/teacher/teacher_dashboard.php';
@@ -59,21 +61,27 @@ class GradeController
 
     public function showYearLevels()
     {
-        // check if teacher is logged in
         if (!isset($_SESSION['user_id']) || $_SESSION['user_role'] !== 'teacher') {
             header('Location: index.php?page=login');
             exit();
         }
 
-        $teacher_id = $_SESSION['user_id'];
-        $year_levels = $this->teacher_model->getAssignedYearLevels($teacher_id);
+        $teacher_id      = $_SESSION['user_id'];
+        $current         = $this->academic_model->getCurrentPeriod();
+        $available_years = $this->teacher_model->getAssignedSchoolYears($teacher_id);
+
+        // use selected school year from query string, fallback to current period
+        $school_year = $_GET['school_year'] ?? ($current['school_year'] ?? '');
+        $semester    = $_GET['semester']    ?? ($current['semester']    ?? 'First');
+
+        // filter year levels by the selected school year so past years are still browsable
+        $year_levels = $this->teacher_model->getAssignedYearLevels($teacher_id, $school_year);
 
         require __DIR__ . '/../views/teacher/year_levels.php';
     }
 
     public function showSubjects()
     {
-        // check if teacher is logged in
         if (!isset($_SESSION['user_id']) || $_SESSION['user_role'] !== 'teacher') {
             header('Location: index.php?page=login');
             exit();
@@ -87,14 +95,18 @@ class GradeController
             exit();
         }
 
-        $subjects = $this->teacher_model->getAssignedSubjectsGrouped($teacher_id, $year_level);
+        $current     = $this->academic_model->getCurrentPeriod();
+        $school_year = $_GET['school_year'] ?? ($current['school_year'] ?? '');
+        $semester    = $_GET['semester']    ?? ($current['semester']    ?? 'First');
+
+        // pass school year so only subjects for the selected year are shown
+        $subjects = $this->teacher_model->getAssignedSubjectsGrouped($teacher_id, $year_level, $school_year);
 
         require __DIR__ . '/../views/teacher/subjects.php';
     }
 
     public function showSections()
     {
-        // check if teacher is logged in
         if (!isset($_SESSION['user_id']) || $_SESSION['user_role'] !== 'teacher') {
             header('Location: index.php?page=login');
             exit();
@@ -102,44 +114,42 @@ class GradeController
 
         $year_level = $_GET['year_level'] ?? null;
         $subject_id = $_GET['subject_id'] ?? null;
-        $school_year = $_GET['school_year'] ?? '2025-2026';
-        $semester = $_GET['semester'] ?? 'First';
+        $current     = $this->academic_model->getCurrentPeriod();
+        $school_year = $_GET['school_year'] ?? ($current['school_year'] ?? '');
+        $semester    = $_GET['semester']    ?? ($current['semester']    ?? 'First');
 
         if (empty($year_level) || empty($subject_id)) {
             header('Location: index.php?page=teacher_dashboard');
             exit();
         }
 
-        // get subject details for breadcrumb
         require_once __DIR__ . '/../models/Subject.php';
         $subject_model = new Subject();
         $subject = $subject_model->getById($subject_id);
 
         $teacher_id = $_SESSION['user_id'];
-        $sections = $this->teacher_model->getSectionsBySubject($teacher_id, $subject_id, $year_level, $school_year);
+        $sections   = $this->teacher_model->getSectionsBySubject($teacher_id, $subject_id, $year_level, $school_year);
 
         require __DIR__ . '/../views/teacher/sections.php';
     }
 
-
     public function showStudentList()
     {
-        // check if teacher is logged in
         if (!isset($_SESSION['user_id']) || $_SESSION['user_role'] !== 'teacher') {
             header('Location: index.php?page=login');
             exit();
         }
 
-        $year_level = $_GET['year_level'] ?? null;
-        $subject_id = $_GET['subject_id'] ?? null;
-        $section_id = $_GET['section_id'] ?? null;
-        $school_year = $_GET['school_year'] ?? '2025-2026';
-        $semester = $_GET['semester'] ?? 'First';
+        $year_level     = $_GET['year_level']     ?? null;
+        $subject_id     = $_GET['subject_id']     ?? null;
+        $section_id     = $_GET['section_id']     ?? null;
+        $current        = $this->academic_model->getCurrentPeriod();
+        $school_year    = $_GET['school_year']    ?? ($current['school_year'] ?? '');
+        $semester       = $_GET['semester']       ?? ($current['semester']    ?? 'First');
         $grading_period = $_GET['grading_period'] ?? 'Prelim';
 
         $errors = [];
 
-        // validate required parameters
         if (empty($year_level)) {
             $errors['year_level'] = 'Year level is required.';
         }
@@ -170,7 +180,6 @@ class GradeController
             exit();
         }
 
-        // fetch subject details for breadcrumb
         $subject = $this->subject_model->getById($subject_id);
         if (!$subject) {
             $_SESSION['grading_errors'] = ['subject' => 'Subject not found.'];
@@ -178,7 +187,6 @@ class GradeController
             exit();
         }
 
-        // fetch section details for breadcrumb
         $section = $this->section_model->getSectionById($section_id);
         if (!$section) {
             $_SESSION['grading_errors'] = ['section' => 'Section not found.'];
@@ -186,13 +194,10 @@ class GradeController
             exit();
         }
 
-        // check if grading period is locked
         $is_locked = $this->grading_period_model->isLocked($school_year, $semester, $grading_period);
 
-        // get enrolled students
         $students = $this->student_model->getEnrolledStudentsInSubject($subject_id, $section_id, $school_year, $semester);
 
-        // get existing grades for each student
         foreach ($students as &$student) {
             $existing_grade = $this->grade_model->getGrade(
                 $student['student_id'],
@@ -203,57 +208,56 @@ class GradeController
             );
 
             $student['grade_value'] = $existing_grade['grade_value'] ?? '';
-            $student['remarks'] = $existing_grade['remarks'] ?? '';
+            $student['remarks']     = $existing_grade['remarks']     ?? '';
 
-            // calculate display values in controller
             if (!empty($student['grade_value'])) {
                 $student['percentage_display'] = number_format($student['grade_value'], 2);
-                $student['gpa_display'] = number_format($this->percentageToGPA($student['grade_value']), 2);
+                $student['gpa_display']        = number_format($this->percentageToGPA($student['grade_value']), 2);
             } else {
                 $student['percentage_display'] = null;
-                $student['gpa_display'] = null;
+                $student['gpa_display']        = null;
             }
         }
-        // exact fix- break the reference to prevent array corruption in the view (WORSE BUG EVER!!!!!!!!!!!!!!!!)
-        unset($student); 
+        // break reference to prevent array corruption in the view
+        unset($student);
 
         $success_message = $_SESSION['success_message'] ?? null;
         unset($_SESSION['success_message']);
+
+        $teacher_id      = $_SESSION['user_id'];
+        $available_years = $this->teacher_model->getAssignedSchoolYears($teacher_id);
 
         require __DIR__ . '/../views/teacher/student_list.php';
     }
 
     public function processSaveGrade()
     {
-        // check if teacher is logged in
         if (!isset($_SESSION['user_id']) || $_SESSION['user_role'] !== 'teacher') {
             header('Location: index.php?page=login');
             exit();
         }
 
-        // check csrf token
         if (!isset($_POST['csrf_token']) || !isset($_SESSION['csrf_token']) || !hash_equals($_SESSION['csrf_token'], $_POST['csrf_token'])) {
-            $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
+            $_SESSION['csrf_token']     = bin2hex(random_bytes(32));
             $_SESSION['grading_errors'] = ['general' => 'Your session expired. Please try again.'];
             header('Location: index.php?page=teacher_dashboard');
             exit();
         }
 
-        $teacher_id = $_SESSION['user_id'];
-        $student_id = $_POST['student_id'] ?? null;
-        $subject_id = $_POST['subject_id'] ?? null;
-        $section_id = $_POST['section_id'] ?? null;
-        $year_level = $_POST['year_level'] ?? null;
-        $school_year = $_POST['school_year'] ?? null;
-        $semester = $_POST['semester'] ?? null;
+        $teacher_id     = $_SESSION['user_id'];
+        $student_id     = $_POST['student_id']     ?? null;
+        $subject_id     = $_POST['subject_id']     ?? null;
+        $section_id     = $_POST['section_id']     ?? null;
+        $year_level     = $_POST['year_level']     ?? null;
+        $school_year    = $_POST['school_year']    ?? null;
+        $semester       = $_POST['semester']       ?? null;
         $grading_period = $_POST['grading_period'] ?? null;
-        $grade_value = trim($_POST['grade_value'] ?? '');
-        $grade_format = $_POST['grade_format'] ?? 'percentage';
-        $remarks = trim($_POST['remarks'] ?? '');
+        $grade_value    = trim($_POST['grade_value']  ?? '');
+        $grade_format   = $_POST['grade_format']   ?? 'percentage';
+        $remarks        = trim($_POST['remarks']    ?? '');
 
         $errors = [];
 
-        // validate required fields
         if (empty($student_id)) {
             $errors['student_id'] = 'Student is required.';
         }
@@ -278,17 +282,15 @@ class GradeController
             $errors['grade_value'] = 'Grade value is required.';
         }
 
-        // validate grade value is numeric
         if (!empty($grade_value) && !is_numeric($grade_value)) {
             $errors['grade_value'] = 'Grade must be a number.';
         }
 
-        // convert GPA to percentage if needed and validate
+        // convert gpa to percentage if needed then validate
         $percentage_value = $grade_value;
         if ($grade_format === 'gpa' && !empty($grade_value) && is_numeric($grade_value)) {
             $gpa_value = floatval($grade_value);
 
-            // validate GPA range first
             if ($gpa_value < 1.0 || $gpa_value > 5.0) {
                 $errors['grade_value'] = 'GPA must be between 1.0 and 5.0.';
             } else {
@@ -298,7 +300,6 @@ class GradeController
                 }
             }
         } elseif ($grade_format === 'percentage' && !empty($grade_value) && is_numeric($grade_value)) {
-            // validate percentage range
             $percentage_num = floatval($grade_value);
             if ($percentage_num < 0 || $percentage_num > 100) {
                 $errors['grade_value'] = 'Percentage must be between 0 and 100.';
@@ -311,7 +312,6 @@ class GradeController
             exit();
         }
 
-        // check if grading period is locked
         $is_locked = $this->grading_period_model->isLocked($school_year, $semester, $grading_period);
 
         if ($is_locked) {
@@ -320,19 +320,18 @@ class GradeController
             exit();
         }
 
-        // prepare grade data (store as percentage)
+        // store grades as percentage internally
         $grade_data = [
-            'student_id' => $student_id,
-            'subject_id' => $subject_id,
-            'teacher_id' => $teacher_id,
+            'student_id'     => $student_id,
+            'subject_id'     => $subject_id,
+            'teacher_id'     => $teacher_id,
             'grading_period' => $grading_period,
-            'semester' => $semester,
-            'grade_value' => $percentage_value,
-            'remarks' => $remarks,
-            'school_year' => $school_year
+            'semester'       => $semester,
+            'grade_value'    => $percentage_value,
+            'remarks'        => $remarks,
+            'school_year'    => $school_year
         ];
 
-        // save grade
         $result = $this->grade_model->saveGrade($grade_data);
 
         if ($result) {
@@ -346,7 +345,6 @@ class GradeController
         }
     }
 
-    // convert GPA to percentage
     private function gpaToPercentage($gpa)
     {
         $conversion = [
@@ -362,13 +360,10 @@ class GradeController
             '5.00' => 50
         ];
 
-        // convert the input GPA to string with 2 decimal places for lookup
         $gpa_key = number_format((float)$gpa, 2, '.', '');
-
         return $conversion[$gpa_key] ?? false;
     }
 
-    // convert percentage to GPA (for display in views)
     public function percentageToGPA($percentage)
     {
         if ($percentage >= 97) return 1.0;
@@ -383,8 +378,6 @@ class GradeController
         return 5.0;
     }
 
-
-    // get GPA range for display
     public function getGPARange($gpa)
     {
         $ranges = [
@@ -400,9 +393,7 @@ class GradeController
             '5.00' => '0-74'
         ];
 
-        // convert the input GPA to string with 2 decimal places for lookup
         $gpa_key = number_format((float)$gpa, 2, '.', '');
-
         return $ranges[$gpa_key] ?? 'N/A';
     }
 }

@@ -218,6 +218,24 @@
                     </div>
                 </div>
 
+                <?php if ($is_history): ?>
+                    <div class="card mb-3">
+                        <div class="card-body">
+                            <div class="d-flex gap-2 align-items-center">
+                                <span class="text-muted"><i class="bi bi-calendar-range"></i> Semester:</span>
+                                <a href="?page=view_section&section_id=<?= $section['section_id'] ?>&semester=First"
+                                    class="btn btn-sm <?= ($semester ?? 'First') === 'First' ? 'btn-primary' : 'btn-outline-primary' ?>">
+                                    First Semester
+                                </a>
+                                <a href="?page=view_section&section_id=<?= $section['section_id'] ?>&semester=Second"
+                                    class="btn btn-sm <?= ($semester ?? 'First') === 'Second' ? 'btn-primary' : 'btn-outline-primary' ?>">
+                                    Second Semester
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                <?php endif; ?>
+
                 <!-- enrolled students card -->
                 <div class="card">
                     <div class="card-header d-flex justify-content-between align-items-center">
@@ -374,7 +392,8 @@
 
             // fetch function
             function loadStudents(page, search) {
-                const url = `index.php?page=ajax_section_students&section_id=${sectionId}&p=${page}&search=${encodeURIComponent(search)}`;
+                const semester = new URLSearchParams(window.location.search).get('semester') || 'First';
+                const url = `index.php?page=ajax_section_students&section_id=${sectionId}&p=${page}&search=${encodeURIComponent(search)}&semester=${semester}`;
 
                 // add loading state
                 tableBody.style.opacity = '0.5';

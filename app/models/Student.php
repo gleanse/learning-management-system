@@ -11,11 +11,10 @@ class Student
         $this->connection = $connection;
     }
 
-    // fetch enrolled students for the list
-    // this controls what you see on the "Grade Students" page
+    // fetch enrolled students for the grade students page
+    // uses student_section_history instead of students.section_id so historical school years still work
     public function getEnrolledStudentsInSubject($subject_id, $section_id, $school_year, $semester)
     {
-        // GROUP BY is the key here. it forces the result to be 1 row per student.
         $stmt = $this->connection->prepare("
             SELECT 
                 s.student_id,
@@ -30,16 +29,20 @@ class Student
                 sec.strand_course
             FROM student_subject_enrollments sse
             INNER JOIN students s ON sse.student_id = s.student_id
-            LEFT JOIN sections sec ON s.section_id = sec.section_id
-            WHERE sse.subject_id = ? 
-                AND s.section_id = ?
-                AND sse.school_year = ? 
+            INNER JOIN student_section_history ssh
+                ON ssh.student_id = s.student_id
+                AND ssh.section_id = ?
+                AND ssh.school_year = ?
+                AND ssh.semester = ?
+            INNER JOIN sections sec ON sec.section_id = ssh.section_id
+            WHERE sse.subject_id = ?
+                AND sse.school_year = ?
                 AND sse.semester = ?
             GROUP BY s.student_id
             ORDER BY s.last_name ASC, s.first_name ASC
         ");
 
-        $stmt->execute([$subject_id, $section_id, $school_year, $semester]);
+        $stmt->execute([$section_id, $school_year, $semester, $subject_id, $school_year, $semester]);
 
         return $stmt->fetchAll();
     }
@@ -449,7 +452,6 @@ class Student
             ");
             $logStmt->execute([$student_id, $section_id, $assigned_by_user_id]);
 
-            // enroll student into all subjects tied to this section
             $this->enrollStudentInSectionSubjects($student_id, $section_id);
 
             $this->connection->commit();
@@ -475,8 +477,6 @@ class Student
             foreach ($student_ids as $student_id) {
                 $updateStmt->execute([$section_id, $student_id]);
                 $logStmt->execute([$student_id, $section_id, $assigned_by_user_id]);
-
-                // enroll student into all subjects tied to this section
                 $this->enrollStudentInSectionSubjects($student_id, $section_id);
             }
 
@@ -492,7 +492,6 @@ class Student
     // enroll a student into all subjects linked to a section
     private function enrollStudentInSectionSubjects($student_id, $section_id)
     {
-        // get subjects and school_year from section
         $stmt = $this->connection->prepare("
             SELECT ss.subject_id, sec.school_year
             FROM section_subjects ss
@@ -508,7 +507,6 @@ class Student
 
         $school_year = $subjects[0]['school_year'];
 
-        // try to get semester from existing enrollment payment record, default to first
         $semStmt = $this->connection->prepare("
             SELECT semester FROM enrollment_payments
             WHERE student_id = ? AND school_year = ?
@@ -518,13 +516,11 @@ class Student
         $semResult = $semStmt->fetch();
         $semester = $semResult ? $semResult['semester'] : 'First';
 
-        // prepare check statement to see if already enrolled
         $checkStmt = $this->connection->prepare("
             SELECT 1 FROM student_subject_enrollments 
             WHERE student_id = ? AND subject_id = ? AND school_year = ? AND semester = ?
         ");
 
-        // prepare insert statement
         $insertStmt = $this->connection->prepare("
             INSERT INTO student_subject_enrollments
                 (student_id, subject_id, school_year, semester, enrolled_date)
@@ -532,14 +528,35 @@ class Student
         ");
 
         foreach ($subjects as $subject) {
-            // check existence before inserting
             $checkStmt->execute([$student_id, $subject['subject_id'], $school_year, $semester]);
-
-            // only insert if not found
             if (!$checkStmt->fetch()) {
                 $insertStmt->execute([$student_id, $subject['subject_id'], $school_year, $semester]);
             }
         }
+
+        // write a section history snapshot so past school years remain queryable
+        $this->writeSectionHistory($student_id, $section_id, $school_year, $semester);
+    }
+
+    // write or ignore a student_section_history row for the given period
+    // called on assignment so every enrollment is snapshotted
+    private function writeSectionHistory($student_id, $section_id, $school_year, $semester)
+    {
+        $secStmt = $this->connection->prepare("SELECT section_name FROM sections WHERE section_id = ?");
+        $secStmt->execute([$section_id]);
+        $section = $secStmt->fetch();
+
+        if (!$section) {
+            return;
+        }
+
+        // insert ignore so re-assignments don't cause duplicate key errors
+        $stmt = $this->connection->prepare("
+            INSERT IGNORE INTO student_section_history
+                (student_id, section_id, section_name, school_year, semester)
+            VALUES (?, ?, ?, ?, ?)
+        ");
+        $stmt->execute([$student_id, $section_id, $section['section_name'], $school_year, $semester]);
     }
 
     public function removeFromSection($student_id)
@@ -615,7 +632,6 @@ class Student
         return $stmt->fetchAll();
     }
 
-    // get unassigned students eligible for a specific section (matching education_level, year_level, strand_course)
     public function getEligibleStudentsForSection($section_id, $limit = null, $offset = null, $search = '')
     {
         $sql = "
@@ -670,7 +686,6 @@ class Student
         return $stmt->fetchAll();
     }
 
-    // count eligible students for pagination
     public function getTotalEligibleStudentsCount($section_id, $search = '')
     {
         $sql = "
@@ -700,7 +715,6 @@ class Student
         return $result['count'];
     }
 
-    // get students without user accounts
     public function getStudentsWithoutUserAccount($limit = null, $offset = null, $search = '')
     {
         $sql = "
@@ -748,7 +762,6 @@ class Student
         return $stmt->fetchAll();
     }
 
-    // count students without user accounts
     public function getTotalStudentsWithoutUserAccountCount($search = '')
     {
         $sql = "SELECT COUNT(*) as count FROM students WHERE user_id IS NULL";
@@ -766,14 +779,12 @@ class Student
         return $result['count'];
     }
 
-    // link existing student record to newly created user
     public function linkStudentToUser($student_id, $user_id)
     {
         $stmt = $this->connection->prepare("UPDATE students SET user_id = ? WHERE student_id = ?");
         return $stmt->execute([$user_id, $student_id]);
     }
 
-    // create student record (for new enrollments without account)
     public function createStudentRecord(array $student_data)
     {
         $stmt = $this->connection->prepare("
@@ -802,7 +813,6 @@ class Student
         ]);
     }
 
-    // check if student has user account
     public function hasUserAccount($student_id)
     {
         $stmt = $this->connection->prepare("SELECT user_id FROM students WHERE student_id = ?");

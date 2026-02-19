@@ -97,7 +97,7 @@
                             <a href="index.php?page=grading">Grading</a>
                         </li>
                         <li class="breadcrumb-item">
-                            <a href="index.php?page=grading_subjects&year_level=<?php echo urlencode($year_level); ?>">
+                            <a href="index.php?page=grading_subjects&year_level=<?= urlencode($year_level) ?>&school_year=<?= urlencode($school_year) ?>&semester=<?= urlencode($semester) ?>">
                                 <?php echo htmlspecialchars($year_level); ?>
                             </a>
                         </li>
@@ -145,7 +145,7 @@
                         <?php else: ?>
                             <div class="sections-grid">
                                 <?php foreach ($sections as $section): ?>
-                                    <a href="index.php?page=grading_students&year_level=<?php echo urlencode($year_level); ?>&subject_id=<?php echo urlencode($subject_id); ?>&section_id=<?php echo urlencode($section['section_id']); ?>&school_year=<?php echo urlencode($school_year); ?>"
+                                    <a href="index.php?page=grading_students&year_level=<?= urlencode($year_level) ?>&subject_id=<?= urlencode($subject_id) ?>&section_id=<?= urlencode($section['section_id']) ?>&school_year=<?= urlencode($school_year) ?>&semester=<?= urlencode($semester) ?>"
                                         class="section-card">
                                         <div class="section-card-header">
                                             <div class="section-icon">

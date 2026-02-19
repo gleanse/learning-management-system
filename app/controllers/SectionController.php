@@ -497,10 +497,12 @@ class SectionController
         // determine if this is a historical section or current
         $current    = $this->academic_model->getCurrentPeriod();
         $is_history = $current && $section['school_year'] !== $current['school_year'];
+        $semester   = $_GET['semester'] ?? 'First';
 
         if ($is_history) {
-            $students       = $this->section_model->getHistoricalStudents($section_id, $limit, $offset, $search);
-            $total_students = $this->section_model->getTotalHistoricalStudents($section_id, $search);
+            $section['student_count'] = $this->section_model->getHistoricalStudentCount($section_id, $semester);
+            $students       = $this->section_model->getHistoricalStudents($section_id, $limit, $offset, $search, $semester);
+            $total_students = $this->section_model->getTotalHistoricalStudents($section_id, $search, $semester);
         } else {
             $students       = $this->student_model->getStudentsBySectionWithPagination($section_id, $limit, $offset, $search);
             $total_students = $this->student_model->getTotalStudentsInSectionCount($section_id, $search);
@@ -531,10 +533,12 @@ class SectionController
         $section     = $this->section_model->getSectionWithStudentCount($section_id);
         $current    = $this->academic_model->getCurrentPeriod();
         $is_history = $current && $section['school_year'] !== $current['school_year'];
+        $semester   = $_GET['semester'] ?? 'First';
 
         if ($is_history) {
-            $students       = $this->section_model->getHistoricalStudents($section_id, $limit, $offset, $search);
-            $total_students = $this->section_model->getTotalHistoricalStudents($section_id, $search);
+            $section['student_count'] = $this->section_model->getHistoricalStudentCount($section_id, $semester);
+            $students       = $this->section_model->getHistoricalStudents($section_id, $limit, $offset, $search, $semester);
+            $total_students = $this->section_model->getTotalHistoricalStudents($section_id, $search, $semester);
         } else {
             $students       = $this->student_model->getStudentsBySectionWithPagination($section_id, $limit, $offset, $search);
             $total_students = $this->student_model->getTotalStudentsInSectionCount($section_id, $search);

@@ -12,10 +12,10 @@ class Teacher
         $this->connection = $connection;
     }
 
-    // get all subjects assigned to this teacher for a specific year level (NOW WITH SECTIONS)
-    public function getAssignedSubjects($teacher_id, $year_level)
+    // get all subjects assigned to this teacher for a specific year level (with sections)
+    public function getAssignedSubjects($teacher_id, $year_level, $school_year = null)
     {
-        $stmt = $this->connection->prepare("
+        $sql = "
             SELECT 
                 s.subject_id,
                 s.subject_code,
@@ -32,18 +32,26 @@ class Teacher
             WHERE tsa.teacher_id = ? 
             AND tsa.year_level = ?
             AND tsa.status = 'active'
-            ORDER BY s.subject_name ASC, sec.section_name ASC
-        ");
+        ";
 
-        $stmt->execute([$teacher_id, $year_level]);
+        $params = [$teacher_id, $year_level];
 
+        if (!empty($school_year)) {
+            $sql .= " AND tsa.school_year = ?";
+            $params[] = $school_year;
+        }
+
+        $sql .= " ORDER BY s.subject_name ASC, sec.section_name ASC";
+
+        $stmt = $this->connection->prepare($sql);
+        $stmt->execute($params);
         return $stmt->fetchAll();
     }
 
-    // get all subjects assigned to this teacher grouped by subject (no duplicates)
-    public function getAssignedSubjectsGrouped($teacher_id, $year_level)
+    // get subjects assigned to teacher grouped by subject for a specific year level and school year
+    public function getAssignedSubjectsGrouped($teacher_id, $year_level, $school_year = null)
     {
-        $stmt = $this->connection->prepare("
+        $sql = "
             SELECT 
                 s.subject_id,
                 s.subject_code,
@@ -56,16 +64,25 @@ class Teacher
             WHERE tsa.teacher_id = ? 
             AND tsa.year_level = ?
             AND tsa.status = 'active'
-            GROUP BY s.subject_id, s.subject_code, s.subject_name, tsa.school_year, tsa.semester
-            ORDER BY s.subject_name ASC
-        ");
+        ";
 
-        $stmt->execute([$teacher_id, $year_level]);
+        $params = [$teacher_id, $year_level];
 
+        if (!empty($school_year)) {
+            $sql .= " AND tsa.school_year = ?";
+            $params[] = $school_year;
+        }
+
+        $sql .= " GROUP BY s.subject_id, s.subject_code, s.subject_name, tsa.school_year, tsa.semester
+                  ORDER BY s.subject_name ASC";
+
+        $stmt = $this->connection->prepare($sql);
+        $stmt->execute($params);
         return $stmt->fetchAll();
     }
 
     // get sections assigned to teacher for a specific subject
+    // counts from student_section_history so past school years show correct numbers
     public function getSectionsBySubject($teacher_id, $subject_id, $year_level, $school_year)
     {
         $stmt = $this->connection->prepare("
@@ -77,10 +94,12 @@ class Teacher
                 sec.strand_course,
                 sec.max_capacity,
                 sec.school_year,
-                COUNT(DISTINCT st.student_id) as student_count
+                COUNT(DISTINCT ssh.student_id) as student_count
             FROM teacher_subject_assignments tsa
             INNER JOIN sections sec ON tsa.section_id = sec.section_id
-            LEFT JOIN students st ON st.section_id = sec.section_id AND st.enrollment_status = 'active'
+            LEFT JOIN student_section_history ssh
+                ON ssh.section_id = sec.section_id
+                AND ssh.school_year = ?
             WHERE tsa.teacher_id = ? 
             AND tsa.subject_id = ? 
             AND tsa.year_level = ? 
@@ -90,25 +109,45 @@ class Teacher
             ORDER BY sec.section_name ASC
         ");
 
-        $stmt->execute([$teacher_id, $subject_id, $year_level, $school_year]);
-
+        $stmt->execute([$school_year, $teacher_id, $subject_id, $year_level, $school_year]);
         return $stmt->fetchAll();
     }
 
-    // get all year levels where teacher has assigned subjects
-    public function getAssignedYearLevels($teacher_id)
+    // get all year levels where teacher has assigned subjects, filtered by school year
+    public function getAssignedYearLevels($teacher_id, $school_year = null)
     {
-        $stmt = $this->connection->prepare("
+        $sql = "
             SELECT DISTINCT year_level
             FROM teacher_subject_assignments
             WHERE teacher_id = ? 
             AND status = 'active'
-            ORDER BY year_level ASC
-        ");
+        ";
 
-        $stmt->execute([$teacher_id]);
+        $params = [$teacher_id];
 
+        if (!empty($school_year)) {
+            $sql .= " AND school_year = ?";
+            $params[] = $school_year;
+        }
+
+        $sql .= " ORDER BY year_level ASC";
+
+        $stmt = $this->connection->prepare($sql);
+        $stmt->execute($params);
         return $stmt->fetchAll();
+    }
+
+    // get all distinct school years teacher has assignments in
+    public function getAssignedSchoolYears($teacher_id)
+    {
+        $stmt = $this->connection->prepare("
+            SELECT DISTINCT school_year
+            FROM teacher_subject_assignments
+            WHERE teacher_id = ? AND status = 'active'
+            ORDER BY school_year DESC
+        ");
+        $stmt->execute([$teacher_id]);
+        return $stmt->fetchAll(PDO::FETCH_COLUMN);
     }
 
     public function getTotalActiveTeachers()

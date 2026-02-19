@@ -1,5 +1,6 @@
 <?php
 require_once __DIR__ . '/../../config/db_connection.php';
+require_once __DIR__ . '/AcademicPeriod.php';
 
 class Section
 {
@@ -159,27 +160,46 @@ class Section
 
     public function getWithPagination($limit, $offset, $search = '', $school_year = '')
     {
-        $sql = "
+        $current    = (new AcademicPeriod())->getCurrentPeriod();
+        $is_history = $current && $school_year !== $current['school_year'];
+
+        if ($is_history) {
+            $sql = "
+            SELECT 
+                sec.section_id, sec.section_name, sec.education_level, sec.year_level, 
+                sec.strand_course, sec.max_capacity, sec.school_year,
+                COUNT(DISTINCT h.student_id) as student_count
+            FROM sections sec
+            LEFT JOIN student_section_history h ON sec.section_id = h.section_id AND h.school_year = :school_year
+            WHERE sec.school_year = :school_year2
+        ";
+        } else {
+            $sql = "
             SELECT 
                 sec.section_id, sec.section_name, sec.education_level, sec.year_level, 
                 sec.strand_course, sec.max_capacity, sec.school_year,
                 COUNT(s.student_id) as student_count
             FROM sections sec
             LEFT JOIN students s ON sec.section_id = s.section_id AND s.enrollment_status = 'active'
-            WHERE sec.school_year = :school_year
+            WHERE sec.school_year = :school_year2
         ";
+        }
 
         if (!empty($search)) {
             $sql .= " AND (sec.section_name LIKE :search OR sec.strand_course LIKE :search)";
         }
 
         $sql .= " GROUP BY sec.section_id, sec.section_name, sec.education_level, sec.year_level, sec.strand_course, sec.max_capacity, sec.school_year 
-                  ORDER BY sec.education_level DESC, sec.year_level ASC, sec.section_name ASC 
-                  LIMIT :limit OFFSET :offset";
+              ORDER BY sec.education_level DESC, sec.year_level ASC, sec.section_name ASC 
+              LIMIT :limit OFFSET :offset";
 
         $stmt = $this->connection->prepare($sql);
-        $stmt->bindValue(':school_year', $school_year);
-        $stmt->bindValue(':limit', (int) $limit, PDO::PARAM_INT);
+
+        if ($is_history) {
+            $stmt->bindValue(':school_year', $school_year);
+        }
+        $stmt->bindValue(':school_year2', $school_year);
+        $stmt->bindValue(':limit',  (int) $limit,  PDO::PARAM_INT);
         $stmt->bindValue(':offset', (int) $offset, PDO::PARAM_INT);
 
         if (!empty($search)) {
@@ -276,29 +296,24 @@ class Section
     }
 
     // get historical students for a section from snapshot table
-    public function getHistoricalStudents($section_id, $limit, $offset, $search = '')
+    public function getHistoricalStudents($section_id, $limit, $offset, $search = '', $semester = 'First')
     {
         $search_param = '%' . $search . '%';
         $stmt = $this->connection->prepare("
         SELECT 
-            s.student_number,
-            s.first_name,
-            s.middle_name,
-            s.last_name,
-            sp.email,
-            s.year_level,
-            s.enrollment_status,
-            h.school_year,
-            h.semester
+            s.student_number, s.first_name, s.middle_name, s.last_name,
+            sp.email, s.year_level, s.enrollment_status, h.school_year, h.semester
         FROM student_section_history h
         INNER JOIN students s ON s.student_id = h.student_id
         LEFT JOIN student_profiles sp ON sp.student_id = s.student_id
         WHERE h.section_id = :section_id
+          AND h.semester = :semester
           AND (s.first_name LIKE :search1 OR s.last_name LIKE :search2 OR s.student_number LIKE :search3)
         ORDER BY s.last_name ASC
         LIMIT :limit OFFSET :offset
     ");
-        $stmt->bindValue(':section_id', $section_id,   PDO::PARAM_INT);
+        $stmt->bindValue(':section_id', $section_id, PDO::PARAM_INT);
+        $stmt->bindValue(':semester',   $semester);
         $stmt->bindValue(':search1',    $search_param);
         $stmt->bindValue(':search2',    $search_param);
         $stmt->bindValue(':search3',    $search_param);
@@ -309,7 +324,7 @@ class Section
     }
 
     // total count of historical students for a section
-    public function getTotalHistoricalStudents($section_id, $search = '')
+    public function getTotalHistoricalStudents($section_id, $search = '', $semester = 'First')
     {
         $search_param = '%' . $search . '%';
         $stmt = $this->connection->prepare("
@@ -317,9 +332,22 @@ class Section
         FROM student_section_history h
         INNER JOIN students s ON s.student_id = h.student_id
         WHERE h.section_id = ?
+          AND h.semester = ?
           AND (s.first_name LIKE ? OR s.last_name LIKE ? OR s.student_number LIKE ?)
     ");
-        $stmt->execute([$section_id, $search_param, $search_param, $search_param]);
+        $stmt->execute([$section_id, $semester, $search_param, $search_param, $search_param]);
+        $result = $stmt->fetch();
+        return (int) $result['total'];
+    }
+
+    public function getHistoricalStudentCount($section_id, $semester = 'First')
+    {
+        $stmt = $this->connection->prepare("
+        SELECT COUNT(DISTINCT student_id) as total
+        FROM student_section_history
+        WHERE section_id = ? AND semester = ?
+    ");
+        $stmt->execute([$section_id, $semester]);
         $result = $stmt->fetch();
         return (int) $result['total'];
     }

@@ -97,12 +97,12 @@
                             <a href="index.php?page=grading">Grading</a>
                         </li>
                         <li class="breadcrumb-item">
-                            <a href="index.php?page=grading_subjects&year_level=<?php echo urlencode($year_level); ?>">
+                            <a href="index.php?page=grading_subjects&year_level=<?= urlencode($year_level) ?>&school_year=<?= urlencode($school_year) ?>&semester=<?= urlencode($semester) ?>">
                                 <?php echo htmlspecialchars($year_level); ?>
                             </a>
                         </li>
                         <li class="breadcrumb-item">
-                            <a href="index.php?page=grading_sections&year_level=<?php echo urlencode($year_level); ?>&subject_id=<?php echo urlencode($subject_id); ?>&school_year=<?php echo urlencode($school_year); ?>">
+                            <a href="index.php?page=grading_sections&year_level=<?= urlencode($year_level) ?>&subject_id=<?= urlencode($subject_id) ?>&school_year=<?= urlencode($school_year) ?>&semester=<?= urlencode($semester) ?>">
                                 <?php echo htmlspecialchars($subject['subject_name']); ?>
                             </a>
                         </li>
@@ -165,8 +165,11 @@
                                         School Year
                                     </label>
                                     <select name="school_year" class="form-select" onchange="this.form.submit()">
-                                        <option value="2025-2026" <?php echo $school_year === '2025-2026' ? 'selected' : ''; ?>>2025-2026</option>
-                                        <option value="2024-2025" <?php echo $school_year === '2024-2025' ? 'selected' : ''; ?>>2024-2025</option>
+                                        <?php foreach ($available_years as $year): ?>
+                                            <option value="<?= $year ?>" <?= $school_year === $year ? 'selected' : '' ?>>
+                                                <?= htmlspecialchars($year) ?>
+                                            </option>
+                                        <?php endforeach; ?>
                                     </select>
                                 </div>
                                 <div class="col-md-3">

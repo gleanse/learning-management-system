@@ -72,10 +72,9 @@
                             </span>
                         </div>
                         <div class="user-avatar">
-                            <!-- user avatar placeholder first letters of name -->
                             <?php
                             $firstname = $_SESSION['user_firstname'] ?? 'T';
-                            $lastname = $_SESSION['user_lastname'] ?? 'U';
+                            $lastname  = $_SESSION['user_lastname']  ?? 'U';
                             echo strtoupper(substr($firstname, 0, 1) . substr($lastname, 0, 1));
                             ?>
                         </div>
@@ -94,10 +93,12 @@
                             </a>
                         </li>
                         <li class="breadcrumb-item">
-                            <a href="index.php?page=grading">Grading</a>
+                            <a href="index.php?page=grading&school_year=<?= urlencode($school_year) ?>&semester=<?= urlencode($semester) ?>">
+                                Grading
+                            </a>
                         </li>
                         <li class="breadcrumb-item active" aria-current="page">
-                            <?php echo htmlspecialchars($year_level); ?>
+                            <?= htmlspecialchars($year_level) ?>
                         </li>
                     </ol>
                 </nav>
@@ -113,7 +114,7 @@
                             <p class="header-subtitle">
                                 <span class="year-level-badge">
                                     <i class="bi bi-mortarboard-fill"></i>
-                                    <?php echo htmlspecialchars($year_level); ?>
+                                    <?= htmlspecialchars($year_level) ?>
                                 </span>
                             </p>
                         </div>
@@ -140,22 +141,20 @@
                         <?php else: ?>
                             <div class="subjects-grid">
                                 <?php foreach ($subjects as $subject): ?>
-                                    <a href="index.php?page=grading_sections&year_level=<?php echo urlencode($year_level); ?>&subject_id=<?php echo urlencode($subject['subject_id']); ?>&school_year=<?php echo urlencode($subject['school_year']); ?>" 
-                                       class="subject-card">
+                                    <a href="index.php?page=grading_sections&year_level=<?= urlencode($year_level) ?>&subject_id=<?= urlencode($subject['subject_id']) ?>&school_year=<?= urlencode($school_year) ?>&semester=<?= urlencode($semester) ?>"
+                                        class="subject-card">
                                         <div class="subject-card-header">
                                             <div class="subject-icon">
                                                 <i class="bi bi-book-half"></i>
                                             </div>
                                             <span class="school-year-badge">
                                                 <i class="bi bi-calendar-event"></i>
-                                                <?php echo htmlspecialchars($subject['school_year']); ?>
+                                                <?= htmlspecialchars($subject['school_year']) ?>
                                             </span>
                                         </div>
                                         <div class="subject-card-body">
-                                            <h5 class="subject-name"><?php echo htmlspecialchars($subject['subject_name']); ?></h5>
-                                            <p class="subject-code">
-                                                <?php echo htmlspecialchars($subject['subject_code']); ?>
-                                            </p>
+                                            <h5 class="subject-name"><?= htmlspecialchars($subject['subject_name']) ?></h5>
+                                            <p class="subject-code"><?= htmlspecialchars($subject['subject_code']) ?></p>
                                         </div>
                                         <div class="subject-card-footer">
                                             <span class="action-text">
