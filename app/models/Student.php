@@ -11,9 +11,11 @@ class Student
         $this->connection = $connection;
     }
 
-    // get all students enrolled in a specific subject and section
+    // fetch enrolled students for the list
+    // this controls what you see on the "Grade Students" page
     public function getEnrolledStudentsInSubject($subject_id, $section_id, $school_year, $semester)
     {
+        // GROUP BY is the key here. it forces the result to be 1 row per student.
         $stmt = $this->connection->prepare("
             SELECT 
                 s.student_id,
@@ -33,6 +35,7 @@ class Student
                 AND s.section_id = ?
                 AND sse.school_year = ? 
                 AND sse.semester = ?
+            GROUP BY s.student_id
             ORDER BY s.last_name ASC, s.first_name ASC
         ");
 
@@ -446,10 +449,14 @@ class Student
             ");
             $logStmt->execute([$student_id, $section_id, $assigned_by_user_id]);
 
+            // enroll student into all subjects tied to this section
+            $this->enrollStudentInSectionSubjects($student_id, $section_id);
+
             $this->connection->commit();
             return true;
         } catch (Exception $e) {
             $this->connection->rollBack();
+            error_log('[Student::assignToSection] ' . $e->getMessage());
             return false;
         }
     }
@@ -468,13 +475,70 @@ class Student
             foreach ($student_ids as $student_id) {
                 $updateStmt->execute([$section_id, $student_id]);
                 $logStmt->execute([$student_id, $section_id, $assigned_by_user_id]);
+
+                // enroll student into all subjects tied to this section
+                $this->enrollStudentInSectionSubjects($student_id, $section_id);
             }
 
             $this->connection->commit();
             return true;
         } catch (Exception $e) {
             $this->connection->rollBack();
+            error_log('[Student::assignMultipleToSection] ' . $e->getMessage());
             return false;
+        }
+    }
+
+    // enroll a student into all subjects linked to a section
+    private function enrollStudentInSectionSubjects($student_id, $section_id)
+    {
+        // get subjects and school_year from section
+        $stmt = $this->connection->prepare("
+            SELECT ss.subject_id, sec.school_year
+            FROM section_subjects ss
+            INNER JOIN sections sec ON sec.section_id = ss.section_id
+            WHERE ss.section_id = ?
+        ");
+        $stmt->execute([$section_id]);
+        $subjects = $stmt->fetchAll();
+
+        if (empty($subjects)) {
+            return;
+        }
+
+        $school_year = $subjects[0]['school_year'];
+
+        // try to get semester from existing enrollment payment record, default to first
+        $semStmt = $this->connection->prepare("
+            SELECT semester FROM enrollment_payments
+            WHERE student_id = ? AND school_year = ?
+            LIMIT 1
+        ");
+        $semStmt->execute([$student_id, $school_year]);
+        $semResult = $semStmt->fetch();
+        $semester = $semResult ? $semResult['semester'] : 'First';
+
+        // prepare check statement to see if already enrolled
+        $checkStmt = $this->connection->prepare("
+            SELECT 1 FROM student_subject_enrollments 
+            WHERE student_id = ? AND subject_id = ? AND school_year = ? AND semester = ?
+        ");
+
+        // prepare insert statement
+        $insertStmt = $this->connection->prepare("
+            INSERT INTO student_subject_enrollments
+                (student_id, subject_id, school_year, semester, enrolled_date)
+            VALUES (?, ?, ?, ?, CURDATE())
+        ");
+
+        foreach ($subjects as $subject) {
+            // check existence before inserting
+            $checkStmt->execute([$student_id, $subject['subject_id'], $school_year, $semester]);
+
+            // only insert if not found
+            if (!$checkStmt->fetch()) {
+                $insertStmt->execute([$student_id, $subject['subject_id'], $school_year, $semester]);
+            }
         }
     }
 

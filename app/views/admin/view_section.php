@@ -261,11 +261,11 @@
                                                 </td>
                                                 <td>
                                                     <span class="section-name">
-                                                        <?= htmlspecialchars($student['first_name'] . ' ' . ($student['middle_name'] ? $student['middle_name'] . ' ' : '') . $student['last_name']) ?>
+                                                        <?= htmlspecialchars(($student['first_name'] ?? '') . ' ' . ($student['middle_name'] ? $student['middle_name'] . ' ' : '') . ($student['last_name'] ?? '')) ?>
                                                     </span>
                                                 </td>
                                                 <td>
-                                                    <span class="strand-course"><?= htmlspecialchars($student['email']) ?></span>
+                                                    <span class="strand-course"><?= htmlspecialchars($student['email'] ?? 'No email provided') ?></span>
                                                 </td>
                                                 <td>
                                                     <span class="year-level"><?= htmlspecialchars($student['year_level']) ?></span>

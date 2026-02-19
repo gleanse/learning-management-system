@@ -214,6 +214,8 @@ class GradeController
                 $student['gpa_display'] = null;
             }
         }
+        // exact fix- break the reference to prevent array corruption in the view (WORSE BUG EVER!!!!!!!!!!!!!!!!)
+        unset($student); 
 
         $success_message = $_SESSION['success_message'] ?? null;
         unset($_SESSION['success_message']);
