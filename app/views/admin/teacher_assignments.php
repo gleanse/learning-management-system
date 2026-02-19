@@ -233,29 +233,16 @@
                                     <label class="form-label">
                                         <i class="bi bi-calendar-range"></i>
                                         School Year
-                                        <span class="text-danger">*</span>
                                     </label>
-                                    <select class="form-select" name="school_year" required>
-                                        <?php foreach ($school_year_options as $index => $sy): ?>
-                                            <option value="<?= $sy ?>" <?= ($index === 0) ? 'selected' : '' ?>>
-                                                <?= $sy ?> <?= ($index === 0) ? '(current)' : '(next)' ?>
-                                            </option>
-                                        <?php endforeach; ?>
-                                    </select>
-                                    <div class="invalid-feedback"></div>
+                                    <input type="text" class="form-control" value="<?= htmlspecialchars($school_year) ?>" readonly>
                                 </div>
 
                                 <div class="col-md-6 mb-3">
                                     <label class="form-label">
                                         <i class="bi bi-calendar3"></i>
                                         Semester
-                                        <span class="text-danger">*</span>
                                     </label>
-                                    <select class="form-select" name="semester" required>
-                                        <option value="First">First Semester</option>
-                                        <option value="Second">Second Semester</option>
-                                    </select>
-                                    <div class="invalid-feedback"></div>
+                                    <input type="text" class="form-control" value="<?= htmlspecialchars($semester) ?>" readonly>
                                 </div>
                             </div>
 

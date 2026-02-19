@@ -351,4 +351,15 @@ class Section
         $result = $stmt->fetch();
         return (int) $result['total'];
     }
+    // get all sections for a specific school year
+    public function getSectionsBySchoolYear($school_year)
+    {
+        $stmt = $this->connection->prepare("
+        SELECT * FROM sections
+        WHERE school_year = ?
+        ORDER BY section_name ASC
+    ");
+        $stmt->execute([$school_year]);
+        return $stmt->fetchAll();
+    }
 }

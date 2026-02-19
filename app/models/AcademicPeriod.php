@@ -153,7 +153,7 @@ class AcademicPeriod
 
             // only promote students when rolling over to a new school year
             if ($next['school_year'] !== $current['school_year']) {
-                $this->promoteStudents();
+                $this->promoteStudents($current['school_year']);
             }
 
             $created = $this->createEnrollmentPayments($next['school_year'], $next['semester'], $admin_id);
@@ -181,7 +181,7 @@ class AcademicPeriod
         $stmt->execute([$school_year, $semester]);
     }
 
-    private function promoteStudents()
+    private function promoteStudents($current_school_year)
     {
         $year_level_map = [
             '3rd Year' => '4th Year',
@@ -194,9 +194,15 @@ class AcademicPeriod
             $stmt = $this->connection->prepare("
             UPDATE students
             SET year_level = ?, section_id = NULL
-            WHERE year_level = ? AND enrollment_status = 'active'
+            WHERE year_level = ?
+                AND enrollment_status = 'active'
+                AND student_id IN (
+                    SELECT student_id FROM enrollment_payments
+                    WHERE school_year = ?
+                    AND status = 'paid'
+                )
         ");
-            $stmt->execute([$next_level, $current_level]);
+            $stmt->execute([$next_level, $current_level, $current_school_year]);
         }
     }
 
