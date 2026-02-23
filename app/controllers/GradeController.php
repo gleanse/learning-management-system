@@ -29,12 +29,48 @@ class GradeController
         $this->academic_model       = new AcademicPeriod();
     }
 
-    public function showTeacherDashboard()
+    private function isAjax()
+    {
+        return isset($_SERVER['HTTP_X_REQUESTED_WITH']) && $_SERVER['HTTP_X_REQUESTED_WITH'] === 'XMLHttpRequest';
+    }
+
+    private function jsonResponse($data, $status_code = 200)
+    {
+        http_response_code($status_code);
+        header('Content-Type: application/json');
+        echo json_encode($data);
+        exit();
+    }
+
+    private function requireTeacher()
     {
         if (!isset($_SESSION['user_id']) || $_SESSION['user_role'] !== 'teacher') {
+            if ($this->isAjax()) {
+                $this->jsonResponse(['success' => false, 'message' => 'Unauthorized.'], 403);
+            }
             header('Location: index.php?page=login');
             exit();
         }
+    }
+
+    private function validateCsrf()
+    {
+        if (!isset($_POST['csrf_token']) || !isset($_SESSION['csrf_token']) || !hash_equals($_SESSION['csrf_token'], $_POST['csrf_token'])) {
+            $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
+
+            if ($this->isAjax()) {
+                $this->jsonResponse(['success' => false, 'message' => 'Your session expired. Please refresh and try again.'], 403);
+            }
+
+            $_SESSION['grading_errors'] = ['general' => 'Your session expired. Please try again.'];
+            header('Location: index.php?page=teacher_dashboard');
+            exit();
+        }
+    }
+
+    public function showTeacherDashboard()
+    {
+        $this->requireTeacher();
 
         $teacher_id = $_SESSION['user_id'];
 
@@ -42,7 +78,6 @@ class GradeController
         $school_year = $current['school_year'] ?? '';
         $semester    = $current['semester']    ?? 'First';
 
-        // year levels filtered to current period so dashboard stays relevant
         $year_levels = $this->teacher_model->getAssignedYearLevels($teacher_id, $school_year);
 
         require_once __DIR__ . '/../models/Schedule.php';
@@ -51,9 +86,9 @@ class GradeController
         $today_schedule = $schedule_model->getTodaySchedule($teacher_id, $school_year, $semester);
 
         foreach ($today_schedule as $key => $schedule) {
-            $today_schedule[$key]['time_range']    = date('g:i A', strtotime($schedule['start_time'])) . ' - ' .
+            $today_schedule[$key]['time_range']   = date('g:i A', strtotime($schedule['start_time'])) . ' - ' .
                 date('g:i A', strtotime($schedule['end_time']));
-            $today_schedule[$key]['room_display']  = !empty($schedule['room']) ? $schedule['room'] : 'Not Assigned';
+            $today_schedule[$key]['room_display'] = !empty($schedule['room']) ? $schedule['room'] : 'Not Assigned';
         }
 
         require __DIR__ . '/../views/teacher/teacher_dashboard.php';
@@ -61,20 +96,15 @@ class GradeController
 
     public function showYearLevels()
     {
-        if (!isset($_SESSION['user_id']) || $_SESSION['user_role'] !== 'teacher') {
-            header('Location: index.php?page=login');
-            exit();
-        }
+        $this->requireTeacher();
 
         $teacher_id      = $_SESSION['user_id'];
         $current         = $this->academic_model->getCurrentPeriod();
         $available_years = $this->teacher_model->getAssignedSchoolYears($teacher_id);
 
-        // use selected school year from query string, fallback to current period
         $school_year = $_GET['school_year'] ?? ($current['school_year'] ?? '');
         $semester    = $_GET['semester']    ?? ($current['semester']    ?? 'First');
 
-        // filter year levels by the selected school year so past years are still browsable
         $year_levels = $this->teacher_model->getAssignedYearLevels($teacher_id, $school_year);
 
         require __DIR__ . '/../views/teacher/year_levels.php';
@@ -82,10 +112,7 @@ class GradeController
 
     public function showSubjects()
     {
-        if (!isset($_SESSION['user_id']) || $_SESSION['user_role'] !== 'teacher') {
-            header('Location: index.php?page=login');
-            exit();
-        }
+        $this->requireTeacher();
 
         $teacher_id = $_SESSION['user_id'];
         $year_level = $_GET['year_level'] ?? null;
@@ -107,13 +134,10 @@ class GradeController
 
     public function showSections()
     {
-        if (!isset($_SESSION['user_id']) || $_SESSION['user_role'] !== 'teacher') {
-            header('Location: index.php?page=login');
-            exit();
-        }
+        $this->requireTeacher();
 
-        $year_level = $_GET['year_level'] ?? null;
-        $subject_id = $_GET['subject_id'] ?? null;
+        $year_level  = $_GET['year_level'] ?? null;
+        $subject_id  = $_GET['subject_id'] ?? null;
         $current     = $this->academic_model->getCurrentPeriod();
         $school_year = $_GET['school_year'] ?? ($current['school_year'] ?? '');
         $semester    = $_GET['semester']    ?? ($current['semester']    ?? 'First');
@@ -123,9 +147,8 @@ class GradeController
             exit();
         }
 
-        require_once __DIR__ . '/../models/Subject.php';
         $subject_model = new Subject();
-        $subject = $subject_model->getById($subject_id);
+        $subject       = $subject_model->getById($subject_id);
 
         $teacher_id = $_SESSION['user_id'];
         $sections   = $this->teacher_model->getSectionsBySubject($teacher_id, $subject_id, $year_level, $school_year);
@@ -135,10 +158,7 @@ class GradeController
 
     public function showStudentList()
     {
-        if (!isset($_SESSION['user_id']) || $_SESSION['user_role'] !== 'teacher') {
-            header('Location: index.php?page=login');
-            exit();
-        }
+        $this->requireTeacher();
 
         $year_level     = $_GET['year_level']     ?? null;
         $subject_id     = $_GET['subject_id']     ?? null;
@@ -150,29 +170,12 @@ class GradeController
 
         $errors = [];
 
-        if (empty($year_level)) {
-            $errors['year_level'] = 'Year level is required.';
-        }
-
-        if (empty($subject_id)) {
-            $errors['subject'] = 'Please select a subject.';
-        }
-
-        if (empty($section_id)) {
-            $errors['section'] = 'Please select a section.';
-        }
-
-        if (empty($school_year)) {
-            $errors['school_year'] = 'Please select a school year.';
-        }
-
-        if (empty($semester)) {
-            $errors['semester'] = 'Please select a semester.';
-        }
-
-        if (empty($grading_period)) {
-            $errors['grading_period'] = 'Please select a grading period.';
-        }
+        if (empty($year_level))      $errors['year_level']     = 'Year level is required.';
+        if (empty($subject_id))      $errors['subject']        = 'Please select a subject.';
+        if (empty($section_id))      $errors['section']        = 'Please select a section.';
+        if (empty($school_year))     $errors['school_year']    = 'Please select a school year.';
+        if (empty($semester))        $errors['semester']       = 'Please select a semester.';
+        if (empty($grading_period))  $errors['grading_period'] = 'Please select a grading period.';
 
         if (!empty($errors)) {
             $_SESSION['grading_errors'] = $errors;
@@ -195,8 +198,7 @@ class GradeController
         }
 
         $is_locked = $this->grading_period_model->isLocked($school_year, $semester, $grading_period);
-
-        $students = $this->student_model->getEnrolledStudentsInSubject($subject_id, $section_id, $school_year, $semester);
+        $students  = $this->student_model->getEnrolledStudentsInSubject($subject_id, $section_id, $school_year, $semester);
 
         foreach ($students as &$student) {
             $existing_grade = $this->grade_model->getGrade(
@@ -232,55 +234,29 @@ class GradeController
 
     public function processSaveGrade()
     {
-        if (!isset($_SESSION['user_id']) || $_SESSION['user_role'] !== 'teacher') {
-            header('Location: index.php?page=login');
-            exit();
-        }
-
-        if (!isset($_POST['csrf_token']) || !isset($_SESSION['csrf_token']) || !hash_equals($_SESSION['csrf_token'], $_POST['csrf_token'])) {
-            $_SESSION['csrf_token']     = bin2hex(random_bytes(32));
-            $_SESSION['grading_errors'] = ['general' => 'Your session expired. Please try again.'];
-            header('Location: index.php?page=teacher_dashboard');
-            exit();
-        }
+        $this->requireTeacher();
+        $this->validateCsrf();
 
         $teacher_id     = $_SESSION['user_id'];
-        $student_id     = $_POST['student_id']     ?? null;
-        $subject_id     = $_POST['subject_id']     ?? null;
-        $section_id     = $_POST['section_id']     ?? null;
-        $year_level     = $_POST['year_level']     ?? null;
-        $school_year    = $_POST['school_year']    ?? null;
-        $semester       = $_POST['semester']       ?? null;
+        $student_id     = $_POST['student_id']    ?? null;
+        $subject_id     = $_POST['subject_id']    ?? null;
+        $section_id     = $_POST['section_id']    ?? null;
+        $year_level     = $_POST['year_level']    ?? null;
+        $school_year    = $_POST['school_year']   ?? null;
+        $semester       = $_POST['semester']      ?? null;
         $grading_period = $_POST['grading_period'] ?? null;
-        $grade_value    = trim($_POST['grade_value']  ?? '');
-        $grade_format   = $_POST['grade_format']   ?? 'percentage';
-        $remarks        = trim($_POST['remarks']    ?? '');
+        $grade_value    = trim($_POST['grade_value'] ?? '');
+        $grade_format   = $_POST['grade_format']  ?? 'percentage';
+        $remarks        = trim($_POST['remarks']   ?? '');
 
         $errors = [];
 
-        if (empty($student_id)) {
-            $errors['student_id'] = 'Student is required.';
-        }
-
-        if (empty($subject_id)) {
-            $errors['subject_id'] = 'Subject is required.';
-        }
-
-        if (empty($school_year)) {
-            $errors['school_year'] = 'School year is required.';
-        }
-
-        if (empty($semester)) {
-            $errors['semester'] = 'Semester is required.';
-        }
-
-        if (empty($grading_period)) {
-            $errors['grading_period'] = 'Grading period is required.';
-        }
-
-        if (empty($grade_value)) {
-            $errors['grade_value'] = 'Grade value is required.';
-        }
+        if (empty($student_id))     $errors['student_id']     = 'Student is required.';
+        if (empty($subject_id))     $errors['subject_id']     = 'Subject is required.';
+        if (empty($school_year))    $errors['school_year']    = 'School year is required.';
+        if (empty($semester))       $errors['semester']       = 'Semester is required.';
+        if (empty($grading_period)) $errors['grading_period'] = 'Grading period is required.';
+        if (empty($grade_value))    $errors['grade_value']    = 'Grade value is required.';
 
         if (!empty($grade_value) && !is_numeric($grade_value)) {
             $errors['grade_value'] = 'Grade must be a number.';
@@ -307,6 +283,9 @@ class GradeController
         }
 
         if (!empty($errors)) {
+            if ($this->isAjax()) {
+                $this->jsonResponse(['success' => false, 'errors' => $errors]);
+            }
             $_SESSION['grading_errors'] = $errors;
             header("Location: index.php?page=grading_students&year_level=$year_level&subject_id=$subject_id&section_id=$section_id&school_year=$school_year&semester=$semester&grading_period=$grading_period");
             exit();
@@ -315,6 +294,9 @@ class GradeController
         $is_locked = $this->grading_period_model->isLocked($school_year, $semester, $grading_period);
 
         if ($is_locked) {
+            if ($this->isAjax()) {
+                $this->jsonResponse(['success' => false, 'message' => 'Grading period is locked. You cannot submit grades at this time.']);
+            }
             $_SESSION['grading_errors'] = ['general' => 'Grading period is locked. You cannot submit grades at this time.'];
             header("Location: index.php?page=grading_students&year_level=$year_level&subject_id=$subject_id&section_id=$section_id&school_year=$school_year&semester=$semester&grading_period=$grading_period");
             exit();
@@ -335,14 +317,19 @@ class GradeController
         $result = $this->grade_model->saveGrade($grade_data);
 
         if ($result) {
+            if ($this->isAjax()) {
+                $this->jsonResponse(['success' => true, 'message' => 'Grade saved successfully.']);
+            }
             $_SESSION['success_message'] = 'Grade saved successfully.';
-            header("Location: index.php?page=grading_students&year_level=$year_level&subject_id=$subject_id&section_id=$section_id&school_year=$school_year&semester=$semester&grading_period=$grading_period");
-            exit();
         } else {
+            if ($this->isAjax()) {
+                $this->jsonResponse(['success' => false, 'message' => 'Failed to save grade. Please try again.']);
+            }
             $_SESSION['grading_errors'] = ['general' => 'Failed to save grade. Please try again.'];
-            header("Location: index.php?page=grading_students&year_level=$year_level&subject_id=$subject_id&section_id=$section_id&school_year=$school_year&semester=$semester&grading_period=$grading_period");
-            exit();
         }
+
+        header("Location: index.php?page=grading_students&year_level=$year_level&subject_id=$subject_id&section_id=$section_id&school_year=$school_year&semester=$semester&grading_period=$grading_period");
+        exit();
     }
 
     private function gpaToPercentage($gpa)
