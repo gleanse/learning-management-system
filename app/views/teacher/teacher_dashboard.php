@@ -13,9 +13,12 @@
 </head>
 
 <body>
+    <!-- UPDATED: Added Overlay for Mobile Sidebar -->
+    <div class="sidebar-overlay" id="sidebarOverlay"></div>
+
     <div class="d-flex">
-        <!-- sidebar -->
-        <div class="sidenav">
+        <!-- UPDATED: Added id="sidebar" -->
+        <div class="sidenav" id="sidebar">
             <div class="sidenav-header">
                 <div class="school-brand">
                     <div class="school-logo">
@@ -52,27 +55,24 @@
 
         <!-- main content -->
         <div class="main-content flex-grow-1">
-            <!-- top navbar -->
+            <!-- UPDATED: Navbar with Hamburger Menu & Responsive Classes -->
             <nav class="navbar top-navbar">
                 <div class="container-fluid">
-                    <div class="navbar-brand mb-0">
-                        <div class="page-icon">
-                            <i class="bi bi-easel-fill"></i>
+                    <div class="d-flex align-items-center gap-2">
+                        <button class="btn btn-light d-md-none p-1 border-0" id="sidebarToggle" style="background: transparent;">
+                            <i class="bi bi-list" style="font-size: 1.75rem; color: var(--secondary);"></i>
+                        </button>
+                        <div class="navbar-brand mb-0">
+                            <div class="page-icon"><i class="bi bi-easel-fill"></i></div>
+                            <span class="d-none d-sm-inline">Teacher Dashboard</span>
                         </div>
-                        <span>Teacher Dashboard</span>
                     </div>
                     <div class="user-info-wrapper">
-                        <div class="user-details">
-                            <span class="user-name">
-                                <?php echo htmlspecialchars($_SESSION['user_firstname'] . ' ' . $_SESSION['user_lastname']); ?>
-                            </span>
-                            <span class="user-role">
-                                <i class="bi bi-person-badge-fill"></i>
-                                <?php echo ucfirst(htmlspecialchars($_SESSION['user_role'])); ?>
-                            </span>
+                        <div class="user-details d-none d-sm-flex flex-column">
+                            <span class="user-name"><?php echo htmlspecialchars($_SESSION['user_firstname'] . ' ' . $_SESSION['user_lastname']); ?></span>
+                            <span class="user-role"><i class="bi bi-person-badge-fill"></i> <?php echo ucfirst(htmlspecialchars($_SESSION['user_role'])); ?></span>
                         </div>
                         <div class="user-avatar">
-                            <!-- user avatar placeholder first letters of name -->
                             <?php
                             $firstname = $_SESSION['user_firstname'] ?? 'T';
                             $lastname = $_SESSION['user_lastname'] ?? 'U';
@@ -105,7 +105,7 @@
                     </div>
                 </div>
 
-                <!-- schedule section now displays todays schedule -->
+                <!-- schedule section -->
                 <div class="card schedule-card mb-4">
                     <div class="card-header">
                         <h5 class="mb-0">
@@ -113,17 +113,16 @@
                             My Schedule - <?php echo htmlspecialchars($current_date); ?>
                         </h5>
                     </div>
-                    <div class="card-body">
+                    <div class="card-body p-0 p-md-4">
                         <?php if (empty($today_schedule)): ?>
                             <div class="empty-state">
-                                <div class="empty-state-icon">
-                                    <i class="bi bi-calendar-x"></i>
-                                </div>
+                                <div class="empty-state-icon"><i class="bi bi-calendar-x"></i></div>
                                 <p class="empty-state-text">No classes scheduled for today.</p>
                             </div>
                         <?php else: ?>
                             <div class="table-responsive">
-                                <table class="table table-hover">
+                                <!-- UPDATED: Table with mobile-card-table class and data-labels -->
+                                <table class="table table-hover mobile-card-table">
                                     <thead>
                                         <tr>
                                             <th><i class="bi bi-clock"></i> Time</th>
@@ -135,25 +134,25 @@
                                     <tbody>
                                         <?php foreach ($today_schedule as $schedule): ?>
                                             <tr>
-                                                <td>
+                                                <td data-label="Time">
                                                     <span class="time-badge">
                                                         <i class="bi bi-clock-fill"></i>
                                                         <?php echo htmlspecialchars($schedule['time_range']); ?>
                                                     </span>
                                                 </td>
-                                                <td>
+                                                <td data-label="Subject">
                                                     <div class="subject-info">
                                                         <span class="subject-code"><?php echo htmlspecialchars($schedule['subject_code']); ?></span>
                                                         <span class="subject-name"><?php echo htmlspecialchars($schedule['subject_name']); ?></span>
                                                     </div>
                                                 </td>
-                                                <td>
+                                                <td data-label="Section">
                                                     <span class="section-badge">
                                                         <i class="bi bi-diagram-3"></i>
                                                         <?php echo htmlspecialchars($schedule['section_name']) . ' (' . htmlspecialchars($schedule['year_level']) . ')'; ?>
                                                     </span>
                                                 </td>
-                                                <td>
+                                                <td data-label="Room">
                                                     <span class="room-badge">
                                                         <i class="bi bi-door-open"></i>
                                                         <?php echo htmlspecialchars($schedule['room_display']); ?>
@@ -171,17 +170,12 @@
                 <!-- quick links section -->
                 <div class="card">
                     <div class="card-header">
-                        <h5 class="mb-0">
-                            <i class="bi bi-journal-bookmark"></i>
-                            Quick Links - Grading
-                        </h5>
+                        <h5 class="mb-0"><i class="bi bi-journal-bookmark"></i> Quick Links - Grading</h5>
                     </div>
                     <div class="card-body">
                         <?php if (empty($year_levels)): ?>
                             <div class="empty-state">
-                                <div class="empty-state-icon">
-                                    <i class="bi bi-inbox"></i>
-                                </div>
+                                <div class="empty-state-icon"><i class="bi bi-inbox"></i></div>
                                 <p class="empty-state-text">No year levels assigned yet.</p>
                             </div>
                         <?php else: ?>
@@ -202,6 +196,22 @@
     </div>
 
     <script src="bootstrap/js/bootstrap.bundle.min.js"></script>
+    <!-- UPDATED: Added Sidebar Toggle Script -->
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const sidebar = document.getElementById('sidebar');
+            const toggleBtn = document.getElementById('sidebarToggle');
+            const overlay = document.getElementById('sidebarOverlay');
+
+            function toggle() {
+                sidebar.classList.toggle('show');
+                overlay.classList.toggle('show');
+                document.body.style.overflow = sidebar.classList.contains('show') ? 'hidden' : '';
+            }
+            if (toggleBtn) toggleBtn.addEventListener('click', toggle);
+            if (overlay) overlay.addEventListener('click', toggle);
+        });
+    </script>
 </body>
 
 </html>

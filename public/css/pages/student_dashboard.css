@@ -880,3 +880,154 @@
     display: none;
   }
 }
+/* ── RESPONSIVE SIDEBAR & OVERLAY ADDITIONS ── */
+
+/* Base style for the dark backdrop */
+.sidebar-overlay {
+  display: block;
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background: rgba(0, 0, 0, 0.5);
+  z-index: 1040;
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.3s ease-in-out, visibility 0.3s ease-in-out;
+}
+
+/* When active */
+.sidebar-overlay.show {
+  opacity: 1;
+  visibility: visible;
+}
+
+/* Ensure desktop resets any mobile classes */
+@media (min-width: 769px) {
+  .sidebar-overlay {
+    display: none !important;
+  }
+}
+
+/* Mobile landscape / small tablet responsive styling */
+@media (max-width: 768px) {
+  /* Sidebar off-canvas configuration */
+  .sidenav {
+    position: fixed !important;
+    top: 0;
+    left: 0;
+    height: 100vh;
+    width: 280px; /* Adjust if your default width is different */
+    max-width: 85vw; /* Failsafe for very small screens */
+    z-index: 1050; /* Keep it above the overlay */
+    transform: translateX(-100%);
+    transition: transform 0.3s ease-in-out;
+    background-color: #ffffff; /* Ensure background is solid */
+    box-shadow: 2px 0 12px rgba(0, 0, 0, 0.15);
+    overflow-y: auto;
+  }
+
+  /* When toggled via javascript */
+  .sidenav.show {
+    transform: translateX(0);
+  }
+
+  /* Let main content take up 100% width on mobile */
+  .main-content {
+    width: 100%;
+    max-width: 100vw;
+  }
+
+  /* Minor adjustment for container padding */
+  .container-fluid.p-4 {
+    padding: 1.25rem !important;
+  }
+}
+
+/* Mobile portrait */
+@media (max-width: 576px) {
+  /* Hide the user name and role completely on very small screens so it doesn't break navbar */
+  .user-details {
+    display: none !important;
+  }
+  .container-fluid.p-4 {
+    padding: 1rem !important;
+  }
+}
+
+/* ── MOBILE TABLE CARD LAYOUT ── */
+@media (max-width: 768px) {
+  /* Remove wrapper borders on mobile */
+  .table-responsive {
+    border: none !important;
+    box-shadow: none !important;
+  }
+
+  /* Force table to behave like blocks, not a grid */
+  .mobile-card-table,
+  .mobile-card-table tbody,
+  .mobile-card-table tr,
+  .mobile-card-table td {
+    display: block;
+    width: 100%;
+  }
+
+  /* Hide the table headers completely */
+  .mobile-card-table thead {
+    display: none;
+  }
+
+  /* Transform each row into a nicely spaced "card" */
+  .mobile-card-table tr {
+    margin-bottom: 1rem;
+    background: #ffffff;
+    border: 1px solid #e2e8f0;
+    border-radius: 0.75rem;
+    padding: 0.5rem 0;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.04);
+  }
+
+  /* Transform cells into flex rows: Label on left, Value on right */
+  .mobile-card-table td {
+    /* Adding !important here ensures the 4th/5th columns appear if there was any lingering code trying to hide them */
+    display: flex !important;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.75rem 1.25rem !important;
+    border-bottom: 1px solid #f8fafc;
+    text-align: right; /* Values right-aligned */
+  }
+
+  /* Remove border from last item in the card */
+  .mobile-card-table td:last-child {
+    border-bottom: none;
+  }
+
+  /* Auto-generate labels from the data-label attribute in HTML */
+  .mobile-card-table td::before {
+    content: attr(data-label);
+    font-weight: 600;
+    font-size: 0.813rem;
+    color: var(--gray-500);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-right: 1rem;
+    text-align: left; /* Label left-aligned */
+  }
+
+  /* Downsize specific text inside the mobile card */
+  .grade-value {
+    font-size: 1.125rem !important; /* Smaller grade font */
+  }
+  .period-badge {
+    font-size: 0.75rem;
+    padding: 0.25rem 0.6rem;
+  }
+  .remarks-text,
+  .date-text,
+  .teacher-text {
+    font-size: 0.875rem;
+    text-align: right;
+  }
+}

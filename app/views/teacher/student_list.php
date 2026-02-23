@@ -13,9 +13,12 @@
 </head>
 
 <body>
+    <!-- ADDED: Sidebar Overlay for Mobile -->
+    <div class="sidebar-overlay" id="sidebarOverlay"></div>
+
     <div class="d-flex">
         <!-- sidebar -->
-        <div class="sidenav">
+        <div class="sidenav" id="sidebar">
             <div class="sidenav-header">
                 <div class="school-brand">
                     <div class="school-logo">
@@ -55,14 +58,21 @@
             <!-- top navbar -->
             <nav class="navbar top-navbar">
                 <div class="container-fluid">
-                    <div class="navbar-brand mb-0">
-                        <div class="page-icon">
-                            <i class="bi bi-journal-text"></i>
+                    <!-- ADDED: Hamburger Menu and Responsive Title -->
+                    <div class="d-flex align-items-center gap-2 gap-md-3">
+                        <button class="btn btn-light d-md-none p-1 border-0" id="sidebarToggle" style="background: transparent;">
+                            <i class="bi bi-list" style="font-size: 1.75rem; color: var(--secondary);"></i>
+                        </button>
+                        <div class="navbar-brand mb-0">
+                            <div class="page-icon">
+                                <i class="bi bi-journal-text"></i>
+                            </div>
+                            <span class="d-none d-sm-inline">Grading Management</span>
                         </div>
-                        <span>Grading Management</span>
                     </div>
+
                     <div class="user-info-wrapper">
-                        <div class="user-details">
+                        <div class="user-details d-none d-sm-flex flex-column">
                             <span class="user-name">
                                 <?php echo htmlspecialchars($_SESSION['user_firstname'] . ' ' . $_SESSION['user_lastname']); ?>
                             </span>
@@ -72,7 +82,6 @@
                             </span>
                         </div>
                         <div class="user-avatar">
-                            <!-- user avatar placeholder first letters of name -->
                             <?php
                             $firstname = $_SESSION['user_firstname'] ?? 'T';
                             $lastname = $_SESSION['user_lastname'] ?? 'U';
@@ -217,14 +226,14 @@
                 </div>
 
                 <!-- student list -->
-                <div class="card student-list-card">
+                <div class="card student-list-card mb-4">
                     <div class="card-header">
                         <h5 class="mb-0">
                             <i class="bi bi-people-fill"></i>
                             Student List
                         </h5>
                     </div>
-                    <div class="card-body">
+                    <div class="card-body p-0 p-md-4">
                         <?php if (empty($students)): ?>
                             <div class="empty-state">
                                 <div class="empty-state-icon">
@@ -238,7 +247,8 @@
                             </div>
                         <?php else: ?>
                             <div class="table-responsive">
-                                <table class="table table-hover">
+                                <!-- ADDED: mobile-card-table -->
+                                <table class="table table-hover mobile-card-table mb-0">
                                     <thead>
                                         <tr>
                                             <th><i class="bi bi-hash"></i> Student Number</th>
@@ -252,8 +262,11 @@
                                     <tbody>
                                         <?php foreach ($students as $student): ?>
                                             <tr>
-                                                <td><?php echo htmlspecialchars($student['student_number']); ?></td>
-                                                <td>
+                                                <!-- ADDED: data-label -->
+                                                <td data-label="Student Number">
+                                                    <?php echo htmlspecialchars($student['student_number']); ?>
+                                                </td>
+                                                <td data-label="Name">
                                                     <?php
                                                     $full_name = $student['first_name'] . ' ';
                                                     if (!empty($student['middle_name'])) {
@@ -263,9 +276,10 @@
                                                     echo htmlspecialchars($full_name);
                                                     ?>
                                                 </td>
-                                                <td><?php echo htmlspecialchars($student['section_name']); ?></td>
-                                                <!-- displays percentage and GPA using data from controller -->
-                                                <td>
+                                                <td data-label="Section">
+                                                    <?php echo htmlspecialchars($student['section_name']); ?>
+                                                </td>
+                                                <td data-label="Grade">
                                                     <?php if (!empty($student['percentage_display'])): ?>
                                                         <span class="badge bg-primary">
                                                             <i class="bi bi-graph-up"></i>
@@ -279,8 +293,10 @@
                                                         </span>
                                                     <?php endif; ?>
                                                 </td>
-                                                <td><?php echo htmlspecialchars($student['remarks'] ?? ''); ?></td>
-                                                <td>
+                                                <td data-label="Remarks">
+                                                    <?php echo htmlspecialchars($student['remarks'] ?? ''); ?>
+                                                </td>
+                                                <td data-label="Action">
                                                     <?php if ($is_locked): ?>
                                                         <span class="badge badge-locked">
                                                             <i class="bi bi-lock-fill"></i> Period Locked
@@ -413,8 +429,27 @@
     </div>
 
     <script src="bootstrap/js/bootstrap.bundle.min.js"></script>
+
+    <!-- ADDED: Sidebar Toggle Script -->
     <script>
-        // TODO: might put this externally later
+        document.addEventListener('DOMContentLoaded', function() {
+            const sidebar = document.getElementById('sidebar');
+            const toggleBtn = document.getElementById('sidebarToggle');
+            const overlay = document.getElementById('sidebarOverlay');
+
+            function toggleSidebar() {
+                sidebar.classList.toggle('show');
+                overlay.classList.toggle('show');
+                document.body.style.overflow = sidebar.classList.contains('show') ? 'hidden' : '';
+            }
+
+            if (toggleBtn) toggleBtn.addEventListener('click', toggleSidebar);
+            if (overlay) overlay.addEventListener('click', toggleSidebar);
+        });
+    </script>
+
+    <!-- EXISTING GPA LOGIC -->
+    <script>
         document.addEventListener('DOMContentLoaded', function() {
             <?php foreach ($students as $student): ?>
                     (function() {

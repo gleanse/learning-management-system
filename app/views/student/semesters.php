@@ -13,9 +13,12 @@
 </head>
 
 <body>
+    <!-- ADDED: Sidebar Overlay for Mobile -->
+    <div class="sidebar-overlay" id="sidebarOverlay"></div>
+
     <div class="d-flex">
         <!-- sidebar -->
-        <div class="sidenav">
+        <div class="sidenav" id="sidebar">
             <div class="sidenav-header">
                 <div class="school-brand">
                     <div class="school-logo">
@@ -55,14 +58,19 @@
             <!-- top navbar -->
             <nav class="navbar top-navbar">
                 <div class="container-fluid">
-                    <div class="navbar-brand mb-0">
-                        <div class="page-icon">
-                            <i class="bi bi-journal-text"></i>
+                    <div class="d-flex align-items-center gap-2 gap-md-3">
+                        <button class="btn btn-light d-md-none p-1 border-0" id="sidebarToggle" style="background: transparent;">
+                            <i class="bi bi-list" style="font-size: 1.75rem; color: var(--secondary);"></i>
+                        </button>
+                        <div class="navbar-brand mb-0">
+                            <div class="page-icon">
+                                <i class="bi bi-journal-text"></i>
+                            </div>
+                            <span class="d-none d-sm-inline">My Grades</span>
                         </div>
-                        <span>My Grades</span>
                     </div>
                     <div class="user-info-wrapper">
-                        <div class="user-details">
+                        <div class="user-details d-none d-sm-flex flex-column">
                             <span class="user-name">
                                 <?php echo htmlspecialchars($_SESSION['user_firstname'] . ' ' . $_SESSION['user_lastname']); ?>
                             </span>
@@ -159,6 +167,24 @@
     </div>
 
     <script src="bootstrap/js/bootstrap.bundle.min.js"></script>
+
+    <!-- ADDED: Inline Javascript for Mobile Sidebar Toggle -->
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const sidebar = document.getElementById('sidebar');
+            const toggleBtn = document.getElementById('sidebarToggle');
+            const overlay = document.getElementById('sidebarOverlay');
+
+            function toggleSidebar() {
+                sidebar.classList.toggle('show');
+                overlay.classList.toggle('show');
+                document.body.style.overflow = sidebar.classList.contains('show') ? 'hidden' : '';
+            }
+
+            if (toggleBtn) toggleBtn.addEventListener('click', toggleSidebar);
+            if (overlay) overlay.addEventListener('click', toggleSidebar);
+        });
+    </script>
 </body>
 
 </html>

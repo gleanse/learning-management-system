@@ -13,9 +13,12 @@
 </head>
 
 <body>
+    <!-- ADDED: Sidebar Overlay for Mobile -->
+    <div class="sidebar-overlay" id="sidebarOverlay"></div>
+
     <div class="d-flex">
         <!-- sidebar -->
-        <div class="sidenav">
+        <div class="sidenav" id="sidebar">
             <div class="sidenav-header">
                 <div class="school-brand">
                     <div class="school-logo">
@@ -55,14 +58,19 @@
             <!-- top navbar -->
             <nav class="navbar top-navbar">
                 <div class="container-fluid">
-                    <div class="navbar-brand mb-0">
-                        <div class="page-icon">
-                            <i class="bi bi-journal-text"></i>
+                    <div class="d-flex align-items-center gap-2 gap-md-3">
+                        <button class="btn btn-light d-md-none p-1 border-0" id="sidebarToggle" style="background: transparent;">
+                            <i class="bi bi-list" style="font-size: 1.75rem; color: var(--secondary);"></i>
+                        </button>
+                        <div class="navbar-brand mb-0">
+                            <div class="page-icon">
+                                <i class="bi bi-journal-text"></i>
+                            </div>
+                            <span class="d-none d-sm-inline">My Grades</span>
                         </div>
-                        <span>My Grades</span>
                     </div>
                     <div class="user-info-wrapper">
-                        <div class="user-details">
+                        <div class="user-details d-none d-sm-flex flex-column">
                             <span class="user-name">
                                 <?php echo htmlspecialchars($_SESSION['user_firstname'] . ' ' . $_SESSION['user_lastname']); ?>
                             </span>
@@ -129,17 +137,18 @@
                 </div>
 
                 <!-- grades card -->
-                <div class="card">
+                <div class="card mb-4">
                     <div class="card-header">
                         <h5 class="mb-0">
                             <i class="bi bi-journal-check"></i>
                             Grades by Grading Period
                         </h5>
                     </div>
-                    <div class="card-body">
+                    <div class="card-body p-0 p-md-4"> <!-- Removed padding on mobile for full width rows -->
                         <?php $grading_periods = ['Prelim', 'Midterm', 'Prefinal', 'Final']; ?>
                         <div class="table-responsive">
-                            <table class="table table-hover">
+                            <!-- ADDED "mobile-card-table" class -->
+                            <table class="table table-hover mobile-card-table mb-0">
                                 <thead>
                                     <tr>
                                         <th><i class="bi bi-calendar-event"></i> Grading Period</th>
@@ -153,34 +162,35 @@
                                     <?php foreach ($grading_periods as $period): ?>
                                         <?php $grade_data = $grades_by_period[$period] ?? null; ?>
                                         <tr>
-                                            <td>
+                                            <!-- ADDED: data-label to every td -->
+                                            <td data-label="Grading Period">
                                                 <span class="period-badge">
                                                     <i class="bi bi-bookmark-fill"></i>
                                                     <?= htmlspecialchars($period) ?>
                                                 </span>
                                             </td>
-                                            <td>
+                                            <td data-label="Grade">
                                                 <?php if ($grade_data): ?>
                                                     <span class="grade-value"><?= number_format($grade_data['grade_value'], 2) ?></span>
                                                 <?php else: ?>
                                                     <span class="text-muted">-</span>
                                                 <?php endif; ?>
                                             </td>
-                                            <td>
+                                            <td data-label="Remarks">
                                                 <?php if ($grade_data && !empty($grade_data['remarks'])): ?>
                                                     <span class="remarks-text"><?= htmlspecialchars($grade_data['remarks']) ?></span>
                                                 <?php else: ?>
                                                     <span class="text-muted">-</span>
                                                 <?php endif; ?>
                                             </td>
-                                            <td>
+                                            <td data-label="Graded Date">
                                                 <?php if ($grade_data): ?>
                                                     <span class="date-text"><?= date('M d, Y', strtotime($grade_data['graded_date'])) ?></span>
                                                 <?php else: ?>
                                                     <span class="text-muted">-</span>
                                                 <?php endif; ?>
                                             </td>
-                                            <td>
+                                            <td data-label="Graded By">
                                                 <?php if ($grade_data): ?>
                                                     <span class="teacher-text">
                                                         <?= htmlspecialchars($grade_data['teacher_first_name'] . ' ' . $grade_data['teacher_last_name']) ?>
@@ -201,6 +211,24 @@
     </div>
 
     <script src="bootstrap/js/bootstrap.bundle.min.js"></script>
+
+    <!-- Sidebar Toggle Script -->
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const sidebar = document.getElementById('sidebar');
+            const toggleBtn = document.getElementById('sidebarToggle');
+            const overlay = document.getElementById('sidebarOverlay');
+
+            function toggleSidebar() {
+                sidebar.classList.toggle('show');
+                overlay.classList.toggle('show');
+                document.body.style.overflow = sidebar.classList.contains('show') ? 'hidden' : '';
+            }
+
+            if (toggleBtn) toggleBtn.addEventListener('click', toggleSidebar);
+            if (overlay) overlay.addEventListener('click', toggleSidebar);
+        });
+    </script>
 </body>
 
 </html>

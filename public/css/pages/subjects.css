@@ -469,3 +469,105 @@
     gap: 0.75rem;
   }
 }
+
+/* ── RESPONSIVE SIDEBAR & OVERLAY (GLOBAL) ── */
+.sidebar-overlay {
+  display: block;
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background: rgba(0, 0, 0, 0.5);
+  z-index: 1040;
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.3s ease-in-out, visibility 0.3s ease-in-out;
+}
+
+.sidebar-overlay.show {
+  opacity: 1;
+  visibility: visible;
+}
+
+/* ── MOBILE-ONLY STYLES (Applies only when screen < 768px) ── */
+@media (max-width: 768px) {
+  /* 1. Sidebar Off-Canvas */
+  .sidenav {
+    position: fixed !important;
+    top: 0;
+    left: 0;
+    height: 100vh;
+    width: 280px;
+    max-width: 85vw;
+    z-index: 1050;
+    transform: translateX(-100%);
+    transition: transform 0.3s ease-in-out;
+    box-shadow: 2px 0 12px rgba(0, 0, 0, 0.15);
+    overflow-y: auto;
+  }
+
+  .sidenav.show {
+    transform: translateX(0);
+  }
+
+  .main-content {
+    width: 100%;
+    max-width: 100vw;
+  }
+
+  /* 2. Table-to-Card Transformation */
+  .table-responsive {
+    border: none !important;
+  }
+
+  .mobile-card-table,
+  .mobile-card-table tbody,
+  .mobile-card-table tr,
+  .mobile-card-table td {
+    display: block;
+    width: 100%;
+  }
+
+  .mobile-card-table thead {
+    display: none;
+  }
+
+  .mobile-card-table tr {
+    margin-bottom: 1rem;
+    background: #ffffff;
+    border: 1px solid #e2e8f0;
+    border-radius: 0.75rem;
+    padding: 0.5rem 0;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.04);
+  }
+
+  .mobile-card-table td {
+    display: flex !important;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.75rem 1.25rem !important;
+    border-bottom: 1px solid #f8fafc;
+  }
+
+  .mobile-card-table td:last-child {
+    border-bottom: none;
+  }
+
+  .mobile-card-table td::before {
+    content: attr(data-label);
+    font-weight: 600;
+    font-size: 0.75rem;
+    color: var(--gray-500);
+    text-transform: uppercase;
+    margin-right: 1rem;
+  }
+}
+
+/* ── EXTRA SMALL MOBILE STYLES (Applies only when screen < 576px) ── */
+@media (max-width: 576px) {
+  /* Hides the user's name and role to save space in the navbar */
+  .user-details {
+    display: none !important;
+  }
+}
