@@ -32,7 +32,10 @@ class TeacherAssignment
                 if ($this->inactiveAssignmentExists($teacher_id, $subject_id, $section_id, $school_year, $semester)) {
                     $this->reactivateSingleAssignment($teacher_id, $subject_id, $section_id, $school_year, $semester);
                     $inserted++;
-                } elseif (!$this->assignmentExists($teacher_id, $subject_id, $section_id, $school_year, $semester)) {
+                } elseif (
+                    !$this->assignmentExists($teacher_id, $subject_id, $section_id, $school_year, $semester)
+                    && !$this->subjectAlreadyAssignedInSection($subject_id, $section_id, $school_year, $semester)
+                ) {
                     $stmt->execute([$teacher_id, $subject_id, $section_id, $year_level, $school_year, $semester]);
                     $inserted++;
                 }
@@ -85,6 +88,9 @@ class TeacherAssignment
                 ");
 
                 foreach ($to_add as $subject_id) {
+                    if ($this->subjectAlreadyAssignedInSection($subject_id, $section_id, $school_year, $semester)) {
+                        continue; // skip already assigned to another teacher
+                    }
                     if ($this->inactiveAssignmentExists($teacher_id, $subject_id, $section_id, $school_year, $semester)) {
                         $this->reactivateSingleAssignment($teacher_id, $subject_id, $section_id, $school_year, $semester);
                     } else {
@@ -232,7 +238,7 @@ class TeacherAssignment
         $stmt->execute([$teacher_id, $section_id, $school_year, $semester, $status]);
         return $stmt->fetch(PDO::FETCH_ASSOC);
     }
-    
+
     public function getSubjectIdsBySection($section_id, $school_year, $semester)
     {
         $stmt = $this->connection->prepare("
@@ -244,6 +250,45 @@ class TeacherAssignment
             AND status = 'active'
     ");
         $stmt->execute([$section_id, $school_year, $semester]);
+        return $stmt->fetchAll(PDO::FETCH_COLUMN);
+    }
+
+    // check if subject is already actively assigned to any teacher in this section
+    public function subjectAlreadyAssignedInSection($subject_id, $section_id, $school_year, $semester)
+    {
+        $stmt = $this->connection->prepare("
+        SELECT COUNT(*) as count
+        FROM teacher_subject_assignments
+        WHERE subject_id = ? 
+            AND section_id = ? 
+            AND school_year = ? 
+            AND semester = ?
+            AND status = 'active'
+    ");
+
+        $stmt->execute([$subject_id, $section_id, $school_year, $semester]);
+        $result = $stmt->fetch();
+        return $result['count'] > 0;
+    }
+
+    // get subject names already actively assigned to another teacher in this section
+    public function getConflictingSubjects($subject_ids, $section_id, $school_year, $semester, $teacher_id)
+    {
+        $placeholders = implode(',', array_fill(0, count($subject_ids), '?'));
+        $stmt = $this->connection->prepare("
+        SELECT s.subject_name
+        FROM teacher_subject_assignments tsa
+        INNER JOIN subjects s ON s.subject_id = tsa.subject_id
+        WHERE tsa.subject_id IN ($placeholders)
+            AND tsa.section_id = ?
+            AND tsa.school_year = ?
+            AND tsa.semester = ?
+            AND tsa.status = 'active'
+            AND tsa.teacher_id != ?
+    ");
+
+        $params = array_merge($subject_ids, [$section_id, $school_year, $semester, $teacher_id]);
+        $stmt->execute($params);
         return $stmt->fetchAll(PDO::FETCH_COLUMN);
     }
 }

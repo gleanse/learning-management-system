@@ -248,10 +248,22 @@ class TeacherAssignmentController
             }
             $_SESSION['assignment_success'] = 'Teacher assigned successfully.';
         } elseif ($result === null) {
+            $conflicts = $this->assignment_model->getConflictingSubjects(
+                $subject_ids,
+                $section_id,
+                $school_year,
+                $semester,
+                $teacher_id
+            );
+
+            $message = !empty($conflicts)
+                ? 'The following subjects are already assigned to another teacher in this section: ' . implode(', ', $conflicts) . '.'
+                : 'These subjects are already assigned to this teacher for this section.';
+
             if ($this->isAjax()) {
-                $this->jsonResponse(['success' => false, 'message' => 'These subjects are already assigned to this teacher for this section.']);
+                $this->jsonResponse(['success' => false, 'message' => $message]);
             }
-            $_SESSION['assignment_errors'] = ['general' => 'These subjects are already assigned to this teacher for this section.'];
+            $_SESSION['assignment_errors'] = ['general' => $message];
         } else {
             if ($this->isAjax()) {
                 $this->jsonResponse(['success' => false, 'message' => 'Failed to assign teacher. Please try again.']);
@@ -369,10 +381,22 @@ class TeacherAssignmentController
             }
             $_SESSION['assignment_success'] = 'Teacher assignment updated successfully.';
         } else {
+            $conflicts = $this->assignment_model->getConflictingSubjects(
+                $subject_ids,
+                $section_id,
+                $school_year,
+                $semester,
+                $teacher_id
+            );
+
+            $message = !empty($conflicts)
+                ? 'The following subjects are already assigned to another teacher in this section: ' . implode(', ', $conflicts) . '.'
+                : 'Failed to update assignment. Please try again.';
+
             if ($this->isAjax()) {
-                $this->jsonResponse(['success' => false, 'message' => 'Failed to update assignment. Please try again.']);
+                $this->jsonResponse(['success' => false, 'message' => $message]);
             }
-            $_SESSION['assignment_errors'] = ['general' => 'Failed to update assignment. Please try again.'];
+            $_SESSION['assignment_errors'] = ['general' => $message];
         }
 
         header('Location: index.php?page=teacher_assignments');
