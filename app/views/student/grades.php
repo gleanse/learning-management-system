@@ -229,6 +229,84 @@
             if (overlay) overlay.addEventListener('click', toggleSidebar);
         });
     </script>
+
+    <!-- grades polling -->
+    <script>
+        (function() {
+            const params = new URLSearchParams(window.location.search);
+            const subject_id = params.get('subject_id');
+            const year_level = params.get('year_level');
+            const semester = params.get('semester');
+            const school_year = params.get('school_year');
+
+            const periods = ['Prelim', 'Midterm', 'Prefinal', 'Final'];
+
+            function formatDate(dateStr) {
+                if (!dateStr) return '-';
+                const d = new Date(dateStr);
+                return d.toLocaleDateString('en-US', {
+                    month: 'short',
+                    day: '2-digit',
+                    year: 'numeric'
+                });
+            }
+
+            function pollGrades() {
+                fetch(`index.php?page=ajax_get_grades&subject_id=${subject_id}&year_level=${encodeURIComponent(year_level)}&semester=${encodeURIComponent(semester)}&school_year=${encodeURIComponent(school_year)}`, {
+                        headers: {
+                            'X-Requested-With': 'XMLHttpRequest'
+                        }
+                    })
+                    .then(res => res.json())
+                    .then(data => {
+                        if (!data.success) return;
+
+                        const tbody = document.querySelector('.mobile-card-table tbody');
+                        const rows = tbody.querySelectorAll('tr');
+
+                        rows.forEach((row, index) => {
+                            const period = periods[index];
+                            const grade_data = data.grades[period] ?? null;
+                            const cells = row.querySelectorAll('td');
+
+                            // grade cell
+                            cells[1].innerHTML = grade_data ?
+                                `<span class="grade-value">${parseFloat(grade_data.grade_value).toFixed(2)}</span>` :
+                                `<span class="text-muted">-</span>`;
+
+                            // remarks cell
+                            cells[2].innerHTML = (grade_data && grade_data.remarks) ?
+                                `<span class="remarks-text">${grade_data.remarks}</span>` :
+                                `<span class="text-muted">-</span>`;
+
+                            // graded date cell
+                            cells[3].innerHTML = grade_data ?
+                                `<span class="date-text">${formatDate(grade_data.graded_date)}</span>` :
+                                `<span class="text-muted">-</span>`;
+
+                            // graded by cell
+                            cells[4].innerHTML = grade_data ?
+                                `<span class="teacher-text">${grade_data.teacher_first_name} ${grade_data.teacher_last_name}</span>` :
+                                `<span class="text-muted">-</span>`;
+                        });
+                    })
+                    .catch(() => {
+                        // silently fail — polling will retry next interval
+                    });
+            }
+
+            // stop polling when tab is hidden to save resources
+            document.addEventListener('visibilitychange', function() {
+                if (document.hidden) {
+                    clearInterval(poller);
+                } else {
+                    poller = setInterval(pollGrades, 3000);
+                }
+            });
+
+            let poller = setInterval(pollGrades, 3000);
+        })();
+    </script>
 </body>
 
 </html>

@@ -819,6 +819,18 @@ if ($page === 'student_grades_view' && $method === 'GET') {
     exit();
 }
 
+// ajax: poll grades for realtime update
+if ($page === 'ajax_get_grades' && $method === 'GET') {
+    if (!isLoggedIn() || !isStudent()) {
+        header('Location: index.php?page=login');
+        exit();
+    }
+
+    $controller = new StudentController();
+    $controller->ajaxGetGrades();
+    exit();
+}
+
 // REGISTRAR ENROLLMENT ROUTES (registrar only)
 
 // registrar dashboard

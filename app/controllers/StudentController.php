@@ -182,4 +182,37 @@ class StudentController
 
         require __DIR__ . '/../views/student/grades.php';
     }
+
+    public function ajaxGetGrades()
+    {
+        $student_info = $this->requireStudent();
+
+        $subject_id = $_GET['subject_id'] ?? null;
+        $year_level = $_GET['year_level'] ?? null;
+        $semester   = $_GET['semester']   ?? null;
+        $school_year = $this->resolveSchoolYear();
+
+        if (empty($subject_id) || empty($year_level) || empty($semester)) {
+            http_response_code(400);
+            header('Content-Type: application/json');
+            echo json_encode(['success' => false]);
+            exit();
+        }
+
+        $grades = $this->student_model->getGradesByStudentIdAndSubject(
+            $student_info['student_id'],
+            $subject_id,
+            $semester,
+            $school_year
+        );
+
+        $grades_by_period = [];
+        foreach ($grades as $grade) {
+            $grades_by_period[$grade['grading_period']] = $grade;
+        }
+
+        header('Content-Type: application/json');
+        echo json_encode(['success' => true, 'grades' => $grades_by_period]);
+        exit();
+    }
 }
