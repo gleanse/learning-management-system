@@ -1,4 +1,6 @@
 <?php
+// php socket_server.php
+// php -S 192.168.254.100:8080 -t public
 
 require_once __DIR__ . '/vendor/autoload.php';
 
