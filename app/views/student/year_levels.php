@@ -312,6 +312,9 @@
                         <span class="badge bg-white bg-opacity-25 ms-auto" id="overallSubjectCount">
                             <?= count($grades_overview) ?> Subject<?= count($grades_overview) !== 1 ? 's' : '' ?>
                         </span>
+                        <button onclick="window.print()" class="btn btn-sm btn-outline-secondary ms-2">
+                            <i class="bi bi-printer"></i> Print
+                        </button>
                     </div>
 
                     <div class="card-body p-0">
@@ -612,6 +615,52 @@
 
             .overall-grades-card .card-header h5 {
                 flex: 1;
+            }
+
+            @media print {
+
+                .sidenav,
+                .sidebar-overlay,
+                .top-navbar,
+                .breadcrumb,
+                .page-header,
+                .sy-filter-bar,
+                .year-levels-card,
+                .section-divider-label,
+                button {
+                    display: none !important;
+                }
+
+                .main-content {
+                    margin: 0 !important;
+                    padding: 0 !important;
+                }
+
+                .overall-grades-card {
+                    box-shadow: none !important;
+                    border: 1px solid #dee2e6 !important;
+                }
+
+                .card-header {
+                    background: #2e275d !important;
+                    -webkit-print-color-adjust: exact;
+                    print-color-adjust: exact;
+                }
+
+                .overall-grades-card .grade-value {
+                    font-size: 0.75rem !important;
+                }
+
+                .overall-grades-card .table thead th,
+                .overall-grades-card .table tbody td {
+                    font-size: 0.75rem !important;
+                    padding: 0.4rem 0.6rem !important;
+                }
+
+                .overall-grades-card .period-badge {
+                    font-size: 0.7rem !important;
+                    padding: 0.2rem 0.4rem !important;
+                }
             }
         </style>
 </body>
