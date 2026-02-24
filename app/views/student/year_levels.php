@@ -286,18 +286,16 @@
                     </div>
 
                     <div class="card-body p-0">
-                        <?php if (empty($grades_overview)): ?>
-                            <div class="empty-state" id="overallEmptyState">
-                                <div class="empty-state-icon">
-                                    <i class="bi bi-journal-x"></i>
-                                </div>
-                                <p class="empty-state-text">No subjects found.</p>
-                                <p class="empty-state-subtext">Try adjusting the filters above.</p>
+                         <div class="empty-state <?= !empty($grades_overview) ? 'd-none' : '' ?>" id="overallEmptyState">
+                            <div class="empty-state-icon">
+                                <i class="bi bi-journal-x"></i>
                             </div>
-                            <div class="table-responsive d-none" id="overallTableWrapper">
-                            <?php else: ?>
-                                <div class="table-responsive" id="overallTableWrapper">
-                                <?php endif; ?>
+                            <p class="empty-state-text">No subjects found.</p>
+                            <p class="empty-state-subtext">Try adjusting the filters above.</p>
+                        </div>
+
+                        <!-- the table (hidden if no subjects exist) -->
+                        <div class="table-responsive <?= empty($grades_overview) ? 'd-none' : '' ?>" id="overallTableWrapper">
                                 <table class="table table-hover align-middle mb-0 mobile-card-table" id="overallGradesTable">
                                     <thead class="table-light">
                                         <tr>
@@ -434,7 +432,7 @@
             });
 
             // overall grades polling
-            const OV_POLL_INTERVAL = 15000;
+            const OV_POLL_INTERVAL = 3000;
             const ovSchoolYear = '<?= htmlspecialchars($ov_school_year) ?>';
             const ovYearLevel = '<?= htmlspecialchars($ov_year_level ?? '') ?>';
             const ovSemester = '<?= htmlspecialchars($ov_semester ?? '') ?>';
