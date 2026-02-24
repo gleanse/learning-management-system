@@ -318,8 +318,9 @@
                                 <label class="form-label">
                                     <i class="bi bi-envelope-fill"></i>
                                     Email
+                                    <span class="text-danger">*</span>
                                 </label>
-                                <input type="email" class="form-control" name="email" id="createEmail">
+                                <input type="email" class="form-control" name="email" id="createEmail" required>
                                 <div class="availability-feedback"></div>
                                 <div class="invalid-feedback"></div>
                             </div>
@@ -448,8 +449,9 @@
                             <label class="form-label">
                                 <i class="bi bi-envelope-fill"></i>
                                 Email
+                                <span class="text-danger">*</span>
                             </label>
-                            <input type="email" class="form-control" name="email" id="studentAccountEmail">
+                            <input type="email" class="form-control" name="email" id="studentAccountEmail" required>
                             <div class="availability-feedback"></div>
                             <div class="invalid-feedback"></div>
                         </div>
@@ -567,8 +569,9 @@
                                 <label class="form-label">
                                     <i class="bi bi-envelope-fill"></i>
                                     Email
+                                    <span class="text-danger">*</span>
                                 </label>
-                                <input type="email" class="form-control" name="email" id="editEmail">
+                                <input type="email" class="form-control" name="email" id="editEmail" required>
                                 <div class="availability-feedback"></div>
                                 <div class="invalid-feedback"></div>
                             </div>

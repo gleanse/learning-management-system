@@ -89,7 +89,7 @@ class StudentProfile
         $stmt = $this->connection->prepare("
             SELECT
                 s.*,
-                sp.email,
+                COALESCE(u.email, sp.email) AS email,
                 sp.date_of_birth,
                 sp.gender,
                 sp.contact_number,
@@ -104,6 +104,7 @@ class StudentProfile
                 ep.net_amount - COALESCE(SUM(pt.amount_paid), 0) AS remaining
             FROM students s
             LEFT JOIN student_profiles sp ON sp.student_id = s.student_id
+            LEFT JOIN users u ON u.id = s.user_id
             LEFT JOIN sections sec ON sec.section_id = s.section_id
             LEFT JOIN enrollment_payments ep
                 ON ep.student_id = s.student_id
@@ -155,6 +156,15 @@ class StudentProfile
     // upsert student profile
     public function saveProfile($student_id, $data)
     {
+        // check if student has a linked user account
+        $stmt = $this->connection->prepare("SELECT user_id FROM students WHERE student_id = ?");
+        $stmt->execute([$student_id]);
+        $student = $stmt->fetch();
+        $has_account = $student && $student['user_id'] !== null;
+
+        // if student has account, email lives in users table so dont touch student_profiles.email
+        $email = $has_account ? null : ($data['email'] ?? null);
+
         $stmt = $this->connection->prepare("
             INSERT INTO student_profiles
                 (student_id, email, date_of_birth, gender, contact_number, home_address, previous_school, special_notes)
@@ -171,7 +181,7 @@ class StudentProfile
         ");
         return $stmt->execute([
             $student_id,
-            $data['email']           ?? null,
+            $email,
             $data['date_of_birth']   ?? null,
             $data['gender']          ?? null,
             $data['contact_number']  ?? null,
@@ -246,5 +256,19 @@ class StudentProfile
             (int) ($data['id_pictures']            ?? 0),
             (int) ($data['medical_certificate']    ?? 0),
         ]);
+    }
+
+    public function getLinkedUserId($student_id)
+    {
+        $stmt = $this->connection->prepare("SELECT user_id FROM students WHERE student_id = ?");
+        $stmt->execute([$student_id]);
+        $result = $stmt->fetch();
+        return $result ? $result['user_id'] : null;
+    }
+
+    public function updateUserEmail($user_id, $email)
+    {
+        $stmt = $this->connection->prepare("UPDATE users SET email = ?, updated_at = NOW() WHERE id = ?");
+        return $stmt->execute([$email, $user_id]);
     }
 }

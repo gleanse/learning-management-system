@@ -987,6 +987,18 @@ if ($page === 'enrollment_check_duplicate_name' && $method === 'GET') {
     exit();
 }
 
+// ajax: check if email already exists
+if ($page === 'enrollment_check_email' && $method === 'GET') {
+    if (!isLoggedIn() || !isRegistrar()) {
+        header('Location: index.php?page=login');
+        exit();
+    }
+
+    $controller = new EnrollmentController();
+    $controller->ajaxCheckEmail();
+    exit();
+}
+
 // PAYMENT ROUTES (registrar only)
 
 // main process payment page

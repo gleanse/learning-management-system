@@ -124,6 +124,11 @@ class Enrollment
     public function enrollNewStudent($data, $registrar_id)
     {
         try {
+            // add email check at the beginning - checks BOTH tables now
+            if (!empty($data['email']) && $this->emailExists($data['email'])) {
+                throw new Exception('Email address is already registered to another student');
+            }
+
             $this->connection->beginTransaction();
 
             $student_id = $this->insertStudent($data);
@@ -230,6 +235,48 @@ class Enrollment
             isset($data['docs']['id_pictures']) ? 1 : 0,
             isset($data['docs']['medical_certificate']) ? 1 : 0,
         ]);
+    }
+
+    // update the emailExists method to check both tables
+    public function emailExists($email, $exclude_student_id = null)
+    {
+        // only check student_profiles for unlinked students
+        $sql = "SELECT sp.student_id 
+            FROM student_profiles sp
+            LEFT JOIN students s ON s.student_id = sp.student_id
+            WHERE sp.email = ? AND s.user_id IS NULL";
+
+        $params = [$email];
+
+        if ($exclude_student_id) {
+            $sql .= " AND sp.student_id != ?";
+            $params[] = $exclude_student_id;
+        }
+
+        $stmt = $this->connection->prepare($sql);
+        $stmt->execute($params);
+        if ($stmt->fetch()) {
+            return true;
+        }
+
+        // check users table — covers students who already have accounts
+        $stmt = $this->connection->prepare("SELECT id FROM users WHERE email = ?");
+        $stmt->execute([$email]);
+        return $stmt->fetch() ? true : false;
+    }
+
+    // get student by email for more details
+    public function getStudentByEmail($email)
+    {
+        $stmt = $this->connection->prepare("
+        SELECT s.student_id, s.student_number, s.first_name, s.last_name,
+               s.education_level, s.strand_course, s.enrollment_status
+        FROM students s
+        INNER JOIN student_profiles sp ON sp.student_id = s.student_id
+        WHERE sp.email = ?
+    ");
+        $stmt->execute([$email]);
+        return $stmt->fetch();
     }
 
     // bulk enroll into all subjects tied to the section

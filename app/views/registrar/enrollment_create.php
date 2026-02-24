@@ -302,11 +302,15 @@
                                             <label class="form-label" for="email">
                                                 <i class="bi bi-envelope"></i>
                                                 Email Address
+                                                <span class="text-danger">*</span>
                                             </label>
-                                            <input type="email" class="form-control"
+                                            <input type="email" class="form-control <?= isset($errors['email']) ? 'is-invalid' : '' ?>"
                                                 id="email" name="email"
                                                 value="<?= htmlspecialchars($form_data['email'] ?? '') ?>"
                                                 placeholder="student@example.com">
+                                            <?php if (isset($errors['email'])): ?>
+                                                <div class="invalid-feedback"><?= htmlspecialchars($errors['email']) ?></div>
+                                            <?php endif; ?>
                                         </div>
                                     </div>
 
@@ -725,6 +729,7 @@
                 getFees: 'index.php?page=enrollment_get_fees',
                 saveDraft: 'index.php?page=enrollment_save_draft',
                 checkDuplicateName: 'index.php?page=enrollment_check_duplicate_name',
+                checkEmail: 'index.php?page=enrollment_check_email',
             }
         };
     </script>

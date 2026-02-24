@@ -162,10 +162,10 @@ INSERT INTO student_profiles (
     updated_at
 )
 VALUES
--- nicka garcia reyes
+-- nicka garcia reyes (has account, email lives in users)
 (
     (SELECT student_id FROM students WHERE student_number = '2025-00001'),
-    'nicka.reyes@email.com',
+    NULL,
     '2003-05-15',
     'female',
     '09171234567',
@@ -175,10 +175,10 @@ VALUES
     NOW(),
     NOW()
 ),
--- pedro cruz ramos
+-- pedro cruz ramos (has account, email lives in users)
 (
     (SELECT student_id FROM students WHERE student_number = '2025-00002'),
-    'pedro.ramos@email.com',
+    NULL,
     '2003-08-22',
     'male',
     NULL,
@@ -188,10 +188,10 @@ VALUES
     NOW(),
     NOW()
 ),
--- ana marie torres
+-- ana marie torres (has account, email lives in users)
 (
     (SELECT student_id FROM students WHERE student_number = '2025-00003'),
-    'ana.torres@email.com',
+    NULL,
     '2007-02-10',
     'female',
     '09981234567',
@@ -201,7 +201,7 @@ VALUES
     NOW(),
     NOW()
 ),
--- carlos david gonzales
+-- carlos david gonzales (has account, email lives in users)
 (
     (SELECT student_id FROM students WHERE student_number = '2025-00004'),
     NULL,
@@ -214,10 +214,10 @@ VALUES
     NOW(),
     NOW()
 ),
--- john michael dela cruz
+-- john michael dela cruz (no account yet, email stored here temporarily)
 (
     (SELECT student_id FROM students WHERE student_number = '2025-00005'),
-    NULL,
+    'john.delacruz@email.com',
     '2007-07-04',
     'male',
     '09181234567',

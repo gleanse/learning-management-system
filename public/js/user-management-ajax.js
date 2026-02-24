@@ -472,7 +472,9 @@ function renderStudentsTable(students) {
                       student.student_id
                     }, '${escapeHtml(fullName)}', '${escapeHtml(
       student.student_number
-    )}', '${escapeHtml(student.year_level)}')">
+    )}', '${escapeHtml(student.year_level)}', '${escapeHtml(
+      student.profile_email || ''
+    )}')">
                         <i class="bi bi-person-plus-fill"></i>
                         Create Account
                     </button>
@@ -597,7 +599,8 @@ function openCreateStudentAccountModal(
   studentId,
   name,
   studentNumber,
-  yearLevel
+  yearLevel,
+  profileEmail
 ) {
   const modal = new bootstrap.Modal(
     document.getElementById('createStudentAccountModal')
@@ -613,6 +616,28 @@ function openCreateStudentAccountModal(
   document.getElementById('studentAccountName').textContent = name;
   document.getElementById('studentAccountNumber').textContent = studentNumber;
   document.getElementById('studentAccountYear').textContent = yearLevel;
+
+  // prefill email from enrollment if available
+  const emailInput = document.getElementById('studentAccountEmail');
+  if (profileEmail) {
+    emailInput.value = profileEmail;
+    emailInput.setAttribute('readonly', true);
+    emailInput.classList.add('is-valid');
+
+    // show note to superadmin
+    const feedback = emailInput.parentElement.querySelector(
+      '.availability-feedback'
+    );
+    if (feedback) {
+      feedback.className = 'availability-feedback available';
+      feedback.innerHTML =
+        '<i class="bi bi-check-circle-fill"></i> Email from enrollment record';
+    }
+  } else {
+    emailInput.value = '';
+    emailInput.removeAttribute('readonly');
+    emailInput.classList.remove('is-valid', 'is-invalid');
+  }
 
   modal.show();
 }
@@ -664,6 +689,18 @@ function openEditUserModal(userId) {
 function handleCreateUser(e) {
   e.preventDefault();
   const form = e.target;
+
+  // ADD THIS VALIDATION
+  const emailInput = form.querySelector('[name="email"]');
+  if (!emailInput.value.trim()) {
+    emailInput.classList.add('is-invalid');
+    const feedback =
+      emailInput.parentElement.querySelector('.invalid-feedback');
+    if (feedback) feedback.textContent = 'Email is required';
+    showAlert('warning', 'Please fill in all required fields');
+    return;
+  }
+
   const formData = new FormData(form);
   const submitBtn = form.querySelector('button[type="submit"]');
 
@@ -710,6 +747,18 @@ function handleCreateUser(e) {
 function handleCreateStudentAccount(e) {
   e.preventDefault();
   const form = e.target;
+
+  // ADD THIS VALIDATION
+  const emailInput = form.querySelector('[name="email"]');
+  if (!emailInput.value.trim()) {
+    emailInput.classList.add('is-invalid');
+    const feedback =
+      emailInput.parentElement.querySelector('.invalid-feedback');
+    if (feedback) feedback.textContent = 'Email is required';
+    showAlert('warning', 'Please fill in all required fields');
+    return;
+  }
+
   const formData = new FormData(form);
   const submitBtn = form.querySelector('button[type="submit"]');
 
@@ -763,6 +812,18 @@ function handleCreateStudentAccount(e) {
 function handleUpdateUser(e) {
   e.preventDefault();
   const form = e.target;
+
+  // ADD THIS VALIDATION
+  const emailInput = form.querySelector('[name="email"]');
+  if (!emailInput.value.trim()) {
+    emailInput.classList.add('is-invalid');
+    const feedback =
+      emailInput.parentElement.querySelector('.invalid-feedback');
+    if (feedback) feedback.textContent = 'Email is required';
+    showAlert('warning', 'Please fill in all required fields');
+    return;
+  }
+
   const formData = new FormData(form);
   const submitBtn = form.querySelector('button[type="submit"]');
 
@@ -871,10 +932,13 @@ function checkEmailAvailability(email, excludeId, context) {
   const input = document.getElementById(inputId);
   const feedback = input.parentElement.querySelector('.availability-feedback');
 
+  // EMAIL IS REQUIRED  show error if empty
   if (!email) {
-    feedback.className = 'availability-feedback';
-    feedback.textContent = '';
-    input.classList.remove('is-invalid', 'is-valid');
+    feedback.className = 'availability-feedback unavailable';
+    feedback.innerHTML =
+      '<i class="bi bi-x-circle-fill"></i> Email is required';
+    input.classList.remove('is-valid');
+    input.classList.add('is-invalid');
     return;
   }
 

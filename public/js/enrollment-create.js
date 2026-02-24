@@ -64,6 +64,20 @@ document.addEventListener('DOMContentLoaded', function () {
       if (!getValue('gender'))
         errors.push({ field: 'gender', msg: 'Gender is required' });
 
+      const email = getValue('email');
+      if (!email) {
+        errors.push({ field: 'email', msg: 'Email is required' });
+      } else {
+        // basic email format validation
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        if (!emailRegex.test(email)) {
+          errors.push({
+            field: 'email',
+            msg: 'Please enter a valid email address',
+          });
+        }
+      }
+
       const dob = getValue('date_of_birth');
       if (!dob) {
         errors.push({
@@ -284,6 +298,72 @@ document.addEventListener('DOMContentLoaded', function () {
   firstNameInput.addEventListener('input', function () {
     if (!this.value.trim()) hideDuplicateAlert();
   });
+
+  // email duplicate check
+  const emailInput = document.getElementById('email');
+  let emailCheckTimeout;
+
+  emailInput.addEventListener('input', function () {
+    clearTimeout(emailCheckTimeout);
+    const email = this.value.trim();
+
+    // clear any existing email error first
+    const existingError = document.querySelector('.email-exists-error');
+    if (existingError) existingError.remove();
+    this.classList.remove('is-invalid');
+
+    if (!email) return;
+
+    // wait for user to stop typing
+    emailCheckTimeout = setTimeout(() => {
+      checkEmailExists(email);
+    }, 500);
+  });
+
+  emailInput.addEventListener('blur', function () {
+    const email = this.value.trim();
+    if (!email) return;
+
+    // check immediately on blur
+    checkEmailExists(email);
+  });
+
+  function checkEmailExists(email) {
+    // don't check if email format is invalid
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) return;
+
+    fetch(
+      `${ENROLLMENT_DATA.ajaxUrls.checkEmail}&email=${encodeURIComponent(
+        email
+      )}`
+    )
+      .then((r) => r.json())
+      .then((res) => {
+        if (res.exists) {
+          // show error message
+          const errorDiv = document.createElement('div');
+          errorDiv.className = 'invalid-feedback email-exists-error d-block';
+          errorDiv.textContent =
+            'This email is already registered to another student';
+
+          emailInput.classList.add('is-invalid');
+
+          // remove existing error if any, then add new one
+          const parent = emailInput.parentNode;
+          const oldError = parent.querySelector('.email-exists-error');
+          if (oldError) oldError.remove();
+          parent.appendChild(errorDiv);
+        } else {
+          emailInput.classList.remove('is-invalid');
+          const oldError = emailInput.parentNode.querySelector(
+            '.email-exists-error'
+          );
+          if (oldError) oldError.remove();
+        }
+      })
+      .catch(() => {});
+  }
 
   const educationLevelSelect = document.getElementById('education_level');
   const yearLevelSelect = document.getElementById('year_level');

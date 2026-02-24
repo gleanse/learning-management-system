@@ -42,19 +42,37 @@ class User
 
             if ($check_email->fetch()) {
                 $errors[] = 'email_exists';
+            } else {
+                // only check student_profiles for unlinked students
+                $sql = "SELECT sp.student_id 
+                    FROM student_profiles sp
+                    LEFT JOIN students s ON s.student_id = sp.student_id
+                    WHERE sp.email = ? AND s.user_id IS NULL";
+
+                $params = [$user_data['email']];
+
+                if (!empty($user_data['student_id'])) {
+                    $sql .= " AND sp.student_id != ?";
+                    $params[] = $user_data['student_id'];
+                }
+
+                $check_student = $this->connection->prepare($sql);
+                $check_student->execute($params);
+
+                if ($check_student->fetch()) {
+                    $errors[] = 'email_exists';
+                }
             }
         }
 
-        // return if theres any validation error
         if (!empty($errors)) {
             return $errors;
         }
 
         $stmt = $this->connection->prepare("
-            INSERT INTO users (username, email, password, role, first_name, middle_name, last_name, created_by)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?)");
+        INSERT INTO users (username, email, password, role, first_name, middle_name, last_name, created_by)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?)");
 
-        // if insert execution succeed return the id of created user
         if ($stmt->execute([
             $user_data['username'],
             $user_data['email'],
@@ -191,7 +209,6 @@ class User
     {
         $errors = [];
 
-        // check username uniqueness excluding current user
         $stmt = $this->connection->prepare("SELECT id FROM users WHERE username = ? AND id != ?");
         $stmt->execute([$data['username'], $id]);
         if ($stmt->fetch()) $errors[] = 'username_exists';
@@ -199,7 +216,22 @@ class User
         if (!empty($data['email'])) {
             $stmt = $this->connection->prepare("SELECT id FROM users WHERE email = ? AND id != ?");
             $stmt->execute([$data['email'], $id]);
-            if ($stmt->fetch()) $errors[] = 'email_exists';
+            if ($stmt->fetch()) {
+                $errors[] = 'email_exists';
+            } else {
+                // only check student_profiles for unlinked students
+                $sql = "SELECT sp.student_id 
+                    FROM student_profiles sp
+                    LEFT JOIN students s ON s.student_id = sp.student_id
+                    WHERE sp.email = ? AND s.user_id IS NULL";
+
+                $check_student = $this->connection->prepare($sql);
+                $check_student->execute([$data['email']]);
+
+                if ($check_student->fetch()) {
+                    $errors[] = 'email_exists';
+                }
+            }
         }
 
         if (!empty($errors)) return $errors;
@@ -226,7 +258,6 @@ class User
             $data['last_name'],
         ];
 
-        // only update password if provided
         if (!empty($data['password'])) {
             $sql .= ", password = ?";
             $params[] = password_hash($data['password'], PASSWORD_DEFAULT);
@@ -267,8 +298,23 @@ class User
             $stmt = $this->connection->prepare("SELECT id FROM users WHERE email = ?");
             $stmt->execute([$email]);
         }
-        return (bool)$stmt->fetch();
+
+        if ($stmt->fetch()) {
+            return true;
+        }
+
+        // only check student_profiles for unlinked students
+        $sql = "SELECT sp.student_id 
+            FROM student_profiles sp
+            LEFT JOIN students s ON s.student_id = sp.student_id
+            WHERE sp.email = ? AND s.user_id IS NULL";
+
+        $stmt = $this->connection->prepare($sql);
+        $stmt->execute([$email]);
+
+        return $stmt->fetch() ? true : false;
     }
+
     public function getTotalUsersByRole()
     {
         $stmt = $this->connection->prepare("

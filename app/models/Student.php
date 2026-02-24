@@ -665,12 +665,14 @@ class Student
                 s.middle_name,
                 s.last_name,
                 u.email,
+                sp.email AS profile_email,
                 sec.section_name,
                 sec.education_level as section_education_level,
                 sec.strand_course as section_strand_course,
                 s.user_id
             FROM students s
             LEFT JOIN users u ON s.user_id = u.id
+            LEFT JOIN student_profiles sp ON sp.student_id = s.student_id
             LEFT JOIN sections sec ON s.section_id = sec.section_id
             WHERE s.student_id = ?
         ");
@@ -814,9 +816,11 @@ class Student
                 s.strand_course,
                 s.enrollment_status,
                 sec.section_name,
-                s.created_at
+                s.created_at,
+                sp.email AS profile_email
             FROM students s
             LEFT JOIN sections sec ON s.section_id = sec.section_id
+            LEFT JOIN student_profiles sp ON sp.student_id = s.student_id
             WHERE s.user_id IS NULL
         ";
 
@@ -1041,5 +1045,11 @@ class Student
         $stmt = $this->connection->prepare($sql);
         $stmt->execute([$student_id, $semester, $school_year, $year_level]);
         return $stmt->fetchAll();
+    }
+    
+    public function clearProfileEmail($student_id)
+    {
+        $stmt = $this->connection->prepare("UPDATE student_profiles SET email = NULL WHERE student_id = ?");
+        return $stmt->execute([$student_id]);
     }
 }

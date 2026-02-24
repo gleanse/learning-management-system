@@ -56,6 +56,24 @@ class EnrollmentController
         require __DIR__ . '/../views/registrar/enrollment_create.php';
     }
 
+    public function ajaxCheckEmail()
+    {
+        $this->requireRegistrar();
+        header('Content-Type: application/json');
+
+        $email = trim($_GET['email'] ?? '');
+
+        if (empty($email)) {
+            echo json_encode(['exists' => false]);
+            return;
+        }
+
+        // check if email exists in student_profiles OR users table
+        $exists = $this->enrollment_model->emailExists($email);
+
+        echo json_encode(['exists' => $exists]);
+    }
+
     public function getSections()
     {
         $this->requireRegistrar();
@@ -229,6 +247,7 @@ class EnrollmentController
         if (empty($data['guardian_name']))     $errors['guardian_name']    = 'Guardian name is required';
         if (empty($data['guardian_contact']))  $errors['guardian_contact'] = 'Guardian contact is required';
         if (empty($data['gender']))            $errors['gender']           = 'Gender is required';
+        if (empty($data['email']))             $errors['email']            = 'Email is required';
 
         // date of birth required + age range 10–100
         if (empty($data['date_of_birth'])) {
@@ -262,6 +281,11 @@ class EnrollmentController
             if (empty($data['initial_amount_paid']) || (float) $data['initial_amount_paid'] <= 0) {
                 $errors['initial_amount_paid'] = 'Initial payment is required to complete enrollment.';
             }
+        }
+
+        // add email format validation
+        if (!empty($data['email']) && !filter_var($data['email'], FILTER_VALIDATE_EMAIL)) {
+            $errors['email'] = 'Invalid email format';
         }
 
         return $errors;

@@ -258,8 +258,14 @@ class StudentProfileController
             exit();
         }
 
-        // update name in students table
         $this->profile_model->updateStudentName($student_id, $first_name, $middle_name ?: null, $last_name);
+
+        // if student has a linked account, update email in users table instead
+        $linked_user_id = $this->profile_model->getLinkedUserId($student_id);
+
+        if ($linked_user_id && !empty($data['email'])) {
+            $this->profile_model->updateUserEmail($linked_user_id, $data['email']);
+        }
 
         $result = $this->profile_model->saveProfile($student_id, $data);
 

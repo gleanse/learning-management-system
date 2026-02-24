@@ -162,9 +162,9 @@ class UserManagementController
         $email      = trim($_GET['email'] ?? '');
         $exclude_id = isset($_GET['exclude_id']) ? (int)$_GET['exclude_id'] : null;
 
-        // empty email is allowed (optional field)
+        // empty email returns available false since email is now required
         if (empty($email)) {
-            $this->jsonResponse(['available' => true, 'message' => '']);
+            $this->jsonResponse(['available' => false, 'message' => 'Email is required.']);
         }
 
         if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
@@ -188,7 +188,7 @@ class UserManagementController
         $middle_name = trim($_POST['middle_name'] ?? '');
         $last_name   = trim($_POST['last_name'] ?? '');
         $username    = trim($_POST['username'] ?? '');
-        $email       = !empty(trim($_POST['email'])) ? trim($_POST['email']) : null;
+        $email       = trim($_POST['email'] ?? '');
         $password    = $_POST['password'] ?? '';
         $role        = $_POST['role'] ?? '';
 
@@ -198,6 +198,7 @@ class UserManagementController
         if (empty($last_name))  $errors['last_name']  = 'Last name is required.';
         if (empty($username))   $errors['username']   = 'Username is required.';
         if (empty($password))   $errors['password']   = 'Password is required.';
+        if (empty($email)) $errors['email'] = 'Email is required.';
 
         $allowed_roles = ['teacher', 'registrar', 'admin', 'superadmin'];
         if (empty($role) || !in_array($role, $allowed_roles, true)) {
@@ -260,6 +261,7 @@ class UserManagementController
         if (empty($student_id)) $errors['student_id'] = 'Student ID is required.';
         if (empty($username))   $errors['username']   = 'Username is required.';
         if (empty($password))   $errors['password']   = 'Password is required.';
+        if (empty($email))      $errors['email']       = 'Email is required.';
 
         if ($email !== null && !filter_var($email, FILTER_VALIDATE_EMAIL)) {
             $errors['email'] = 'Invalid email format.';
@@ -301,6 +303,7 @@ class UserManagementController
                 'middle_name' => $student['middle_name'],
                 'last_name'   => $student['last_name'],
                 'created_by'  => $_SESSION['user_id'],
+                'student_id'  => $student_id,
             ]);
 
             if (is_array($new_user_id)) {
@@ -324,6 +327,7 @@ class UserManagementController
             }
 
             $connection->commit();
+            $this->student_model->clearProfileEmail($student_id);
 
             $this->jsonResponse([
                 'success' => true,
@@ -347,7 +351,7 @@ class UserManagementController
         $middle_name = trim($_POST['middle_name'] ?? '');
         $last_name   = trim($_POST['last_name'] ?? '');
         $username    = trim($_POST['username'] ?? '');
-        $email       = !empty(trim($_POST['email'])) ? trim($_POST['email']) : null;
+        $email       = trim($_POST['email'] ?? '');
         $password    = $_POST['password'] ?? '';
         $role        = $_POST['role'] ?? '';
         $status      = $_POST['status'] ?? '';
@@ -358,6 +362,7 @@ class UserManagementController
         if (empty($first_name)) $errors['first_name'] = 'First name is required.';
         if (empty($last_name))  $errors['last_name']  = 'Last name is required.';
         if (empty($username))   $errors['username']   = 'Username is required.';
+        if (empty($email)) $errors['email'] = 'Email is required.';
 
         $allowed_roles    = ['student', 'teacher', 'registrar', 'admin', 'superadmin'];
         $allowed_statuses = ['active', 'inactive', 'suspended'];
