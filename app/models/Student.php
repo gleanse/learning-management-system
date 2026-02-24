@@ -989,4 +989,57 @@ class Student
             $insertStmt->execute([$student_id, $subject_id, $school_year, $semester]);
         }
     }
+
+    // get all enrolled subjects with grades for each grading period
+    // used for the overall grades overview page
+    // returns one row per subject with prelim, midterm, prefinal, final as separate columns
+    public function getAllGradesOverview($student_id, $year_level, $semester, $school_year)
+    {
+        $current    = (new AcademicPeriod())->getCurrentPeriod();
+        $is_history = $current && $school_year !== $current['school_year'];
+
+        if ($is_history) {
+            $section_join = "
+                INNER JOIN student_section_history ssh
+                    ON ssh.student_id = sse.student_id
+                    AND ssh.school_year = sse.school_year
+                    AND ssh.semester = sse.semester
+                INNER JOIN sections sec ON sec.section_id = ssh.section_id
+            ";
+        } else {
+            $section_join = "
+                INNER JOIN students st ON st.student_id = sse.student_id
+                INNER JOIN sections sec ON sec.section_id = st.section_id
+            ";
+        }
+
+        $sql = "
+            SELECT
+                sub.subject_id,
+                sub.subject_code,
+                sub.subject_name,
+                MAX(CASE WHEN g.grading_period = 'Prelim'   THEN g.grade_value END) AS prelim,
+                MAX(CASE WHEN g.grading_period = 'Midterm'  THEN g.grade_value END) AS midterm,
+                MAX(CASE WHEN g.grading_period = 'Prefinal' THEN g.grade_value END) AS prefinal,
+                MAX(CASE WHEN g.grading_period = 'Final'    THEN g.grade_value END) AS final
+            FROM student_subject_enrollments sse
+            {$section_join}
+            INNER JOIN subjects sub ON sub.subject_id = sse.subject_id
+            LEFT JOIN grades g
+                ON  g.student_id  = sse.student_id
+                AND g.subject_id  = sse.subject_id
+                AND g.semester    = sse.semester
+                AND g.school_year = sse.school_year
+            WHERE sse.student_id  = ?
+                AND sse.semester   = ?
+                AND sse.school_year = ?
+                AND sec.year_level  = ?
+            GROUP BY sub.subject_id, sub.subject_code, sub.subject_name
+            ORDER BY sub.subject_name ASC
+        ";
+
+        $stmt = $this->connection->prepare($sql);
+        $stmt->execute([$student_id, $semester, $school_year, $year_level]);
+        return $stmt->fetchAll();
+    }
 }

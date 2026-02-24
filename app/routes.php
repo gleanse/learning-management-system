@@ -831,6 +831,17 @@ if ($page === 'ajax_get_grades' && $method === 'GET') {
     exit();
 }
 
+if ($page === 'ajax_get_overall_grades' && $method === 'GET') {
+    if (!isLoggedIn() || !isStudent()) {
+        header('Location: index.php?page=login');
+        exit();
+    }
+
+    $controller = new StudentController();
+    $controller->ajaxGetOverallGrades();
+    exit();
+}
+
 // REGISTRAR ENROLLMENT ROUTES (registrar only)
 
 // registrar dashboard
