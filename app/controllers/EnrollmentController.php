@@ -163,6 +163,14 @@ class EnrollmentController
         }
 
         $data   = $this->sanitize($_POST);
+
+        // server-side guard — voucher only valid for senior high
+        if (!empty($data['shs_voucher']) && $data['shs_voucher'] === '1') {
+            if (empty($data['education_level']) || $data['education_level'] !== 'senior_high') {
+                $data['shs_voucher'] = '0';
+            }
+        }
+
         $errors = $this->validate($data);
 
         if (!empty($errors)) {
@@ -247,6 +255,13 @@ class EnrollmentController
         // total amount must be greater than zero — means fee config exists for this course
         if (empty($data['total_amount']) || (float) $data['total_amount'] <= 0) {
             $errors['total_amount'] = 'Fee configuration not set for this course and school year. Please contact the administrator.';
+        }
+
+        // skip if voucher toggled — payment already covered
+        if (empty($data['shs_voucher']) || $data['shs_voucher'] !== '1') {
+            if (empty($data['initial_amount_paid']) || (float) $data['initial_amount_paid'] <= 0) {
+                $errors['initial_amount_paid'] = 'Initial payment is required to complete enrollment.';
+            }
         }
 
         return $errors;

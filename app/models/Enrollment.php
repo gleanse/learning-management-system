@@ -138,8 +138,11 @@ class Enrollment
 
             $payment_id = $this->insertEnrollmentPayment($student_id, $data, $registrar_id);
 
-            // only record transaction if upfront amount was paid
-            if (!empty($data['initial_amount_paid']) && $data['initial_amount_paid'] > 0) {
+            // voucher — record as fully paid via voucher transaction
+            if (!empty($data['shs_voucher']) && $data['shs_voucher'] === '1') {
+                $this->insertVoucherTransaction($payment_id, $data, $registrar_id);
+                // only record transaction if upfront amount was paid
+            } elseif (!empty($data['initial_amount_paid']) && $data['initial_amount_paid'] > 0) {
                 $this->insertPaymentTransaction($payment_id, $data, $registrar_id);
             }
 
@@ -263,11 +266,17 @@ class Enrollment
         $net_amount      = $total_amount - $discount_amount;
         $amount_paid     = (float) ($data['initial_amount_paid'] ?? 0);
 
-        $status = 'pending';
-        if ($amount_paid >= $net_amount && $net_amount > 0) {
-            $status = 'paid';
-        } elseif ($amount_paid > 0) {
-            $status = 'partial';
+        // voucher overrides everything, full paid, no balance
+        if (!empty($data['shs_voucher']) && $data['shs_voucher'] === '1') {
+            $net_amount = 0.00;
+            $status     = 'paid';
+        } else {
+            $status = 'pending';
+            if ($amount_paid >= $net_amount && $net_amount > 0) {
+                $status = 'paid';
+            } elseif ($amount_paid > 0) {
+                $status = 'partial';
+            }
         }
 
         $stmt = $this->connection->prepare("
@@ -303,6 +312,23 @@ class Enrollment
             $payment_id,
             (float) $data['initial_amount_paid'],
             $data['payment_notes'] ?? null,
+            $received_by,
+        ]);
+    }
+
+    // insert voucher payment transaction record
+    private function insertVoucherTransaction($payment_id, $data, $received_by)
+    {
+        $stmt = $this->connection->prepare("
+        INSERT INTO payment_transactions (
+            payment_id, amount_paid, payment_date, notes, received_by
+        ) VALUES (?, ?, CURDATE(), ?, ?)
+    ");
+
+        $stmt->execute([
+            $payment_id,
+            (float) ($data['total_amount'] ?? 0),
+            'Paid via SHS Voucher',
             $received_by,
         ]);
     }

@@ -529,6 +529,11 @@
                                                 name="initial_amount_paid" min="0" step="0.01"
                                                 value="<?= htmlspecialchars($form_data['initial_amount_paid'] ?? '0') ?>"
                                                 placeholder="0.00">
+                                            <?php if (isset($errors['initial_amount_paid'])): ?>
+                                                <div class="invalid-feedback d-block">
+                                                    <?= htmlspecialchars($errors['initial_amount_paid']) ?>
+                                                </div>
+                                            <?php endif; ?>
                                         </div>
                                     </div>
 
@@ -540,6 +545,24 @@
                                         </label>
                                         <textarea class="form-control" id="payment_notes" name="payment_notes"
                                             rows="2" placeholder="Optional notes for this payment"><?= htmlspecialchars($form_data['payment_notes'] ?? '') ?></textarea>
+                                    </div>
+
+                                    <!-- shs voucher toggle — only shown for senior high students -->
+                                    <div class="mb-3 d-none" id="voucherWrapper">
+                                        <div class="voucher-toggle-card">
+                                            <div class="voucher-toggle-info">
+                                                <i class="bi bi-ticket-perforated-fill text-success fs-5"></i>
+                                                <div>
+                                                    <div class="fw-semibold">SHS Voucher</div>
+                                                    <small class="text-muted">Mark as fully paid via government voucher. Registrar must verify the voucher before proceeding.</small>
+                                                </div>
+                                            </div>
+                                            <div class="form-check form-switch ms-auto">
+                                                <input class="form-check-input" type="checkbox" role="switch"
+                                                    id="shsVoucherToggle" style="width: 2.5rem; height: 1.25rem;">
+                                            </div>
+                                        </div>
+                                        <input type="hidden" name="shs_voucher" id="shsVoucherInput" value="0">
                                     </div>
 
                                     <!-- payment summary -->
@@ -716,8 +739,73 @@
             <?php if (!empty($draft) && !$is_validation_error): ?>
                 showToast('success', 'Draft restored. Continue where you left off.');
             <?php endif; ?>
+
+            // voucher toggle — show only for senior high
+            const educationLevelSelect = document.getElementById('education_level');
+            const voucherWrapper = document.getElementById('voucherWrapper');
+            const voucherToggle = document.getElementById('shsVoucherToggle');
+            const voucherInput = document.getElementById('shsVoucherInput');
+            const amountPaidInput = document.getElementById('initial_amount_paid');
+            const paymentSummary = document.getElementById('paymentSummary');
+
+            educationLevelSelect.addEventListener('change', function() {
+                if (this.value === 'senior_high') {
+                    voucherWrapper.classList.remove('d-none');
+                } else {
+                    voucherWrapper.classList.add('d-none');
+                    voucherToggle.checked = false;
+                    voucherInput.value = '0';
+                    amountPaidInput.disabled = false;
+                    paymentSummary.classList.remove('d-none');
+                }
+            });
+
+            voucherToggle.addEventListener('change', function() {
+                if (this.checked) {
+                    const confirmed = confirm(
+                        'Are you sure this student has a valid SHS voucher?\n\n' +
+                        'This will mark the enrollment as fully paid. ' +
+                        'Please verify the voucher before proceeding.'
+                    );
+
+                    if (!confirmed) {
+                        this.checked = false;
+                        voucherInput.value = '0';
+                        return;
+                    }
+
+                    voucherInput.value = '1';
+                    amountPaidInput.value = '0';
+                    amountPaidInput.disabled = true;
+                    paymentSummary.classList.add('d-none');
+
+                } else {
+                    voucherInput.value = '0';
+                    amountPaidInput.disabled = false;
+                    paymentSummary.classList.remove('d-none');
+                }
+            });
         });
     </script>
+
+    <style>
+        .voucher-toggle-card {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            padding: 1rem 1.25rem;
+            background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%);
+            border: 1px solid #bbf7d0;
+            border-radius: 0.75rem;
+        }
+
+        .voucher-toggle-info {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            flex: 1;
+        }
+    </style>
 
 </body>
 
