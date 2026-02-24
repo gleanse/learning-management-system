@@ -16,6 +16,7 @@ require_once __DIR__ . '/controllers/RegistrarDashboardController.php';
 require_once __DIR__ . '/controllers/PaymentController.php';
 require_once __DIR__ . '/controllers/AcademicPeriodController.php';
 require_once __DIR__ . '/controllers/StudentProfileController.php';
+require_once __DIR__ . '/controllers/FeeConfigController.php';
 
 $page = $_GET['page'] ?? 'login';
 $method = $_SERVER['REQUEST_METHOD'];
@@ -129,6 +130,40 @@ if ($page === 'ajax_graduate_students' && $method === 'POST') {
     }
     $controller = new AcademicPeriodController();
     $controller->ajaxGraduateStudents();
+    exit();
+}
+
+// FEE CONFIG ROUTES (admin only)
+// fee config page
+if ($page === 'fee_config' && $method === 'GET') {
+    if (!isLoggedIn() || !isAdmin()) {
+        header('Location: index.php?page=login');
+        exit();
+    }
+    $controller = new FeeConfigController();
+    $controller->showFeeConfig();
+    exit();
+}
+
+// ajax: get single fee row for edit modal
+if ($page === 'ajax_get_fee' && $method === 'GET') {
+    if (!isLoggedIn() || !isAdmin()) {
+        header('Location: index.php?page=login');
+        exit();
+    }
+    $controller = new FeeConfigController();
+    $controller->ajaxGetFee();
+    exit();
+}
+
+// ajax: update fee config row
+if ($page === 'ajax_update_fee' && $method === 'POST') {
+    if (!isLoggedIn() || !isAdmin()) {
+        header('Location: index.php?page=login');
+        exit();
+    }
+    $controller = new FeeConfigController();
+    $controller->ajaxUpdateFee();
     exit();
 }
 

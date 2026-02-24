@@ -74,6 +74,12 @@
                     </a>
                 </li>
                 <li class="nav-item">
+                    <a class="nav-link" href="index.php?page=fee_config">
+                        <i class="bi bi-cash-coin"></i>
+                        <span>Fee Configuration</span>
+                    </a>
+                </li>
+                <li class="nav-item">
                     <a class="nav-link" href="index.php?page=logout">
                         <i class="bi bi-box-arrow-right"></i>
                         <span>Logout</span>
