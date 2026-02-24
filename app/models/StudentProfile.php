@@ -208,4 +208,43 @@ class StudentProfile
         $stmt->execute([$school_year, $semester]);
         return $stmt->fetchAll();
     }
+
+    // get enrollment documents for a student by school year
+    public function getEnrollmentDocuments($student_id, $school_year)
+    {
+        $stmt = $this->connection->prepare("
+            SELECT *
+            FROM enrollment_documents
+            WHERE student_id = ? AND school_year = ?
+        ");
+        $stmt->execute([$student_id, $school_year]);
+        return $stmt->fetch();
+    }
+
+    // upsert enrollment documents
+    public function saveEnrollmentDocuments($student_id, $school_year, $data)
+    {
+        $stmt = $this->connection->prepare("
+            INSERT INTO enrollment_documents
+                (student_id, school_year, psa_birth_certificate, form_138_report_card,
+                 good_moral_certificate, id_pictures, medical_certificate)
+            VALUES (?, ?, ?, ?, ?, ?, ?)
+            ON DUPLICATE KEY UPDATE
+                psa_birth_certificate   = VALUES(psa_birth_certificate),
+                form_138_report_card    = VALUES(form_138_report_card),
+                good_moral_certificate  = VALUES(good_moral_certificate),
+                id_pictures             = VALUES(id_pictures),
+                medical_certificate     = VALUES(medical_certificate),
+                updated_at              = CURRENT_TIMESTAMP
+        ");
+        return $stmt->execute([
+            $student_id,
+            $school_year,
+            (int) ($data['psa_birth_certificate']  ?? 0),
+            (int) ($data['form_138_report_card']   ?? 0),
+            (int) ($data['good_moral_certificate'] ?? 0),
+            (int) ($data['id_pictures']            ?? 0),
+            (int) ($data['medical_certificate']    ?? 0),
+        ]);
+    }
 }

@@ -129,8 +129,30 @@ document.addEventListener('DOMContentLoaded', function () {
       // school_year and semester are now auto-set from active period — skip validation
     }
 
-    // step 3 — no required fields, registrar just records what was paid
-    // total_amount is validated on the server side against fee config
+    if (step === 3) {
+      const total =
+        parseFloat(document.getElementById('totalAmountInput').value) || 0;
+      const voucher = document.getElementById('shs_voucher');
+      const isVoucher = voucher && voucher.checked;
+
+      if (total <= 0) {
+        showToast(
+          'warning',
+          'Fee configuration is not set for this course. Please contact the administrator.'
+        );
+        return false;
+      }
+
+      if (
+        !isVoucher &&
+        (parseFloat(getValue('initial_amount_paid')) || 0) <= 0
+      ) {
+        errors.push({
+          field: 'initial_amount_paid',
+          msg: 'Initial payment is required to complete enrollment',
+        });
+      }
+    }
 
     if (errors.length > 0) {
       errors.forEach((e) => showFieldError(e.field, e.msg));

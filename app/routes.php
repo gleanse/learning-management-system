@@ -1082,6 +1082,17 @@ if ($page === 'ajax_search_student_profiles' && $method === 'GET') {
     exit();
 }
 
+// ajax: update enrollment document statuses
+if ($page === 'update_enrollment_documents' && $method === 'POST') {
+    if (!isLoggedIn() || !isRegistrar()) {
+        header('Location: index.php?page=login');
+        exit();
+    }
+    $controller = new StudentProfileController();
+    $controller->processUpdateDocuments();
+    exit();
+}
+
 // AUTH ROUTES
 if ($page === 'login' && $method === 'GET') {
     if (isLoggedIn()) {

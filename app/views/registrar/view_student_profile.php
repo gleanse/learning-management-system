@@ -173,6 +173,94 @@
                                             <p class="mb-0"><?= htmlspecialchars($student['special_notes']) ?></p>
                                         </div>
                                     <?php endif; ?>
+
+                                    <!-- enrollment documents section -->
+                                    <?php
+                                    $doc_fields = [
+                                        'psa_birth_certificate'  => 'PSA Birth Certificate',
+                                        'form_138_report_card'   => 'Form 138 / Report Card',
+                                        'good_moral_certificate' => 'Good Moral Certificate',
+                                        'id_pictures'            => 'ID Pictures',
+                                        'medical_certificate'    => 'Medical Certificate',
+                                    ];
+
+                                    $total_docs = count($doc_fields);
+                                    $submitted  = 0;
+
+                                    if ($enrollment_docs) {
+                                        foreach (array_keys($doc_fields) as $field) {
+                                            if (!empty($enrollment_docs[$field])) $submitted++;
+                                        }
+                                    }
+
+                                    $all_submitted = $submitted === $total_docs;
+                                    ?>
+                                    <div class="col-12">
+                                        <hr class="my-2">
+                                        <div class="d-flex align-items-center justify-content-between mb-2">
+                                            <div class="d-flex align-items-center gap-2">
+                                                <label class="form-label text-muted small mb-0">Enrollment Documents</label>
+                                                <span id="docsBadge" class="badge <?= $all_submitted ? 'bg-success' : ($submitted > 0 ? 'bg-warning text-dark' : 'bg-danger') ?>">
+                                                    <?= $submitted ?> / <?= $total_docs ?> Submitted
+                                                </span>
+                                            </div>
+                                            <button type="button" class="btn btn-sm btn-outline-primary" id="toggleDocsEdit">
+                                                <i class="bi bi-pencil-fill"></i> Edit Documents
+                                            </button>
+                                        </div>
+
+                                        <!-- view mode -->
+                                        <div id="docsViewMode">
+                                            <div class="row g-2">
+                                                <?php foreach ($doc_fields as $field => $label): ?>
+                                                    <?php $checked = !empty($enrollment_docs[$field]); ?>
+                                                    <div class="col-md-6">
+                                                        <div class="d-flex align-items-center gap-2 doc-status-row">
+                                                            <i class="<?= $checked ? 'bi bi-check-circle-fill text-success' : 'bi bi-x-circle-fill text-danger' ?>"></i>
+                                                            <span class="small <?= $checked ? '' : 'text-muted' ?>"><?= $label ?></span>
+                                                        </div>
+                                                    </div>
+                                                <?php endforeach; ?>
+                                            </div>
+                                        </div>
+
+                                        <!-- edit mode -->
+                                        <div id="docsEditMode" style="display:none;">
+                                            <form id="docsForm">
+                                                <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($_SESSION['csrf_token']) ?>">
+                                                <input type="hidden" name="student_id" value="<?= $student['student_id'] ?>">
+                                                <div class="row g-2 mb-3">
+                                                    <?php foreach ($doc_fields as $field => $label): ?>
+                                                        <?php $checked = !empty($enrollment_docs[$field]); ?>
+                                                        <div class="col-md-6">
+                                                            <div class="form-check">
+                                                                <input
+                                                                    class="form-check-input doc-checkbox"
+                                                                    type="checkbox"
+                                                                    name="<?= $field ?>"
+                                                                    id="doc_<?= $field ?>"
+                                                                    <?= $checked ? 'checked' : '' ?>>
+                                                                <label class="form-check-label small" for="doc_<?= $field ?>">
+                                                                    <?= $label ?>
+                                                                </label>
+                                                            </div>
+                                                        </div>
+                                                    <?php endforeach; ?>
+                                                </div>
+                                                <div class="d-flex align-items-center gap-2">
+                                                    <button type="submit" class="btn btn-sm btn-primary" id="saveDocsBtn">
+                                                        <i class="bi bi-save-fill"></i> Save
+                                                    </button>
+                                                    <button type="button" class="btn btn-sm btn-outline-secondary" id="cancelDocsEdit">
+                                                        Cancel
+                                                    </button>
+                                                    <span id="docsSaveMsg" class="small" style="display:none;"></span>
+                                                </div>
+                                            </form>
+                                        </div>
+                                    </div>
+                                    <!-- end enrollment documents -->
+
                                 </div>
                             </div>
                         </div>
@@ -271,6 +359,96 @@
     </div>
 
     <script src="bootstrap/js/bootstrap.bundle.min.js"></script>
+    <script>
+        (function() {
+            const toggleBtn = document.getElementById('toggleDocsEdit');
+            const cancelBtn = document.getElementById('cancelDocsEdit');
+            const viewMode = document.getElementById('docsViewMode');
+            const editMode = document.getElementById('docsEditMode');
+            const form = document.getElementById('docsForm');
+            const saveMsg = document.getElementById('docsSaveMsg');
+            const badge = document.getElementById('docsBadge');
+
+            const docFields = <?= json_encode(array_keys($doc_fields)) ?>;
+            const docLabels = <?= json_encode(array_values($doc_fields)) ?>;
+            const totalDocs = <?= $total_docs ?>;
+
+            toggleBtn.addEventListener('click', function() {
+                viewMode.style.display = 'none';
+                editMode.style.display = 'block';
+                toggleBtn.style.display = 'none';
+            });
+
+            cancelBtn.addEventListener('click', function() {
+                viewMode.style.display = 'block';
+                editMode.style.display = 'none';
+                toggleBtn.style.display = '';
+                saveMsg.style.display = 'none';
+            });
+
+            form.addEventListener('submit', function(e) {
+                e.preventDefault();
+
+                const saveBtn = document.getElementById('saveDocsBtn');
+                saveBtn.disabled = true;
+                saveBtn.innerHTML = '<span class="spinner-border spinner-border-sm"></span> Saving...';
+
+                fetch('index.php?page=update_enrollment_documents', {
+                        method: 'POST',
+                        headers: {
+                            'X-Requested-With': 'XMLHttpRequest'
+                        },
+                        body: new FormData(form),
+                    })
+                    .then(function(res) {
+                        return res.json();
+                    })
+                    .then(function(data) {
+                        if (data.success) {
+                            // update badge
+                            const s = data.submitted;
+                            badge.textContent = s + ' / ' + totalDocs + ' Submitted';
+                            badge.className = 'badge ' + (s === totalDocs ? 'bg-success' : (s > 0 ? 'bg-warning text-dark' : 'bg-danger'));
+
+                            // update view mode icons and labels
+                            const rows = viewMode.querySelectorAll('.doc-status-row');
+                            rows.forEach(function(row, i) {
+                                const ok = data.docs[docFields[i]] === 1;
+                                const icon = row.querySelector('i');
+                                const label = row.querySelector('span');
+                                icon.className = ok ? 'bi bi-check-circle-fill text-success' : 'bi bi-x-circle-fill text-danger';
+                                label.className = 'small ' + (ok ? '' : 'text-muted');
+                            });
+
+                            saveMsg.className = 'small text-success';
+                            saveMsg.textContent = 'Saved!';
+                            saveMsg.style.display = 'inline';
+
+                            // collapse back to view after short delay
+                            setTimeout(function() {
+                                viewMode.style.display = 'block';
+                                editMode.style.display = 'none';
+                                toggleBtn.style.display = '';
+                                saveMsg.style.display = 'none';
+                            }, 900);
+                        } else {
+                            saveMsg.className = 'small text-danger';
+                            saveMsg.textContent = data.message || 'Failed to save.';
+                            saveMsg.style.display = 'inline';
+                        }
+                    })
+                    .catch(function() {
+                        saveMsg.className = 'small text-danger';
+                        saveMsg.textContent = 'An error occurred.';
+                        saveMsg.style.display = 'inline';
+                    })
+                    .finally(function() {
+                        saveBtn.disabled = false;
+                        saveBtn.innerHTML = '<i class="bi bi-save-fill"></i> Save';
+                    });
+            });
+        })();
+    </script>
 </body>
 
 </html>

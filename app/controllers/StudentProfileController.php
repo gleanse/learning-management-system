@@ -109,12 +109,69 @@ class StudentProfileController
         }
 
         $payment_history = $this->profile_model->getPaymentHistory($student_id);
+        $enrollment_docs = $this->profile_model->getEnrollmentDocuments($student_id, $school_year);
 
         $errors          = $_SESSION['profile_errors']  ?? [];
         $success_message = $_SESSION['profile_success'] ?? null;
         unset($_SESSION['profile_errors'], $_SESSION['profile_success']);
 
         require __DIR__ . '/../views/registrar/view_student_profile.php';
+    }
+
+    // process inline document status update
+    public function processUpdateDocuments()
+    {
+        $this->requireRegistrar();
+        $this->validateCsrf();
+
+        $student_id = isset($_POST['student_id']) ? (int) $_POST['student_id'] : null;
+
+        if (empty($student_id)) {
+            if ($this->isAjax()) {
+                $this->jsonResponse(['success' => false, 'message' => 'Invalid student.'], 400);
+            }
+            $_SESSION['profile_errors'] = ['general' => 'Invalid student.'];
+            header('Location: index.php?page=student_profiles');
+            exit();
+        }
+
+        $current     = $this->academic_model->getCurrentPeriod();
+        $school_year = $current['school_year'] ?? '';
+
+        // only accept known document fields, default unchecked to 0
+        $docs = [
+            'psa_birth_certificate'  => isset($_POST['psa_birth_certificate'])  ? 1 : 0,
+            'form_138_report_card'   => isset($_POST['form_138_report_card'])   ? 1 : 0,
+            'good_moral_certificate' => isset($_POST['good_moral_certificate']) ? 1 : 0,
+            'id_pictures'            => isset($_POST['id_pictures'])            ? 1 : 0,
+            'medical_certificate'    => isset($_POST['medical_certificate'])    ? 1 : 0,
+        ];
+
+        $result = $this->profile_model->saveEnrollmentDocuments($student_id, $school_year, $docs);
+
+        if ($this->isAjax()) {
+            if ($result) {
+                $submitted = array_sum($docs);
+                $this->jsonResponse([
+                    'success'   => true,
+                    'message'   => 'Documents updated successfully.',
+                    'submitted' => $submitted,
+                    'total'     => count($docs),
+                    'docs'      => $docs,
+                ]);
+            }
+            $this->jsonResponse(['success' => false, 'message' => 'Failed to update documents.'], 500);
+        }
+
+        // non-ajax fallback
+        if ($result) {
+            $_SESSION['profile_success'] = 'Enrollment documents updated successfully.';
+        } else {
+            $_SESSION['profile_errors'] = ['general' => 'Failed to update documents. Please try again.'];
+        }
+
+        header('Location: index.php?page=view_student_profile&student_id=' . $student_id);
+        exit();
     }
 
     // show edit profile form

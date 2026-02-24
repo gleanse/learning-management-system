@@ -403,25 +403,220 @@
   color: #ffffff;
 }
 
-/* PRINT */
 @media print {
+  /* hide ui chrome */
   .sidenav,
   .top-navbar,
-  .success-footer,
-  .breadcrumb {
+  .breadcrumb,
+  .success-footer {
     display: none !important;
+  }
+
+  body {
+    background: #ffffff !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    font-size: 11pt;
+    color: #000000 !important;
+  }
+
+  .d-flex {
+    display: block !important;
   }
 
   .main-content {
     margin: 0 !important;
     padding: 0 !important;
+    width: 100% !important;
   }
+
+  .container-fluid {
+    padding: 0 !important;
+  }
+
+  .success-wrapper {
+    padding: 0 !important;
+    min-height: unset !important;
+  }
+
   .success-card {
     box-shadow: none !important;
-    border: 1px solid #e2e8f0 !important;
+    border: none !important;
+    border-radius: 0 !important;
+    width: 100% !important;
   }
-  body {
+
+  /* hide original green card header */
+  .success-card > .card-header {
+    display: none !important;
+  }
+
+  /* inject letterhead via pseudo element */
+  .success-card::before {
+    content: 'Datamex College of Saint Adeline\A Learning Management System\A ————————————————————\A ENROLLMENT CONFIRMATION';
+    white-space: pre;
+    display: block;
+    text-align: center;
+    font-size: 11pt;
+    font-weight: 600;
+    color: #000000;
+    padding: 1rem 0 1rem;
+    border-bottom: 2.5pt solid #000000;
+    margin-bottom: 1rem;
+    line-height: 1.8;
+  }
+
+  /* inject disclaimer at bottom */
+  .success-card::after {
+    content: 'This document is system-generated and serves as only reference proof of enrollment.';
+    display: block;
+    text-align: center;
+    font-size: 8pt;
+    color: #555555;
+    margin-top: 1.5rem;
+    padding-top: 0.75rem;
+    border-top: 1pt solid #cccccc;
+    font-style: italic;
+  }
+
+  /* hero */
+  .success-hero {
     background: #ffffff !important;
+    border-bottom: 1.5pt solid #000000 !important;
+    padding: 0.75rem 0 1rem !important;
+  }
+
+  .success-icon-wrapper {
+    display: none !important;
+  }
+
+  .success-title {
+    font-size: 14pt !important;
+    color: #000000 !important;
+    margin-bottom: 0.2rem !important;
+  }
+
+  .success-subtitle {
+    font-size: 10pt !important;
+    color: #333333 !important;
+  }
+
+  .student-number-badge {
+    background: #ffffff !important;
+    border: 1.5pt solid #000000 !important;
+    box-shadow: none !important;
+  }
+
+  .student-number-badge .badge-label {
+    color: #333333 !important;
+  }
+
+  /* strip gradient text from student number */
+  .student-number-badge .badge-value {
+    background: none !important;
+    -webkit-background-clip: unset !important;
+    -webkit-text-fill-color: #000000 !important;
+    background-clip: unset !important;
+    color: #000000 !important;
+    animation: none !important;
+  }
+
+  /* info body */
+  .success-body {
+    padding: 0.75rem 0 !important;
+  }
+
+  .info-section {
+    border: 1.5pt solid #000000 !important;
+    border-radius: 0 !important;
+    background: #ffffff !important;
+    margin-bottom: 0.75rem !important;
+    animation: none !important;
+    page-break-inside: avoid;
+  }
+
+  .info-section-header {
+    background: #1a1a1a !important;
+    color: #ffffff !important;
+    padding: 0.4rem 0.75rem !important;
+    font-size: 9pt !important;
+    print-color-adjust: exact;
+    -webkit-print-color-adjust: exact;
+  }
+
+  .info-grid {
+    background: #cccccc !important;
+  }
+
+  .info-item {
+    background: #ffffff !important;
+    padding: 0.4rem 0.75rem !important;
+  }
+
+  .info-item-label {
+    font-size: 7.5pt !important;
+    color: #555555 !important;
+  }
+
+  .info-item-value {
+    font-size: 10pt !important;
+    color: #000000 !important;
+  }
+
+  .payment-status-badge {
+    border: 1pt solid #000000 !important;
+    background: #ffffff !important;
+    color: #000000 !important;
+  }
+
+  /* doc chips */
+  .doc-chips {
+    padding: 0.5rem 0.75rem !important;
+  }
+
+  .doc-chip {
+    border-radius: 0.25rem !important;
+    font-size: 8.5pt !important;
+  }
+
+  .doc-chip.submitted {
+    background: #dcfce7 !important;
+    color: #166534 !important;
+    border: 1pt solid #86efac !important;
+    print-color-adjust: exact;
+    -webkit-print-color-adjust: exact;
+  }
+
+  .doc-chip.missing {
+    background: #f1f5f9 !important;
+    color: #94a3b8 !important;
+    border: 1pt dashed #cbd5e1 !important;
+    print-color-adjust: exact;
+    -webkit-print-color-adjust: exact;
+  }
+
+  /* subjects */
+  .subjects-list {
+    padding: 0.5rem 0.75rem !important;
+  }
+
+  .subject-row {
+    background: #f8fafc !important;
+    border: 1pt solid #e2e8f0 !important;
+    border-radius: 0 !important;
+    padding: 0.3rem 0.5rem !important;
+    print-color-adjust: exact;
+    -webkit-print-color-adjust: exact;
+  }
+
+  .subject-row .s-code {
+    color: #000000 !important;
+    font-size: 8pt !important;
+  }
+
+  .subject-row .s-name {
+    font-size: 9pt !important;
+    color: #000000 !important;
   }
 }
 
