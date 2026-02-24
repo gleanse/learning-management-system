@@ -1129,6 +1129,42 @@ if ($page === 'update_enrollment_documents' && $method === 'POST') {
 }
 
 // AUTH ROUTES
+
+// forgot password page
+if ($page === 'forgot_password' && $method === 'GET') {
+    $controller = new AuthController();
+    $controller->showForgotPassword();
+    exit();
+}
+
+// ajax: send otp
+if ($page === 'forgot_password_send' && $method === 'POST') {
+    $controller = new AuthController();
+    $controller->sendOtp();
+    exit();
+}
+
+// ajax: verify otp
+if ($page === 'forgot_password_verify' && $method === 'POST') {
+    $controller = new AuthController();
+    $controller->verifyOtp();
+    exit();
+}
+
+// ajax: reset password
+if ($page === 'forgot_password_reset' && $method === 'POST') {
+    $controller = new AuthController();
+    $controller->resetPassword();
+    exit();
+}
+
+// ajax: resend otp
+if ($page === 'forgot_password_resend' && $method === 'POST') {
+    $controller = new AuthController();
+    $controller->resendOtp();
+    exit();
+}
+
 if ($page === 'login' && $method === 'GET') {
     if (isLoggedIn()) {
         if (isTeacher()) {

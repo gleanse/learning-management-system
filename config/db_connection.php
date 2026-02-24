@@ -19,6 +19,7 @@ try {
     $connection = new PDO($dsn, $user, $pass);
     $connection->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
     $connection->setAttribute(PDO::ATTR_DEFAULT_FETCH_MODE, PDO::FETCH_ASSOC);
+    $connection->exec("SET time_zone = '+08:00'");
 } catch (PDOException $e) {
     if (($_SERVER['ENV_APP'] ?? 'dev') === 'prod') {
         http_response_code(503);

@@ -673,3 +673,16 @@ body {
     font-size: 0.95rem;
   }
 }
+
+.forgot-link {
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: var(--primary);
+    text-decoration: none;
+    transition: color 0.2s ease;
+}
+
+.forgot-link:hover {
+    color: #a01410;
+    text-decoration: underline;
+}

@@ -3,16 +3,27 @@
 require_once __DIR__ . '/../models/User.php';
 require_once __DIR__ . '/../models/LoginLockout.php';
 require_once __DIR__ . '/../helpers/auth_helper.php';
+require_once __DIR__ . '/../models/PasswordReset.php';
 
 class AuthController
 {
     private $user_model;
     private $lockout_model;
+    private $reset_model;
 
     public function __construct()
     {
         $this->user_model = new User();
         $this->lockout_model = new LoginLockout();
+        $this->reset_model   = new PasswordReset();
+    }
+
+    private function jsonResponse($data, $status_code = 200)
+    {
+        http_response_code($status_code);
+        header('Content-Type: application/json');
+        echo json_encode($data);
+        exit();
     }
 
     public function showLoginForm()
@@ -276,5 +287,219 @@ class AuthController
             $errors['general'] = 'Registration failed. Please try again.';
             require __DIR__ . '/../views/register.php';
         }
+    }
+
+    // shows the forgot password page (single page, multi-step via js)
+    public function showForgotPassword()
+    {
+        if (isset($_SESSION['user_id'])) {
+            header('Location: index.php?page=dashboard');
+            exit();
+        }
+
+        require __DIR__ . '/../views/forgot_password.php';
+    }
+
+    // step 1 — lookup user by username or email, send otp if valid
+    public function sendOtp()
+    {
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            $this->jsonResponse(['success' => false, 'message' => 'Invalid request.'], 405);
+        }
+
+        $identifier = trim($_POST['identifier'] ?? '');
+
+        if (empty($identifier)) {
+            $this->jsonResponse(['success' => false, 'message' => 'Please enter your username or email.']);
+        }
+
+        $user = $this->reset_model->findUserByIdentifier($identifier);
+
+        // vague message intentional — don't reveal if account exists
+        if (!$user) {
+            $this->jsonResponse(['success' => false, 'message' => 'No active account found with that username or email.']);
+        }
+
+        if (empty($user['email'])) {
+            $this->jsonResponse(['success' => false, 'message' => 'No email address linked to this account. Please contact your administrator.']);
+        }
+
+        if ($this->reset_model->isWithinCooldown($user['id'])) {
+            $remaining = $this->reset_model->getCooldownRemaining($user['id']);
+            $this->jsonResponse([
+                'success'  => false,
+                'message'  => "Please wait {$remaining} second(s) before requesting a new OTP.",
+                'cooldown' => $remaining,
+            ]);
+        }
+
+        $otp  = $this->reset_model->createOrRenewOtp($user['id']);
+        $sent = $this->reset_model->sendOtpEmail(
+            $user['email'],
+            $user['first_name'] . ' ' . $user['last_name'],
+            $otp
+        );
+
+        if (!$sent) {
+            $this->jsonResponse(['success' => false, 'message' => 'Failed to send OTP. Please try again later.']);
+        }
+
+        // store user_id in session to carry across steps — never expose to client
+        $_SESSION['otp_user_id'] = $user['id'];
+
+        $masked = $this->maskEmail($user['email']);
+
+        $this->jsonResponse([
+            'success'      => true,
+            'message'      => "OTP sent to {$masked}. Valid for 15 minutes.",
+            'masked_email' => $masked,
+        ]);
+    }
+
+    // step 2 — verify the 6-digit otp
+    public function verifyOtp()
+    {
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            $this->jsonResponse(['success' => false, 'message' => 'Invalid request.'], 405);
+        }
+
+        $user_id  = $_SESSION['otp_user_id'] ?? null;
+        $otp_code = trim($_POST['otp_code'] ?? '');
+
+        if (!$user_id) {
+            $this->jsonResponse(['success' => false, 'message' => 'Session expired. Please start over.']);
+        }
+
+        if (empty($otp_code) || !preg_match('/^\d{6}$/', $otp_code)) {
+            $this->jsonResponse(['success' => false, 'message' => 'Please enter a valid 6-digit OTP.']);
+        }
+
+        $reset = $this->reset_model->verifyOtp($user_id, $otp_code);
+
+        if (!$reset) {
+            $this->jsonResponse(['success' => false, 'message' => 'Invalid or expired OTP. Please try again.']);
+        }
+
+        $this->reset_model->markOtpUsed($reset['id']);
+
+        // flag session as otp verified then clear otp session
+        $_SESSION['otp_verified']   = true;
+        $_SESSION['otp_reset_user'] = $user_id;
+        unset($_SESSION['otp_user_id']);
+
+        $this->jsonResponse(['success' => true, 'message' => 'OTP verified. Please set your new password.']);
+    }
+
+    // step 3 — reset password after otp verified
+    public function resetPassword()
+    {
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            $this->jsonResponse(['success' => false, 'message' => 'Invalid request.'], 405);
+        }
+
+        if (empty($_SESSION['otp_verified']) || empty($_SESSION['otp_reset_user'])) {
+            $this->jsonResponse(['success' => false, 'message' => 'Session expired. Please start over.']);
+        }
+
+        $user_id          = (int) $_SESSION['otp_reset_user'];
+        $new_password     = $_POST['new_password']     ?? '';
+        $confirm_password = $_POST['confirm_password'] ?? '';
+
+        if (empty($new_password)) {
+            $this->jsonResponse(['success' => false, 'message' => 'Password is required.']);
+        }
+
+        if ($new_password !== $confirm_password) {
+            $this->jsonResponse(['success' => false, 'message' => 'Passwords do not match.']);
+        }
+
+        $strength_errors = $this->validatePasswordStrength($new_password);
+        if (!empty($strength_errors)) {
+            $this->jsonResponse([
+                'success' => false,
+                'message' => 'Password must contain: ' . implode(', ', $strength_errors) . '.',
+            ]);
+        }
+
+        $updated = $this->reset_model->resetPassword($user_id, $new_password);
+
+        if (!$updated) {
+            $this->jsonResponse(['success' => false, 'message' => 'Failed to reset password. Please try again.']);
+        }
+
+        unset($_SESSION['otp_verified'], $_SESSION['otp_reset_user']);
+
+        $this->jsonResponse(['success' => true, 'message' => 'Password reset successfully. You can now log in.']);
+    }
+
+    // resend otp — respects 1 minute cooldown
+    public function resendOtp()
+    {
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            $this->jsonResponse(['success' => false, 'message' => 'Invalid request.'], 405);
+        }
+
+        $user_id = $_SESSION['otp_user_id'] ?? null;
+
+        if (!$user_id) {
+            $this->jsonResponse(['success' => false, 'message' => 'Session expired. Please start over.']);
+        }
+
+        if ($this->reset_model->isWithinCooldown($user_id)) {
+            $remaining = $this->reset_model->getCooldownRemaining($user_id);
+            $this->jsonResponse([
+                'success'  => false,
+                'message'  => "Please wait {$remaining} second(s) before resending.",
+                'cooldown' => $remaining,
+            ]);
+        }
+
+        global $connection;
+        $stmt = $connection->prepare("SELECT id, email, first_name, last_name FROM users WHERE id = ? LIMIT 1");
+        $stmt->execute([$user_id]);
+        $user = $stmt->fetch();
+
+        if (!$user || empty($user['email'])) {
+            $this->jsonResponse(['success' => false, 'message' => 'Unable to resend OTP. Please start over.']);
+        }
+
+        $otp  = $this->reset_model->createOrRenewOtp($user_id);
+        $sent = $this->reset_model->sendOtpEmail(
+            $user['email'],
+            $user['first_name'] . ' ' . $user['last_name'],
+            $otp
+        );
+
+        if (!$sent) {
+            $this->jsonResponse(['success' => false, 'message' => 'Failed to resend OTP. Please try again later.']);
+        }
+
+        $masked = $this->maskEmail($user['email']);
+
+        $this->jsonResponse([
+            'success' => true,
+            'message' => "OTP resent to {$masked}.",
+        ]);
+    }
+
+    // masks email for display — jo***@gmail.com
+    private function maskEmail($email)
+    {
+        [$local, $domain] = explode('@', $email);
+        $visible = substr($local, 0, 2);
+        return $visible . str_repeat('*', max(3, strlen($local) - 2)) . '@' . $domain;
+    }
+
+    private function validatePasswordStrength($password)
+    {
+        $errors = [];
+
+        if (strlen($password) < 8)             $errors[] = 'At least 8 characters';
+        if (!preg_match('/[A-Z]/', $password))  $errors[] = 'At least one uppercase letter';
+        if (!preg_match('/[a-z]/', $password))  $errors[] = 'At least one lowercase letter';
+        if (!preg_match('/[0-9]/', $password))  $errors[] = 'At least one number';
+        if (!preg_match('/[\W_]/', $password))  $errors[] = 'At least one special character';
+
+        return $errors;
     }
 }

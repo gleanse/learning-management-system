@@ -36,6 +36,8 @@ ini_set('session.gc_maxlifetime', 18000);
 ini_set('session.gc_probability', 5);
 ini_set('session.gc_divisor', 100);
 
+date_default_timezone_set('Asia/Manila');
+
 session_start();
 
 // check if user is not logged in but has remember_token cookie

@@ -117,11 +117,16 @@
                                     </div>
 
                                     <!-- REMEMBER me checkbox -->
-                                    <div class="form-check mb-4">
-                                        <input class="form-check-input" type="checkbox" name="remember_me" id="remember_me">
-                                        <label class="form-check-label" for="remember_me">
-                                            Remember me
-                                        </label>
+                                    <div class="form-check mb-4 d-flex align-items-center justify-content-between">
+                                        <div>
+                                            <input class="form-check-input" type="checkbox" name="remember_me" id="remember_me">
+                                            <label class="form-check-label" for="remember_me">
+                                                Remember me
+                                            </label>
+                                        </div>
+                                        <a href="index.php?page=forgot_password" class="forgot-link">
+                                            <i class="bi bi-shield-lock me-1"></i>Forgot Password?
+                                        </a>
                                     </div>
 
                                     <!-- SUBMIT button -->

@@ -72,16 +72,13 @@ class User
     }
 
     // REMEMBER ME FEATURE MODEL METHODS
-    public function saveRememberToken($userId, $tokenHash, $expiresAt)
+    public function saveRememberToken($userId, $tokenHash)
     {
-        $stmt = $this->connection->prepare("INSERT INTO remember_tokens (user_id, token_hash, expires_at) 
-                VALUES (?, ?, ?)");
-
-        return $stmt->execute([
-            $userId,
-            $tokenHash,
-            $expiresAt,
-        ]);
+        $stmt = $this->connection->prepare("
+        INSERT INTO remember_tokens (user_id, token_hash, expires_at)
+        VALUES (?, ?, DATE_ADD(NOW(), INTERVAL 30 DAY))
+    ");
+        return $stmt->execute([$userId, $tokenHash]);
     }
 
     public function getUserByRememberToken($tokenHash)
