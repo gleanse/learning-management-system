@@ -9,10 +9,13 @@
     <link rel="stylesheet" href="bootstrap/css/bootstrap-icons.css">
     <link rel="stylesheet" href="css/main.css">
     <link rel="stylesheet" href="css/shared/sidenav.css">
+    <link rel="stylesheet" href="css/shared/top-navbar.css">
     <link rel="stylesheet" href="css/pages/section_management.css">
 </head>
 
 <body>
+    <div class="toast-container position-fixed top-0 end-0 p-3" style="z-index:1100;" id="toastContainer"></div>
+
     <div class="d-flex">
         <!-- sidebar -->
         <div class="sidenav">
@@ -78,6 +81,11 @@
                     </a>
                 </li>
                 <li class="nav-item">
+                    <a class="nav-link" href="index.php?page=announcements">
+                        <i class="bi bi-megaphone-fill"></i><span>Announcements</span>
+                    </a>
+                </li>
+                <li class="nav-item">
                     <a class="nav-link" href="index.php?page=logout">
                         <i class="bi bi-box-arrow-right"></i>
                         <span>Logout</span>
@@ -88,35 +96,7 @@
 
         <!-- main content -->
         <div class="main-content flex-grow-1">
-            <!-- top navbar -->
-            <nav class="navbar top-navbar">
-                <div class="container-fluid">
-                    <div class="navbar-brand mb-0">
-                        <div class="page-icon">
-                            <i class="bi bi-eye-fill"></i>
-                        </div>
-                        <span>View Section</span>
-                    </div>
-                    <div class="user-info-wrapper">
-                        <div class="user-details">
-                            <span class="user-name">
-                                <?php echo htmlspecialchars($_SESSION['user_firstname'] . ' ' . $_SESSION['user_lastname']); ?>
-                            </span>
-                            <span class="user-role">
-                                <i class="bi bi-person-badge-fill"></i>
-                                <?php echo ucfirst(htmlspecialchars($_SESSION['user_role'])); ?>
-                            </span>
-                        </div>
-                        <div class="user-avatar">
-                            <?php
-                            $firstname = $_SESSION['user_firstname'] ?? 'A';
-                            $lastname = $_SESSION['user_lastname'] ?? 'U';
-                            echo strtoupper(substr($firstname, 0, 1) . substr($lastname, 0, 1));
-                            ?>
-                        </div>
-                    </div>
-                </div>
-            </nav>
+            <?php require __DIR__ . '/../shared/top_navbar.php'; ?>
 
             <!-- page content -->
             <div class="container-fluid p-4">
@@ -448,7 +428,7 @@
             });
         });
     </script>
-
+    <script src="js/shared/top-navbar.js"></script>
 </body>
 
 </html>

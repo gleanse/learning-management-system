@@ -9,6 +9,7 @@
     <link rel="stylesheet" href="bootstrap/css/bootstrap-icons.css">
     <link rel="stylesheet" href="css/main.css">
     <link rel="stylesheet" href="css/shared/sidenav.css">
+    <link rel="stylesheet" href="css/shared/top-navbar.css">
     <link rel="stylesheet" href="css/pages/payment_process.css">
 </head>
 
@@ -66,35 +67,7 @@
 
         <!-- main content -->
         <div class="main-content flex-grow-1">
-            <!-- top navbar -->
-            <nav class="navbar top-navbar">
-                <div class="container-fluid">
-                    <div class="navbar-brand mb-0">
-                        <div class="page-icon">
-                            <i class="bi bi-cash-stack"></i>
-                        </div>
-                        <span>Process Payment</span>
-                    </div>
-                    <div class="user-info-wrapper">
-                        <div class="user-details">
-                            <span class="user-name">
-                                <?php echo htmlspecialchars($_SESSION['user_firstname'] . ' ' . $_SESSION['user_lastname']); ?>
-                            </span>
-                            <span class="user-role">
-                                <i class="bi bi-person-badge-fill"></i>
-                                <?php echo ucfirst(htmlspecialchars($_SESSION['user_role'])); ?>
-                            </span>
-                        </div>
-                        <div class="user-avatar">
-                            <?php
-                            $firstname = $_SESSION['user_firstname'] ?? 'R';
-                            $lastname  = $_SESSION['user_lastname']  ?? 'U';
-                            echo strtoupper(substr($firstname, 0, 1) . substr($lastname, 0, 1));
-                            ?>
-                        </div>
-                    </div>
-                </div>
-            </nav>
+           <?php require __DIR__ . '/../shared/top_navbar.php'; ?>
 
             <!-- page content -->
             <div class="container-fluid p-4">
@@ -543,6 +516,7 @@
             <?php endif; ?>
         });
     </script>
+    <script src="js/shared/top-navbar.js"></script>
 
 </body>
 

@@ -9,6 +9,7 @@
     <link rel="stylesheet" href="bootstrap/css/bootstrap-icons.css">
     <link rel="stylesheet" href="css/main.css">
     <link rel="stylesheet" href="css/shared/sidenav.css">
+    <link rel="stylesheet" href="css/shared/top-navbar.css">
     <link rel="stylesheet" href="css/pages/student_profiles.css">
 </head>
 
@@ -62,23 +63,7 @@
         </div>
 
         <div class="main-content flex-grow-1">
-            <nav class="navbar top-navbar">
-                <div class="container-fluid">
-                    <div class="navbar-brand mb-0">
-                        <div class="page-icon"><i class="bi bi-person-lines-fill"></i></div>
-                        <span>View Student Profile</span>
-                    </div>
-                    <div class="user-info-wrapper">
-                        <div class="user-details">
-                            <span class="user-name"><?= htmlspecialchars($_SESSION['user_firstname'] . ' ' . $_SESSION['user_lastname']) ?></span>
-                            <span class="user-role"><i class="bi bi-person-badge-fill"></i> <?= ucfirst($_SESSION['user_role']) ?></span>
-                        </div>
-                        <div class="user-avatar">
-                            <?php echo strtoupper(substr($_SESSION['user_firstname'] ?? 'R', 0, 1) . substr($_SESSION['user_lastname'] ?? 'G', 0, 1)); ?>
-                        </div>
-                    </div>
-                </div>
-            </nav>
+            <?php require __DIR__ . '/../shared/top_navbar.php'; ?>
 
             <div class="container-fluid p-4">
                 <nav aria-label="breadcrumb">
@@ -449,6 +434,7 @@
             });
         })();
     </script>
+    <script src="js/shared/top-navbar.js"></script>
 </body>
 
 </html>

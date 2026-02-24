@@ -17,6 +17,8 @@ require_once __DIR__ . '/controllers/PaymentController.php';
 require_once __DIR__ . '/controllers/AcademicPeriodController.php';
 require_once __DIR__ . '/controllers/StudentProfileController.php';
 require_once __DIR__ . '/controllers/FeeConfigController.php';
+require_once __DIR__ . '/controllers/AnnouncementController.php';
+require_once __DIR__ . '/controllers/ChangePasswordController.php';
 
 $page = $_GET['page'] ?? 'login';
 $method = $_SERVER['REQUEST_METHOD'];
@@ -50,6 +52,140 @@ function isSuperAdmin()
 function isRegistrar()
 {
     return isset($_SESSION['user_role']) && $_SESSION['user_role'] === 'registrar';
+}
+
+// CHANGE PASSWORD ROUTES (all logged-in roles)
+// ajax: change password
+if ($page === 'ajax_change_password' && $method === 'POST') {
+    if (!isLoggedIn()) {
+        header('Location: index.php?page=login');
+        exit();
+    }
+    $controller = new ChangePasswordController();
+    $controller->ajaxChangePassword();
+    exit();
+}
+
+// ANNOUNCEMENT ROUTES
+// admin: announcements management page
+if ($page === 'announcements' && $method === 'GET') {
+    if (!isLoggedIn() || (!isAdmin() && !isSuperAdmin())) {
+        header('Location: index.php?page=login');
+        exit();
+    }
+    $controller = new AnnouncementController();
+    $controller->showAnnouncementsPage();
+    exit();
+}
+
+// admin ajax: save draft
+if ($page === 'ajax_announcement_save_draft' && $method === 'POST') {
+    if (!isLoggedIn() || (!isAdmin() && !isSuperAdmin())) {
+        header('Location: index.php?page=login');
+        exit();
+    }
+    $controller = new AnnouncementController();
+    $controller->ajaxSaveDraft();
+    exit();
+}
+
+// admin ajax: publish
+if ($page === 'ajax_announcement_publish' && $method === 'POST') {
+    if (!isLoggedIn() || (!isAdmin() && !isSuperAdmin())) {
+        header('Location: index.php?page=login');
+        exit();
+    }
+    $controller = new AnnouncementController();
+    $controller->ajaxPublish();
+    exit();
+}
+
+// admin ajax: delete draft
+if ($page === 'ajax_announcement_delete_draft' && $method === 'POST') {
+    if (!isLoggedIn() || (!isAdmin() && !isSuperAdmin())) {
+        header('Location: index.php?page=login');
+        exit();
+    }
+    $controller = new AnnouncementController();
+    $controller->ajaxDeleteDraft();
+    exit();
+}
+
+// admin ajax: get single announcement for edit modal
+if ($page === 'ajax_get_announcement' && $method === 'GET') {
+    if (!isLoggedIn() || (!isAdmin() && !isSuperAdmin())) {
+        header('Location: index.php?page=login');
+        exit();
+    }
+    $controller = new AnnouncementController();
+    $controller->ajaxGetAnnouncement();
+    exit();
+}
+
+// all users ajax: get unread count for bell badge
+if ($page === 'ajax_announcement_unread_count' && $method === 'GET') {
+    if (!isLoggedIn()) {
+        header('Location: index.php?page=login');
+        exit();
+    }
+    $controller = new AnnouncementController();
+    $controller->ajaxGetUnreadCount();
+    exit();
+}
+
+// all users ajax: get recent announcements for bell dropdown
+if ($page === 'ajax_announcement_recent' && $method === 'GET') {
+    if (!isLoggedIn()) {
+        header('Location: index.php?page=login');
+        exit();
+    }
+    $controller = new AnnouncementController();
+    $controller->ajaxGetRecent();
+    exit();
+}
+
+// all users ajax: mark one announcement as read
+if ($page === 'ajax_announcement_mark_read' && $method === 'POST') {
+    if (!isLoggedIn()) {
+        header('Location: index.php?page=login');
+        exit();
+    }
+    $controller = new AnnouncementController();
+    $controller->ajaxMarkRead();
+    exit();
+}
+
+// all users ajax: mark all announcements as read
+if ($page === 'ajax_announcement_mark_all_read' && $method === 'POST') {
+    if (!isLoggedIn()) {
+        header('Location: index.php?page=login');
+        exit();
+    }
+    $controller = new AnnouncementController();
+    $controller->ajaxMarkAllRead();
+    exit();
+}
+
+// admin ajax: delete published announcement
+if ($page === 'ajax_announcement_delete_published' && $method === 'POST') {
+    if (!isLoggedIn() || (!isAdmin() && !isSuperAdmin())) {
+        header('Location: index.php?page=login');
+        exit();
+    }
+    $controller = new AnnouncementController();
+    $controller->ajaxDeletePublished();
+    exit();
+}
+
+// admin ajax: update published announcement
+if ($page === 'ajax_announcement_update_published' && $method === 'POST') {
+    if (!isLoggedIn() || (!isAdmin() && !isSuperAdmin())) {
+        header('Location: index.php?page=login');
+        exit();
+    }
+    $controller = new AnnouncementController();
+    $controller->ajaxUpdatePublished();
+    exit();
 }
 
 // ADMIN dashboard
