@@ -133,6 +133,61 @@ if ($page === 'ajax_graduate_students' && $method === 'POST') {
     exit();
 }
 
+// ajax: undo last academic period advancement
+if ($page === 'ajax_academic_period_undo' && $method === 'POST') {
+    if (!isLoggedIn() || (!isAdmin() && !isSuperAdmin())) {
+        header('Location: index.php?page=login');
+        exit();
+    }
+    $controller = new AcademicPeriodController();
+    $controller->ajaxUndo();
+    exit();
+}
+
+// ajax: redo a previously undone advancement
+if ($page === 'ajax_academic_period_redo' && $method === 'POST') {
+    if (!isLoggedIn() || (!isAdmin() && !isSuperAdmin())) {
+        header('Location: index.php?page=login');
+        exit();
+    }
+    $controller = new AcademicPeriodController();
+    $controller->ajaxRedo();
+    exit();
+}
+
+// ajax: toggle lock on a single grading period
+if ($page === 'ajax_toggle_grading_lock' && $method === 'POST') {
+    if (!isLoggedIn() || (!isAdmin() && !isSuperAdmin())) {
+        header('Location: index.php?page=login');
+        exit();
+    }
+    $controller = new AcademicPeriodController();
+    $controller->ajaxToggleGradingLock();
+    exit();
+}
+
+// ajax: lock all grading periods at once
+if ($page === 'ajax_lock_all_grading' && $method === 'POST') {
+    if (!isLoggedIn() || (!isAdmin() && !isSuperAdmin())) {
+        header('Location: index.php?page=login');
+        exit();
+    }
+    $controller = new AcademicPeriodController();
+    $controller->ajaxLockAllGrading();
+    exit();
+}
+
+// ajax: save grading period deadlines
+if ($page === 'ajax_save_grading_periods' && $method === 'POST') {
+    if (!isLoggedIn() || (!isAdmin() && !isSuperAdmin())) {
+        header('Location: index.php?page=login');
+        exit();
+    }
+    $controller = new AcademicPeriodController();
+    $controller->ajaxSaveGradingPeriods();
+    exit();
+}
+
 // FEE CONFIG ROUTES (admin only)
 // fee config page
 if ($page === 'fee_config' && $method === 'GET') {

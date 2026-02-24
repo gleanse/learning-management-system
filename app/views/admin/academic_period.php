@@ -245,7 +245,7 @@
                                 </div>
                                 <div class="card-body">
                                     <p class="text-muted mb-3" style="font-size: 0.875rem;">
-                                        no academic period has been set up yet. initialize the first semester to begin tracking enrollment payments.
+                                        No academic period has been set up yet. Initialize the first semester to begin tracking enrollment payments.
                                     </p>
 
                                     <?php if (!empty($errors['general'])): ?>
@@ -306,7 +306,7 @@
                             </div>
 
                         <?php else: ?>
-                            <!-- current period info + advance action -->
+                            <!-- current period info + advance/undo/redo actions -->
                             <div class="card action-card mb-4">
                                 <div class="card-header">
                                     <h5 class="mb-0">
@@ -362,11 +362,11 @@
                                             </div>
                                         <?php endif; ?>
 
-                                        <!-- advance button -->
+                                        <!-- advance + undo/redo -->
                                         <div class="advance-section">
                                             <div class="advance-preview mb-3">
                                                 <span class="advance-label">next period will be:</span>
-                                                <span class="advance-target">
+                                                <span class="advance-target" id="advanceTargetLabel">
                                                     <i class="bi bi-arrow-right-circle-fill"></i>
                                                     <?= htmlspecialchars($next_period) ?>
                                                 </span>
@@ -379,16 +379,30 @@
                                                 </div>
                                             <?php endif; ?>
 
-                                            <form action="index.php?page=academic_period_advance" method="POST">
-                                                <button type="button" class="btn btn-primary btn-action w-100" id="advanceBtn">
-                                                    <i class="bi bi-skip-forward-fill"></i>
-                                                    Advance to <?= htmlspecialchars($next_period) ?>
+                                            <button type="button" class="btn btn-primary btn-action w-100 mb-2" id="advanceBtn">
+                                                <i class="bi bi-skip-forward-fill"></i>
+                                                Advance to <?= htmlspecialchars($next_period) ?>
+                                            </button>
+
+                                            <!-- undo / redo row -->
+                                            <div class="d-flex gap-2 mt-2">
+                                                <button type="button" class="btn btn-outline-secondary btn-sm flex-fill" id="undoBtn">
+                                                    <i class="bi bi-arrow-counterclockwise"></i>
+                                                    Undo Advance
                                                 </button>
-                                            </form>
+                                                <button type="button" class="btn btn-outline-primary btn-sm flex-fill" id="redoBtn"
+                                                    <?= !$can_redo ? 'disabled' : '' ?>>
+                                                    <i class="bi bi-arrow-clockwise"></i>
+                                                    Redo
+                                                </button>
+                                            </div>
+                                            <p class="text-muted mt-2 mb-0" style="font-size: 0.75rem;">
+                                                <i class="bi bi-info-circle me-1"></i>
+                                                Undo is only available within the same school year and if no grades have been submitted yet.
+                                            </p>
                                         </div>
 
                                     <?php else: ?>
-                                        <!-- no active period but records exist — edge case -->
                                         <div class="empty-state py-3">
                                             <div class="empty-state-icon">
                                                 <i class="bi bi-calendar-x"></i>
@@ -421,7 +435,7 @@
                                     </div>
                                 <?php else: ?>
                                     <div class="history-timeline" id="historyTimeline">
-                                        <?php foreach ($history as $index => $record): ?>
+                                        <?php foreach ($history as $record): ?>
                                             <div class="history-item <?= $record['is_active'] ? 'history-item-active' : '' ?>">
                                                 <div class="history-dot">
                                                     <?php if ($record['is_active']): ?>
@@ -470,6 +484,173 @@
                         </div>
                     </div>
                 </div>
+
+                <!-- =====================================================
+                     GRADING PERIODS SECTION — only shows when period is active
+                     ===================================================== -->
+                <?php if ($current && !empty($grading_periods)): ?>
+                    <div class="row mt-4" id="gradingPeriodsSection">
+                        <div class="col-12">
+                            <div class="card grading-card">
+                                <div class="card-header d-flex align-items-center justify-content-between">
+                                    <h5 class="mb-0">
+                                        <i class="bi bi-lock-fill"></i>
+                                        Grading Period Deadlines &amp; Locks
+                                    </h5>
+                                    <div class="d-flex align-items-center gap-2">
+                                        <span class="badge bg-light text-dark border" id="gradingStatusBadge">
+                                            <?php
+                                            $locked_count = count(array_filter($grading_periods, fn($p) => $p['is_locked']));
+                                            echo $locked_count . ' / ' . count($grading_periods) . ' locked';
+                                            ?>
+                                        </span>
+                                        <button type="button" class="btn btn-sm btn-warning" id="lockAllBtn">
+                                            <i class="bi bi-lock-fill"></i>
+                                            Lock All
+                                        </button>
+                                    </div>
+                                </div>
+                                <div class="card-body">
+                                    <p class="text-muted mb-3" style="font-size: 0.875rem;">
+                                        Set deadlines for each grading period and lock them to prevent further grade submissions. All four periods must be locked before advancing.
+                                    </p>
+
+                                    <div class="table-responsive">
+                                        <table class="table grading-table mb-3" id="gradingPeriodsTable">
+                                            <thead>
+                                                <tr>
+                                                    <th>Grading Period</th>
+                                                    <th>Deadline</th>
+                                                    <th>Status</th>
+                                                    <th class="text-center">Lock</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody id="gradingPeriodsBody">
+                                                <?php foreach ($grading_periods as $period): ?>
+                                                    <tr class="grading-period-row <?= $period['lock_status'] === 'locked' ? 'row-locked' : ($period['lock_status'] === 'expired' ? 'row-expired' : '') ?>"
+                                                        data-period-id="<?= $period['period_id'] ?>">
+                                                        <td class="fw-semibold">
+                                                            <i class="bi bi-flag-fill me-2 text-primary"></i>
+                                                            <?= htmlspecialchars($period['grading_period']) ?>
+                                                        </td>
+                                                        <td>
+                                                            <?php if ($period['deadline_date']): ?>
+                                                                <span class="deadline-display <?= $period['lock_status'] === 'expired' ? 'text-danger' : '' ?>">
+                                                                    <?= date('M d, Y', strtotime($period['deadline_date'])) ?>
+                                                                </span>
+                                                            <?php else: ?>
+                                                                <span class="text-muted fst-italic">not set</span>
+                                                            <?php endif; ?>
+                                                        </td>
+                                                        <td>
+                                                            <?php if ($period['lock_status'] === 'locked'): ?>
+                                                                <span class="grading-badge grading-badge-locked">
+                                                                    <i class="bi bi-lock-fill"></i> locked
+                                                                </span>
+                                                            <?php elseif ($period['lock_status'] === 'expired'): ?>
+                                                                <span class="grading-badge grading-badge-expired">
+                                                                    <i class="bi bi-clock-history"></i> expired
+                                                                </span>
+                                                            <?php else: ?>
+                                                                <span class="grading-badge grading-badge-open">
+                                                                    <i class="bi bi-unlock-fill"></i> open
+                                                                </span>
+                                                            <?php endif; ?>
+                                                        </td>
+                                                        <td class="text-center">
+                                                            <div class="form-check form-switch d-flex justify-content-center mb-0">
+                                                                <input
+                                                                    class="form-check-input grading-lock-toggle"
+                                                                    type="checkbox"
+                                                                    role="switch"
+                                                                    data-period-id="<?= $period['period_id'] ?>"
+                                                                    <?= $period['is_locked'] ? 'checked' : '' ?>>
+                                                            </div>
+                                                        </td>
+                                                    </tr>
+                                                <?php endforeach; ?>
+                                            </tbody>
+                                        </table>
+                                    </div>
+
+                                    <!-- deadline editor -->
+                                    <div class="deadline-editor mt-3">
+                                        <div class="deadline-editor-header mb-3">
+                                            <h6 class="mb-0">
+                                                <i class="bi bi-pencil-fill me-2"></i>
+                                                Set / Update Deadlines
+                                            </h6>
+                                        </div>
+                                        <div class="row g-3">
+                                            <?php
+                                            $deadline_map = [];
+                                            foreach ($grading_periods as $p) {
+                                                $deadline_map[strtolower($p['grading_period'])] = $p['deadline_date'];
+                                            }
+                                            $period_labels = ['prelim' => 'Prelim', 'midterm' => 'Midterm', 'prefinal' => 'Prefinal', 'final' => 'Final'];
+                                            ?>
+                                            <?php foreach ($period_labels as $key => $label): ?>
+                                                <div class="col-md-3 col-sm-6">
+                                                    <label class="form-label" style="font-size: 0.813rem; font-weight: 600;">
+                                                        <?= $label ?>
+                                                    </label>
+                                                    <input
+                                                        type="date"
+                                                        class="form-control form-control-sm"
+                                                        name="deadline_<?= $key ?>"
+                                                        id="deadline_<?= $key ?>"
+                                                        value="<?= htmlspecialchars($deadline_map[$key] ?? '') ?>">
+                                                </div>
+                                            <?php endforeach; ?>
+                                        </div>
+                                        <div class="mt-3">
+                                            <button type="button" class="btn btn-primary btn-sm" id="saveDeadlinesBtn">
+                                                <i class="bi bi-floppy-fill"></i>
+                                                Save Deadlines
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                <?php elseif ($current && empty($grading_periods)): ?>
+                    <!-- period exists but no grading periods set up yet — show deadline setup only -->
+                    <div class="row mt-4" id="gradingPeriodsSection">
+                        <div class="col-12">
+                            <div class="card grading-card">
+                                <div class="card-header">
+                                    <h5 class="mb-0">
+                                        <i class="bi bi-lock-fill"></i>
+                                        Grading Period Deadlines &amp; Locks
+                                    </h5>
+                                </div>
+                                <div class="card-body">
+                                    <p class="text-muted mb-3" style="font-size: 0.875rem;">
+                                        No grading periods have been configured yet for this semester. Set deadlines below to create them.
+                                    </p>
+                                    <div class="row g-3">
+                                        <?php foreach (['prelim' => 'Prelim', 'midterm' => 'Midterm', 'prefinal' => 'Prefinal', 'final' => 'Final'] as $key => $label): ?>
+                                            <div class="col-md-3 col-sm-6">
+                                                <label class="form-label" style="font-size: 0.813rem; font-weight: 600;">
+                                                    <?= $label ?>
+                                                </label>
+                                                <input type="date" class="form-control form-control-sm"
+                                                    name="deadline_<?= $key ?>" id="deadline_<?= $key ?>">
+                                            </div>
+                                        <?php endforeach; ?>
+                                    </div>
+                                    <div class="mt-3">
+                                        <button type="button" class="btn btn-primary btn-sm" id="saveDeadlinesBtn">
+                                            <i class="bi bi-floppy-fill"></i>
+                                            Save Deadlines
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                <?php endif; ?>
 
                 <!-- =====================================================
                      GRADUATION SECTION — only shows during second semester
@@ -585,7 +766,7 @@
                         <span id="advanceModalNextLabel"><?php if ($next_period): ?><?= htmlspecialchars($next_period) ?><?php endif; ?></span>
                     </p>
                     <p class="mb-0 text-muted" style="font-size: 0.875rem;">
-                        This will deactivate the current period and create payment records for all active students with a valid fee configuration. This action cannot be undone.
+                        This will deactivate the current period and create payment records for all active students with a valid fee configuration. All grading periods must be locked before advancing.
                     </p>
                 </div>
                 <div class="modal-footer">
@@ -632,6 +813,75 @@
         </div>
     </div>
 
+    <!-- undo confirmation modal -->
+    <div class="modal fade" id="undoConfirmModal" tabindex="-1">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">
+                        <i class="bi bi-arrow-counterclockwise"></i>
+                        Confirm Undo Advance
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <p class="mb-3 text-muted" style="font-size: 0.875rem;">
+                        This will revert the academic period to the previous semester. The following will happen:
+                    </p>
+                    <ul class="mb-3" style="font-size: 0.875rem;">
+                        <li>Pending payment records for the current period will be deleted.</li>
+                        <li>The previous period will be reactivated.</li>
+                        <li>Grading periods of the previous semester will be unlocked.</li>
+                    </ul>
+                    <div class="alert alert-warning mb-0" style="font-size: 0.813rem;">
+                        <i class="bi bi-exclamation-triangle-fill me-2"></i>
+                        Undo is blocked if grades have already been submitted or if the school year has changed.
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                        <i class="bi bi-x-circle"></i>
+                        Cancel
+                    </button>
+                    <button type="button" class="btn btn-warning" id="confirmUndoBtn">
+                        <i class="bi bi-arrow-counterclockwise"></i>
+                        Confirm Undo
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- redo confirmation modal -->
+    <div class="modal fade" id="redoConfirmModal" tabindex="-1">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">
+                        <i class="bi bi-arrow-clockwise"></i>
+                        Confirm Redo
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <p class="mb-0 text-muted" style="font-size: 0.875rem;">
+                        This will redo the previously undone advancement. Payment records will be recreated for students that don't have one yet. All grading periods must be locked before redoing.
+                    </p>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                        <i class="bi bi-x-circle"></i>
+                        Cancel
+                    </button>
+                    <button type="button" class="btn btn-primary" id="confirmRedoBtn">
+                        <i class="bi bi-arrow-clockwise"></i>
+                        Confirm Redo
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- graduation confirmation modal -->
     <div class="modal fade" id="graduateConfirmModal" tabindex="-1">
         <div class="modal-dialog modal-dialog-centered">
@@ -669,7 +919,8 @@
     <script>
         const academicPeriodConfig = {
             success: <?= !empty($success) ? json_encode($success['message']) : 'null' ?>,
-            error: <?= !empty($errors['general']) ? json_encode($errors['general']) : 'null' ?>
+            error: <?= !empty($errors['general']) ? json_encode($errors['general']) : 'null' ?>,
+            canRedo: <?= json_encode($can_redo) ?>
         };
     </script>
     <script src="js/academic-period.js"></script>

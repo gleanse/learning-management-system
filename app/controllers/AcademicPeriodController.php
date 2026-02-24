@@ -32,31 +32,35 @@ class AcademicPeriodController
     {
         $this->requireAdmin();
 
-        $current        = $this->academic_model->getCurrentPeriod();
-        $has_period     = $this->academic_model->hasPeriod();
-        $history        = $this->academic_model->getHistory(10);
-        $active_count   = $this->academic_model->getActiveStudentCount();
-        $errors         = $_SESSION['academic_errors']  ?? [];
-        $success        = $_SESSION['academic_success'] ?? null;
+        $current      = $this->academic_model->getCurrentPeriod();
+        $has_period   = $this->academic_model->hasPeriod();
+        $history      = $this->academic_model->getHistory(10);
+        $active_count = $this->academic_model->getActiveStudentCount();
+        $errors       = $_SESSION['academic_errors']  ?? [];
+        $success      = $_SESSION['academic_success'] ?? null;
 
         unset($_SESSION['academic_errors'], $_SESSION['academic_success']);
 
-        // stats for current period
         $period_count   = 0;
         $missing_config = 0;
+        $grading_periods = [];
+        $can_redo        = false;
 
         if ($current) {
-            $period_count   = $this->academic_model->getPaidStudentCount($current['school_year'], $current['semester']);
-            $missing_config = $this->academic_model->getStudentsMissingFeeConfig($current['school_year']);
+            $period_count    = $this->academic_model->getPaidStudentCount($current['school_year'], $current['semester']);
+            $missing_config  = $this->academic_model->getStudentsMissingFeeConfig($current['school_year']);
+            $grading_periods = $this->academic_model->getGradingPeriodSummary($current['school_year'], $current['semester']);
+            $can_redo        = $this->academic_model->canRedo();
+
+            // auto lock any expired grading periods on dashboard load
+            $this->academic_model->autoLockExpiredPeriods();
         }
 
-        // resolve what next period would be for the advance button label
         $next_period = null;
         if ($current) {
             $next_period = $this->resolveNextPeriodLabel($current['school_year'], $current['semester']);
         }
 
-        // fetch graduatable students only during second semester
         $graduatable_students = [];
         if ($current && $current['semester'] === 'Second') {
             $graduatable_students = $this->academic_model->getGraduatableStudents();
@@ -74,7 +78,6 @@ class AcademicPeriodController
             $this->jsonResponse(['success' => false, 'message' => 'Invalid request method.'], 405);
         }
 
-        // block if period already exists
         if ($this->academic_model->hasPeriod()) {
             $this->jsonResponse(['success' => false, 'message' => 'A period is already initialized.'], 400);
         }
@@ -86,7 +89,6 @@ class AcademicPeriodController
         if (empty($school_year)) $errors['school_year'] = 'School year is required.';
         if (empty($semester))    $errors['semester']    = 'Semester is required.';
 
-        // validate school year format YYYY-YYYY
         if (!empty($school_year) && !preg_match('/^\d{4}-\d{4}$/', $school_year)) {
             $errors['school_year'] = 'School year must be in YYYY-YYYY format.';
         }
@@ -95,31 +97,17 @@ class AcademicPeriodController
             $this->jsonResponse(['success' => false, 'errors' => $errors], 422);
         }
 
-        $result = $this->academic_model->initializePeriod($school_year, $semester, $_SESSION['user_id']);
+        $deadlines = $this->extractDeadlines();
+        $result    = $this->academic_model->initializePeriod($school_year, $semester, $_SESSION['user_id'], $deadlines);
 
         if (!$result['success']) {
             $this->jsonResponse(['success' => false, 'message' => 'Failed to initialize period. Please try again.'], 500);
         }
 
-        // build fresh data to return for ui update
-        $current        = $this->academic_model->getCurrentPeriod();
-        $active_count   = $this->academic_model->getActiveStudentCount();
-        $period_count   = $this->academic_model->getPaidStudentCount($school_year, $semester);
-        $missing_config = $this->academic_model->getStudentsMissingFeeConfig($school_year);
-        $history        = $this->academic_model->getHistory(10);
-        $next_period    = $this->resolveNextPeriodLabel($school_year, $semester);
-
-        $this->jsonResponse([
-            'success'        => true,
-            'message'        => "Period initialized: {$semester} Semester {$school_year}. {$result['created']} payment record(s) created.",
-            'created'        => $result['created'],
-            'current'        => $current,
-            'active_count'   => $active_count,
-            'period_count'   => $period_count,
-            'missing_config' => $missing_config,
-            'next_period'    => $next_period,
-            'history'        => $history,
-        ]);
+        $this->jsonResponse(array_merge(
+            ['success' => true, 'message' => "Period initialized: {$semester} Semester {$school_year}. {$result['created']} payment record(s) created."],
+            $this->buildCurrentPeriodPayload($school_year, $semester)
+        ));
     }
 
     // ajax: advance to the next semester or school year
@@ -135,47 +123,220 @@ class AcademicPeriodController
             $this->jsonResponse(['success' => false, 'message' => 'No active period found. Please initialize first.'], 400);
         }
 
-        $result = $this->academic_model->advancePeriod($_SESSION['user_id']);
+        $current = $this->academic_model->getCurrentPeriod();
+
+        // grading period lock check — warn before allowing advance
+        if (!$this->academic_model->allGradingPeriodsLocked($current['school_year'], $current['semester'])) {
+            $this->jsonResponse([
+                'success' => false,
+                'message' => 'All grading periods must be locked before advancing to the next semester.',
+            ], 422);
+        }
+
+        $deadlines = $this->extractDeadlines();
+        $result    = $this->academic_model->advancePeriod($_SESSION['user_id'], $deadlines);
 
         if (!$result['success']) {
-            $this->jsonResponse(['success' => false, 'message' => 'Failed to advance period. Please try again.'], 500);
+            $this->jsonResponse(['success' => false, 'message' => $result['error'] ?? 'Failed to advance period. Please try again.'], 500);
         }
 
         $next = $result['next'];
 
-        // build fresh data to return for ui update
-        $current        = $this->academic_model->getCurrentPeriod();
-        $active_count   = $this->academic_model->getActiveStudentCount();
-        $period_count   = $this->academic_model->getPaidStudentCount($next['school_year'], $next['semester']);
-        $missing_config = $this->academic_model->getStudentsMissingFeeConfig($next['school_year']);
-        $history        = $this->academic_model->getHistory(10);
-        $next_period    = $this->resolveNextPeriodLabel($next['school_year'], $next['semester']);
+        $this->jsonResponse(array_merge(
+            [
+                'success' => true,
+                'message' => "Advanced to {$next['semester']} Semester {$next['school_year']}. {$result['created']} payment record(s) created.",
+                'created' => $result['created'],
+            ],
+            $this->buildCurrentPeriodPayload($next['school_year'], $next['semester'])
+        ));
+    }
+
+    // ajax: undo the last period advancement
+    public function ajaxUndo()
+    {
+        $this->requireAdmin();
+
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            $this->jsonResponse(['success' => false, 'message' => 'Invalid request method.'], 405);
+        }
+
+        $current = $this->academic_model->getCurrentPeriod();
+
+        if (!$current) {
+            $this->jsonResponse(['success' => false, 'message' => 'No active period to undo.'], 400);
+        }
+
+        // hard block if grades already exist — undo would cause data loss
+        if ($this->academic_model->hasGradesForPeriod($current['school_year'], $current['semester'])) {
+            $this->jsonResponse([
+                'success' => false,
+                'message' => 'Cannot undo: grades have already been submitted for the current period.',
+            ], 422);
+        }
+
+        $result = $this->academic_model->undoPeriod($_SESSION['user_id']);
+
+        if (!$result['success']) {
+            $this->jsonResponse(['success' => false, 'message' => $result['error'] ?? 'Failed to undo period. Please try again.'], 500);
+        }
+
+        $prev = $result['previous'];
+
+        $this->jsonResponse(array_merge(
+            [
+                'success'  => true,
+                'message'  => "Reverted to {$prev['semester']} Semester {$prev['school_year']}.",
+                'can_redo' => true,
+            ],
+            $this->buildCurrentPeriodPayload($prev['school_year'], $prev['semester'])
+        ));
+    }
+
+    // ajax: redo a previously undone advancement
+    public function ajaxRedo()
+    {
+        $this->requireAdmin();
+
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            $this->jsonResponse(['success' => false, 'message' => 'Invalid request method.'], 405);
+        }
+
+        if (!$this->academic_model->canRedo()) {
+            $this->jsonResponse(['success' => false, 'message' => 'Nothing to redo.'], 400);
+        }
+
+        $current = $this->academic_model->getCurrentPeriod();
+
+        if (!$this->academic_model->allGradingPeriodsLocked($current['school_year'], $current['semester'])) {
+            $this->jsonResponse([
+                'success' => false,
+                'message' => 'All grading periods must be locked before redoing.',
+            ], 422);
+        }
+
+        $deadlines = $this->extractDeadlines();
+        $result    = $this->academic_model->redoPeriod($_SESSION['user_id'], $deadlines);
+
+        if (!$result['success']) {
+            $this->jsonResponse(['success' => false, 'message' => $result['error'] ?? 'Failed to redo period. Please try again.'], 500);
+        }
+
+        $target = $result['target'];
+
+        $this->jsonResponse(array_merge(
+            [
+                'success'  => true,
+                'message'  => "Redone to {$target['semester']} Semester {$target['school_year']}. {$result['created']} payment record(s) created.",
+                'created'  => $result['created'],
+                'can_redo' => $this->academic_model->canRedo(),
+            ],
+            $this->buildCurrentPeriodPayload($target['school_year'], $target['semester'])
+        ));
+    }
+
+    // ajax: toggle lock status of a single grading period
+    public function ajaxToggleGradingLock()
+    {
+        $this->requireAdmin();
+
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            $this->jsonResponse(['success' => false, 'message' => 'Invalid request method.'], 405);
+        }
+
+        $period_id = (int) ($_POST['period_id'] ?? 0);
+        $is_locked = filter_var($_POST['is_locked'] ?? false, FILTER_VALIDATE_BOOLEAN);
+
+        if (!$period_id) {
+            $this->jsonResponse(['success' => false, 'message' => 'Invalid grading period.'], 422);
+        }
+
+        $result = $this->academic_model->toggleGradingPeriodLock($period_id, $is_locked);
+
+        if (!$result) {
+            $this->jsonResponse(['success' => false, 'message' => 'Failed to update lock status.'], 500);
+        }
+
+        $current = $this->academic_model->getCurrentPeriod();
+        $grading_periods = $current
+            ? $this->academic_model->getGradingPeriodSummary($current['school_year'], $current['semester'])
+            : [];
 
         $this->jsonResponse([
-            'success'        => true,
-            'message'        => "Advanced to {$next['semester']} Semester {$next['school_year']}. {$result['created']} payment record(s) created.",
-            'created'        => $result['created'],
-            'current'        => $current,
-            'active_count'   => $active_count,
-            'period_count'   => $period_count,
-            'missing_config' => $missing_config,
-            'next_period'    => $next_period,
-            'history'        => $history,
+            'success'         => true,
+            'message'         => $is_locked ? 'Grading period locked.' : 'Grading period unlocked.',
+            'grading_periods' => $grading_periods,
+            'all_locked'      => $current
+                ? $this->academic_model->allGradingPeriodsLocked($current['school_year'], $current['semester'])
+                : false,
         ]);
     }
 
-    // helper — returns human readable next period label for the advance button
-    private function resolveNextPeriodLabel($school_year, $semester)
+    // ajax: lock all grading periods at once for the current period
+    public function ajaxLockAllGrading()
     {
-        if ($semester === 'First') {
-            return "Second Semester {$school_year}";
+        $this->requireAdmin();
+
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            $this->jsonResponse(['success' => false, 'message' => 'Invalid request method.'], 405);
         }
 
-        $parts      = explode('-', $school_year);
-        $next_start = (int) ($parts[1] ?? date('Y'));
-        $next_end   = $next_start + 1;
+        $current = $this->academic_model->getCurrentPeriod();
 
-        return "First Semester {$next_start}-{$next_end}";
+        if (!$current) {
+            $this->jsonResponse(['success' => false, 'message' => 'No active period found.'], 400);
+        }
+
+        $periods = $this->academic_model->getGradingPeriods($current['school_year'], $current['semester']);
+
+        foreach ($periods as $period) {
+            $this->academic_model->lockGradingPeriod($period['period_id']);
+        }
+
+        $grading_periods = $this->academic_model->getGradingPeriodSummary($current['school_year'], $current['semester']);
+
+        $this->jsonResponse([
+            'success'         => true,
+            'message'         => 'All grading periods locked.',
+            'grading_periods' => $grading_periods,
+            'all_locked'      => true,
+        ]);
+    }
+
+    // ajax: save grading period deadlines
+    public function ajaxSaveGradingPeriods()
+    {
+        $this->requireAdmin();
+
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            $this->jsonResponse(['success' => false, 'message' => 'Invalid request method.'], 405);
+        }
+
+        $current = $this->academic_model->getCurrentPeriod();
+
+        if (!$current) {
+            $this->jsonResponse(['success' => false, 'message' => 'No active period found.'], 400);
+        }
+
+        $deadlines = $this->extractDeadlines();
+
+        if (empty($deadlines)) {
+            $this->jsonResponse(['success' => false, 'message' => 'No deadline data provided.'], 422);
+        }
+
+        $result = $this->academic_model->saveGradingPeriods($current['school_year'], $current['semester'], $deadlines);
+
+        if (!$result) {
+            $this->jsonResponse(['success' => false, 'message' => 'Failed to save grading periods.'], 500);
+        }
+
+        $grading_periods = $this->academic_model->getGradingPeriodSummary($current['school_year'], $current['semester']);
+
+        $this->jsonResponse([
+            'success'         => true,
+            'message'         => 'Grading period deadlines saved.',
+            'grading_periods' => $grading_periods,
+        ]);
     }
 
     // ajax: graduate selected students
@@ -210,5 +371,59 @@ class AcademicPeriodController
             'active_count' => $active_count,
             'graduatable'  => $graduatable,
         ]);
+    }
+
+    // helper — returns human readable next period label for the advance button
+    private function resolveNextPeriodLabel($school_year, $semester)
+    {
+        if ($semester === 'First') {
+            return "Second Semester {$school_year}";
+        }
+
+        $parts      = explode('-', $school_year);
+        $next_start = (int) ($parts[1] ?? date('Y'));
+        $next_end   = $next_start + 1;
+
+        return "First Semester {$next_start}-{$next_end}";
+    }
+
+    // pull deadline fields from post — expects keys: deadline_prelim, deadline_midterm etc.
+    private function extractDeadlines()
+    {
+        $keys = ['prelim', 'midterm', 'prefinal', 'final'];
+        $deadlines = [];
+
+        foreach ($keys as $key) {
+            $value = trim($_POST["deadline_{$key}"] ?? '');
+            if (!empty($value)) {
+                $deadlines[$key] = $value;
+            }
+        }
+
+        return $deadlines;
+    }
+
+    // build the common payload returned after any period mutation
+    private function buildCurrentPeriodPayload($school_year, $semester)
+    {
+        $current         = $this->academic_model->getCurrentPeriod();
+        $active_count    = $this->academic_model->getActiveStudentCount();
+        $period_count    = $this->academic_model->getPaidStudentCount($school_year, $semester);
+        $missing_config  = $this->academic_model->getStudentsMissingFeeConfig($school_year);
+        $history         = $this->academic_model->getHistory(10);
+        $grading_periods = $this->academic_model->getGradingPeriodSummary($school_year, $semester);
+        $next_period     = $current ? $this->resolveNextPeriodLabel($school_year, $semester) : null;
+        $can_redo        = $this->academic_model->canRedo();
+
+        return compact(
+            'current',
+            'active_count',
+            'period_count',
+            'missing_config',
+            'history',
+            'grading_periods',
+            'next_period',
+            'can_redo'
+        );
     }
 }

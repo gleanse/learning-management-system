@@ -4,19 +4,20 @@ function showToast(type, message) {
   const icons = {
     success: 'bi-check-circle-fill',
     danger: 'bi-exclamation-circle-fill',
+    warning: 'bi-exclamation-triangle-fill',
   };
-  const labels = { success: 'Success', danger: 'Error' };
+  const labels = { success: 'Success', danger: 'Error', warning: 'Warning' };
 
   const toast = document.createElement('div');
   toast.className = `toast toast-${type} show`;
   toast.innerHTML = `
-        <div class="toast-header">
-            <i class="bi ${icons[type]} me-2"></i>
-            <strong class="me-auto">${labels[type]}</strong>
-            <button type="button" class="btn-close" onclick="this.closest('.toast').remove()"></button>
-        </div>
-        <div class="toast-body">${message}</div>
-    `;
+    <div class="toast-header">
+      <i class="bi ${icons[type]} me-2"></i>
+      <strong class="me-auto">${labels[type]}</strong>
+      <button type="button" class="btn-close" onclick="this.closest('.toast').remove()"></button>
+    </div>
+    <div class="toast-body">${message}</div>
+  `;
   container.appendChild(toast);
   setTimeout(() => toast.remove(), 5000);
 }
@@ -94,10 +95,10 @@ function updateHistory(history) {
 
   if (!history || history.length === 0) {
     timeline.innerHTML = `
-            <div class="empty-state py-5">
-                <div class="empty-state-icon"><i class="bi bi-inbox"></i></div>
-                <p class="empty-state-text">no period history yet</p>
-            </div>`;
+      <div class="empty-state py-5">
+        <div class="empty-state-icon"><i class="bi bi-inbox"></i></div>
+        <p class="empty-state-text">no period history yet</p>
+      </div>`;
     return;
   }
 
@@ -109,35 +110,106 @@ function updateHistory(history) {
         : '';
 
       return `
-            <div class="history-item ${isActive ? 'history-item-active' : ''}">
-                <div class="history-dot">
-                    <i class="bi ${
-                      isActive ? 'bi-circle-fill' : 'bi-check-circle-fill'
-                    }"></i>
-                </div>
-                <div class="history-content">
-                    <div class="history-header">
-                        <span class="history-period">
-                            ${record.semester} Semester &mdash; S.Y. ${
-        record.school_year
-      }
-                        </span>
-                        ${
-                          isActive
-                            ? `<span class="badge-active"><i class="bi bi-broadcast"></i> active</span>`
-                            : `<span class="badge-completed"><i class="bi bi-check2"></i> completed</span>`
-                        }
-                    </div>
-                    <div class="history-meta">
-                        <span><i class="bi bi-clock"></i> ${formatDateTime(
-                          record.advanced_at
-                        )}</span>
-                        ${advancedBy}
-                    </div>
-                </div>
-            </div>`;
+      <div class="history-item ${isActive ? 'history-item-active' : ''}">
+        <div class="history-dot">
+          <i class="bi ${
+            isActive ? 'bi-circle-fill' : 'bi-check-circle-fill'
+          }"></i>
+        </div>
+        <div class="history-content">
+          <div class="history-header">
+            <span class="history-period">
+              ${record.semester} Semester &mdash; S.Y. ${record.school_year}
+            </span>
+            ${
+              isActive
+                ? `<span class="badge-active"><i class="bi bi-broadcast"></i> active</span>`
+                : `<span class="badge-completed"><i class="bi bi-check2"></i> completed</span>`
+            }
+          </div>
+          <div class="history-meta">
+            <span><i class="bi bi-clock"></i> ${formatDateTime(
+              record.advanced_at
+            )}</span>
+            ${advancedBy}
+          </div>
+        </div>
+      </div>`;
     })
     .join('');
+}
+
+// rebuild grading periods table from fresh data
+function updateGradingPeriods(gradingPeriods) {
+  const tbody = document.getElementById('gradingPeriodsBody');
+  if (!tbody) return;
+
+  if (!gradingPeriods || gradingPeriods.length === 0) {
+    tbody.innerHTML = `
+      <tr>
+        <td colspan="4" class="text-center text-muted py-3">no grading periods configured</td>
+      </tr>`;
+    return;
+  }
+
+  tbody.innerHTML = gradingPeriods
+    .map((period) => {
+      const statusBadge =
+        period.lock_status === 'locked'
+          ? `<span class="grading-badge grading-badge-locked"><i class="bi bi-lock-fill"></i> locked</span>`
+          : period.lock_status === 'expired'
+          ? `<span class="grading-badge grading-badge-expired"><i class="bi bi-clock-history"></i> expired</span>`
+          : `<span class="grading-badge grading-badge-open"><i class="bi bi-unlock-fill"></i> open</span>`;
+
+      const deadlineDisplay = period.deadline_date
+        ? `<span class="deadline-display ${
+            period.lock_status === 'expired' ? 'text-danger' : ''
+          }">${formatDate(period.deadline_date)}</span>`
+        : `<span class="text-muted fst-italic">not set</span>`;
+
+      const rowClass =
+        period.lock_status === 'locked'
+          ? 'grading-period-row row-locked'
+          : period.lock_status === 'expired'
+          ? 'grading-period-row row-expired'
+          : 'grading-period-row';
+
+      return `
+      <tr class="${rowClass}" data-period-id="${period.period_id}">
+        <td class="fw-semibold">
+          <i class="bi bi-flag-fill me-2 text-primary"></i>${
+            period.grading_period
+          }
+        </td>
+        <td>${deadlineDisplay}</td>
+        <td>${statusBadge}</td>
+        <td class="text-center">
+          <div class="form-check form-switch d-flex justify-content-center mb-0">
+            <input
+              class="form-check-input grading-lock-toggle"
+              type="checkbox"
+              role="switch"
+              data-period-id="${period.period_id}"
+              ${period.is_locked ? 'checked' : ''}>
+          </div>
+        </td>
+      </tr>`;
+    })
+    .join('');
+
+  // update the locked count badge
+  const lockedCount = gradingPeriods.filter(
+    (p) => parseInt(p.is_locked) === 1
+  ).length;
+  const statusBadge = document.getElementById('gradingStatusBadge');
+  if (statusBadge)
+    statusBadge.textContent = `${lockedCount} / ${gradingPeriods.length} locked`;
+}
+
+// update undo/redo button states
+function updateUndoRedoState(canRedo) {
+  const redoBtn = document.getElementById('redoBtn');
+  if (redoBtn) redoBtn.disabled = !canRedo;
 }
 
 // swap initialize form panel to current period panel after first init
@@ -149,81 +221,90 @@ function swapToPeriodPanel(data) {
   const next = data.next_period;
   const missing = parseInt(data.missing_config);
   const periodCount = parseInt(data.period_count);
+  const canRedo = data.can_redo || false;
 
   const missingWarning =
     missing > 0
       ? `
-        <div class="alert alert-warning mb-3" style="font-size: 0.875rem;">
-            <i class="bi bi-exclamation-triangle-fill me-2"></i>
-            <strong>${missing}</strong> student(s) don't have a fee configuration for this school year. They will be skipped when creating payment records.
-        </div>`
+    <div class="alert alert-warning mb-3" style="font-size: 0.875rem;">
+      <i class="bi bi-exclamation-triangle-fill me-2"></i>
+      <strong>${missing}</strong> student(s) don't have a fee configuration for this school year. They will be skipped when creating payment records.
+    </div>`
       : '';
 
   actionCol.innerHTML = `
-        <div class="card action-card mb-4">
-            <div class="card-header">
-                <h5 class="mb-0">
-                    <i class="bi bi-calendar2-range-fill"></i>
-                    Current Period
-                </h5>
+    <div class="card action-card mb-4">
+      <div class="card-header">
+        <h5 class="mb-0">
+          <i class="bi bi-calendar2-range-fill"></i>
+          Current Period
+        </h5>
+      </div>
+      <div class="card-body">
+        <div class="current-period-display mb-4">
+          <div class="period-badge-large">
+            <i class="bi bi-calendar2-check-fill"></i>
+            <div>
+              <span class="period-sem">${current.semester} Semester</span>
+              <span class="period-year">S.Y. ${current.school_year}</span>
             </div>
-            <div class="card-body">
-                <div class="current-period-display mb-4">
-                    <div class="period-badge-large">
-                        <i class="bi bi-calendar2-check-fill"></i>
-                        <div>
-                            <span class="period-sem">${
-                              current.semester
-                            } Semester</span>
-                            <span class="period-year">S.Y. ${
-                              current.school_year
-                            }</span>
-                        </div>
-                    </div>
-                    <div class="period-meta mt-3">
-                        <div class="meta-item">
-                            <span class="meta-label"><i class="bi bi-clock"></i> Started</span>
-                            <span class="meta-value">${formatDate(
-                              current.advanced_at
-                            )}</span>
-                        </div>
-                        <div class="meta-item">
-                            <span class="meta-label"><i class="bi bi-receipt"></i> Payment Records</span>
-                            <span class="meta-value">${formatNumber(
-                              periodCount
-                            )}</span>
-                        </div>
-                        ${
-                          missing > 0
-                            ? `
-                        <div class="meta-item meta-item-warning">
-                            <span class="meta-label"><i class="bi bi-exclamation-triangle-fill"></i> Missing Config</span>
-                            <span class="meta-value text-danger fw-bold">${missing} students</span>
-                        </div>`
-                            : ''
-                        }
-                    </div>
-                </div>
-                <div class="advance-section">
-                    <div class="advance-preview mb-3">
-                        <span class="advance-label">next period will be:</span>
-                        <span class="advance-target" id="advanceTargetLabel">
-                            <i class="bi bi-arrow-right-circle-fill"></i> ${next}
-                        </span>
-                    </div>
-                    ${missingWarning}
-                    <form id="advanceForm">
-                        <button type="button" class="btn btn-primary btn-action w-100" id="advanceBtn">
-                            <i class="bi bi-skip-forward-fill"></i>
-                            Advance to ${next}
-                        </button>
-                    </form>
-                </div>
+          </div>
+          <div class="period-meta mt-3">
+            <div class="meta-item">
+              <span class="meta-label"><i class="bi bi-clock"></i> Started</span>
+              <span class="meta-value">${formatDate(current.advanced_at)}</span>
             </div>
-        </div>`;
+            <div class="meta-item">
+              <span class="meta-label"><i class="bi bi-receipt"></i> Payment Records</span>
+              <span class="meta-value">${formatNumber(periodCount)}</span>
+            </div>
+            ${
+              missing > 0
+                ? `
+            <div class="meta-item meta-item-warning">
+              <span class="meta-label"><i class="bi bi-exclamation-triangle-fill"></i> Missing Config</span>
+              <span class="meta-value text-danger fw-bold">${missing} students</span>
+            </div>`
+                : ''
+            }
+          </div>
+        </div>
+        <div class="advance-section">
+          <div class="advance-preview mb-3">
+            <span class="advance-label">next period will be:</span>
+            <span class="advance-target" id="advanceTargetLabel">
+              <i class="bi bi-arrow-right-circle-fill"></i> ${next}
+            </span>
+          </div>
+          ${missingWarning}
+          <button type="button" class="btn btn-primary btn-action w-100 mb-2" id="advanceBtn">
+            <i class="bi bi-skip-forward-fill"></i>
+            Advance to ${next}
+          </button>
+          <div class="d-flex gap-2 mt-2">
+            <button type="button" class="btn btn-outline-secondary btn-sm flex-fill" id="undoBtn">
+              <i class="bi bi-arrow-counterclockwise"></i>
+              Undo Advance
+            </button>
+            <button type="button" class="btn btn-outline-primary btn-sm flex-fill" id="redoBtn" ${
+              canRedo ? '' : 'disabled'
+            }>
+              <i class="bi bi-arrow-clockwise"></i>
+              Redo
+            </button>
+          </div>
+          <p class="text-muted mt-2 mb-0" style="font-size: 0.75rem;">
+            <i class="bi bi-info-circle me-1"></i>
+            undo is only available within the same school year and if no grades have been submitted yet.
+          </p>
+        </div>
+      </div>
+    </div>`;
 
   updateAdvanceModalLabel(next);
   bindAdvanceBtn();
+  bindUndoBtn();
+  bindRedoBtn();
 }
 
 // update advance modal next period label
@@ -232,7 +313,7 @@ function updateAdvanceModalLabel(nextPeriod) {
   if (labelEl) labelEl.textContent = nextPeriod;
 }
 
-// update the action panel values after advance
+// update the action panel values after advance or undo/redo
 function updatePeriodPanel(data) {
   const current = data.current;
   const next = data.next_period;
@@ -264,6 +345,11 @@ function updatePeriodPanel(data) {
   }
 
   updateAdvanceModalLabel(next);
+  updateUndoRedoState(data.can_redo || false);
+
+  if (data.grading_periods) {
+    updateGradingPeriods(data.grading_periods);
+  }
 }
 
 // bind advance button — separated so it can be re-bound after dom swap
@@ -279,6 +365,32 @@ function bindAdvanceBtn() {
   });
 }
 
+// bind undo button
+function bindUndoBtn() {
+  const undoBtn = document.getElementById('undoBtn');
+  if (!undoBtn) return;
+
+  const undoModal = new bootstrap.Modal(
+    document.getElementById('undoConfirmModal')
+  );
+  undoBtn.addEventListener('click', function () {
+    undoModal.show();
+  });
+}
+
+// bind redo button
+function bindRedoBtn() {
+  const redoBtn = document.getElementById('redoBtn');
+  if (!redoBtn) return;
+
+  const redoModal = new bootstrap.Modal(
+    document.getElementById('redoConfirmModal')
+  );
+  redoBtn.addEventListener('click', function () {
+    if (!redoBtn.disabled) redoModal.show();
+  });
+}
+
 document.addEventListener('DOMContentLoaded', function () {
   // show flash messages passed from php on initial page load
   if (academicPeriodConfig.success)
@@ -286,10 +398,14 @@ document.addEventListener('DOMContentLoaded', function () {
   if (academicPeriodConfig.error)
     showToast('danger', academicPeriodConfig.error);
 
-  // bind advance button
+  // bind action buttons
   bindAdvanceBtn();
+  bindUndoBtn();
+  bindRedoBtn();
 
-  // confirm advance — ajax submit
+  // -------------------------------------------------------
+  // confirm advance
+  // -------------------------------------------------------
   const confirmAdvanceBtn = document.getElementById('confirmAdvanceBtn');
   if (confirmAdvanceBtn) {
     confirmAdvanceBtn.addEventListener('click', async function () {
@@ -315,7 +431,9 @@ document.addEventListener('DOMContentLoaded', function () {
           updateStatCards(data);
           updatePeriodPanel(data);
           updateHistory(data.history);
+          if (data.grading_periods) updateGradingPeriods(data.grading_periods);
         } else {
+          advanceModal.hide();
           showToast('danger', data.message || 'Failed to advance period.');
         }
       } catch (err) {
@@ -328,7 +446,94 @@ document.addEventListener('DOMContentLoaded', function () {
     });
   }
 
+  // -------------------------------------------------------
+  // confirm undo
+  // -------------------------------------------------------
+  const confirmUndoBtn = document.getElementById('confirmUndoBtn');
+  if (confirmUndoBtn) {
+    confirmUndoBtn.addEventListener('click', async function () {
+      const btn = this;
+      const undoModal = bootstrap.Modal.getInstance(
+        document.getElementById('undoConfirmModal')
+      );
+
+      btn.disabled = true;
+      btn.innerHTML =
+        '<span class="spinner-border spinner-border-sm me-2"></span>Processing...';
+
+      try {
+        const res = await fetch('index.php?page=ajax_academic_period_undo', {
+          method: 'POST',
+          headers: { 'X-Requested-With': 'XMLHttpRequest' },
+        });
+        const data = await res.json();
+
+        if (data.success) {
+          undoModal.hide();
+          showToast('success', data.message);
+          updateStatCards(data);
+          updatePeriodPanel(data);
+          updateHistory(data.history);
+          if (data.grading_periods) updateGradingPeriods(data.grading_periods);
+        } else {
+          undoModal.hide();
+          showToast('danger', data.message || 'Failed to undo period.');
+        }
+      } catch (err) {
+        showToast('danger', 'An unexpected error occurred. Please try again.');
+      } finally {
+        btn.disabled = false;
+        btn.innerHTML =
+          '<i class="bi bi-arrow-counterclockwise"></i> Confirm Undo';
+      }
+    });
+  }
+
+  // -------------------------------------------------------
+  // confirm redo
+  // -------------------------------------------------------
+  const confirmRedoBtn = document.getElementById('confirmRedoBtn');
+  if (confirmRedoBtn) {
+    confirmRedoBtn.addEventListener('click', async function () {
+      const btn = this;
+      const redoModal = bootstrap.Modal.getInstance(
+        document.getElementById('redoConfirmModal')
+      );
+
+      btn.disabled = true;
+      btn.innerHTML =
+        '<span class="spinner-border spinner-border-sm me-2"></span>Processing...';
+
+      try {
+        const res = await fetch('index.php?page=ajax_academic_period_redo', {
+          method: 'POST',
+          headers: { 'X-Requested-With': 'XMLHttpRequest' },
+        });
+        const data = await res.json();
+
+        if (data.success) {
+          redoModal.hide();
+          showToast('success', data.message);
+          updateStatCards(data);
+          updatePeriodPanel(data);
+          updateHistory(data.history);
+          if (data.grading_periods) updateGradingPeriods(data.grading_periods);
+        } else {
+          redoModal.hide();
+          showToast('danger', data.message || 'Failed to redo period.');
+        }
+      } catch (err) {
+        showToast('danger', 'An unexpected error occurred. Please try again.');
+      } finally {
+        btn.disabled = false;
+        btn.innerHTML = '<i class="bi bi-arrow-clockwise"></i> Confirm Redo';
+      }
+    });
+  }
+
+  // -------------------------------------------------------
   // initialize period flow
+  // -------------------------------------------------------
   const initializeBtn = document.getElementById('initializeBtn');
   if (initializeBtn) {
     const initializeModal = new bootstrap.Modal(
@@ -363,7 +568,6 @@ document.addEventListener('DOMContentLoaded', function () {
       initializeModal.show();
     });
 
-    // confirm initialize — ajax submit
     document
       .getElementById('confirmInitializeBtn')
       .addEventListener('click', async function () {
@@ -403,10 +607,11 @@ document.addEventListener('DOMContentLoaded', function () {
             updateStatCards(data);
             swapToPeriodPanel(data);
             updateHistory(data.history);
+            if (data.grading_periods)
+              updateGradingPeriods(data.grading_periods);
           } else {
             initializeModal.hide();
 
-            // show server-side field errors inline if returned
             if (data.errors) {
               Object.entries(data.errors).forEach(([field, msg]) => {
                 const input = document.querySelector(`[name="${field}"]`);
@@ -444,7 +649,133 @@ document.addEventListener('DOMContentLoaded', function () {
       });
   }
 
+  // -------------------------------------------------------
+  // grading lock toggle — individual switch
+  // -------------------------------------------------------
+  document.addEventListener('change', async function (e) {
+    if (!e.target.classList.contains('grading-lock-toggle')) return;
+
+    const toggle = e.target;
+    const periodId = toggle.dataset.periodId;
+    const isLocked = toggle.checked;
+
+    toggle.disabled = true;
+
+    const formData = new FormData();
+    formData.append('period_id', periodId);
+    formData.append('is_locked', isLocked ? '1' : '0');
+
+    try {
+      const res = await fetch('index.php?page=ajax_toggle_grading_lock', {
+        method: 'POST',
+        headers: { 'X-Requested-With': 'XMLHttpRequest' },
+        body: formData,
+      });
+      const data = await res.json();
+
+      if (data.success) {
+        showToast('success', data.message);
+        if (data.grading_periods) updateGradingPeriods(data.grading_periods);
+      } else {
+        // revert toggle on failure
+        toggle.checked = !isLocked;
+        showToast('danger', data.message || 'Failed to update lock status.');
+      }
+    } catch (err) {
+      toggle.checked = !isLocked;
+      showToast('danger', 'An unexpected error occurred. Please try again.');
+    } finally {
+      toggle.disabled = false;
+    }
+  });
+
+  // -------------------------------------------------------
+  // lock all grading periods
+  // -------------------------------------------------------
+  const lockAllBtn = document.getElementById('lockAllBtn');
+  if (lockAllBtn) {
+    lockAllBtn.addEventListener('click', async function () {
+      const btn = this;
+
+      btn.disabled = true;
+      btn.innerHTML =
+        '<span class="spinner-border spinner-border-sm me-2"></span>Locking...';
+
+      try {
+        const res = await fetch('index.php?page=ajax_lock_all_grading', {
+          method: 'POST',
+          headers: { 'X-Requested-With': 'XMLHttpRequest' },
+        });
+        const data = await res.json();
+
+        if (data.success) {
+          showToast('success', data.message);
+          if (data.grading_periods) updateGradingPeriods(data.grading_periods);
+        } else {
+          showToast(
+            'danger',
+            data.message || 'Failed to lock all grading periods.'
+          );
+        }
+      } catch (err) {
+        showToast('danger', 'An unexpected error occurred. Please try again.');
+      } finally {
+        btn.disabled = false;
+        btn.innerHTML = '<i class="bi bi-lock-fill"></i> Lock All';
+      }
+    });
+  }
+
+  // -------------------------------------------------------
+  // save grading period deadlines
+  // -------------------------------------------------------
+  const saveDeadlinesBtn = document.getElementById('saveDeadlinesBtn');
+  if (saveDeadlinesBtn) {
+    saveDeadlinesBtn.addEventListener('click', async function () {
+      const btn = this;
+
+      const formData = new FormData();
+      ['prelim', 'midterm', 'prefinal', 'final'].forEach((key) => {
+        const input = document.getElementById(`deadline_${key}`);
+        if (input && input.value)
+          formData.append(`deadline_${key}`, input.value);
+      });
+
+      if ([...formData.keys()].length === 0) {
+        showToast('danger', 'Please set at least one deadline before saving.');
+        return;
+      }
+
+      btn.disabled = true;
+      btn.innerHTML =
+        '<span class="spinner-border spinner-border-sm me-2"></span>Saving...';
+
+      try {
+        const res = await fetch('index.php?page=ajax_save_grading_periods', {
+          method: 'POST',
+          headers: { 'X-Requested-With': 'XMLHttpRequest' },
+          body: formData,
+        });
+        const data = await res.json();
+
+        if (data.success) {
+          showToast('success', data.message);
+          if (data.grading_periods) updateGradingPeriods(data.grading_periods);
+        } else {
+          showToast('danger', data.message || 'Failed to save deadlines.');
+        }
+      } catch (err) {
+        showToast('danger', 'An unexpected error occurred. Please try again.');
+      } finally {
+        btn.disabled = false;
+        btn.innerHTML = '<i class="bi bi-floppy-fill"></i> Save Deadlines';
+      }
+    });
+  }
+
+  // -------------------------------------------------------
   // clear inline validation on input
+  // -------------------------------------------------------
   document.querySelectorAll('input, select').forEach((el) => {
     el.addEventListener('input', function () {
       this.classList.remove('is-invalid');
@@ -461,7 +792,9 @@ document.addEventListener('DOMContentLoaded', function () {
     });
   }
 
-  // select all graduates checkbox
+  // -------------------------------------------------------
+  // graduation section
+  // -------------------------------------------------------
   const selectAllGraduates = document.getElementById('selectAllGraduates');
   if (selectAllGraduates) {
     selectAllGraduates.addEventListener('change', function () {
@@ -473,7 +806,6 @@ document.addEventListener('DOMContentLoaded', function () {
     });
   }
 
-  // individual checkbox change
   document.addEventListener('change', function (e) {
     if (e.target.classList.contains('graduate-checkbox')) {
       e.target.closest('tr').classList.toggle('selected-row', e.target.checked);
@@ -481,7 +813,6 @@ document.addEventListener('DOMContentLoaded', function () {
     }
   });
 
-  // update selected count and enable/disable graduate button
   function updateGraduateCount() {
     const checked = document.querySelectorAll('.graduate-checkbox:checked');
     const countEl = document.getElementById('selectedGraduateCount');
@@ -491,7 +822,6 @@ document.addEventListener('DOMContentLoaded', function () {
     if (btn) btn.disabled = checked.length === 0;
   }
 
-  // graduate button — show confirmation modal
   const graduateBtn = document.getElementById('graduateBtn');
   if (graduateBtn) {
     const graduateModal = new bootstrap.Modal(
@@ -506,7 +836,6 @@ document.addEventListener('DOMContentLoaded', function () {
     });
   }
 
-  // confirm graduate — ajax submit
   const confirmGraduateBtn = document.getElementById('confirmGraduateBtn');
   if (confirmGraduateBtn) {
     confirmGraduateBtn.addEventListener('click', async function () {
@@ -514,7 +843,6 @@ document.addEventListener('DOMContentLoaded', function () {
       const graduateModal = bootstrap.Modal.getInstance(
         document.getElementById('graduateConfirmModal')
       );
-
       const checked = document.querySelectorAll('.graduate-checkbox:checked');
       const studentIds = Array.from(checked).map((cb) => cb.value);
 
@@ -543,11 +871,9 @@ document.addEventListener('DOMContentLoaded', function () {
           graduateModal.hide();
           showToast('success', data.message);
 
-          // update active students stat card
           const activeEl = document.getElementById('statActiveCount');
           if (activeEl) activeEl.textContent = formatNumber(data.active_count);
 
-          // remove graduated rows from table
           studentIds.forEach((id) => {
             const cb = document.querySelector(
               `.graduate-checkbox[value="${id}"]`
@@ -555,7 +881,6 @@ document.addEventListener('DOMContentLoaded', function () {
             if (cb) cb.closest('tr').remove();
           });
 
-          // update eligible badge count
           const remaining =
             document.querySelectorAll('.graduate-checkbox').length;
           const badge = document.querySelector(
@@ -563,7 +888,6 @@ document.addEventListener('DOMContentLoaded', function () {
           );
           if (badge) badge.textContent = `${remaining} eligible`;
 
-          // if no students left show empty state
           if (remaining === 0) {
             const tableWrapper = document.querySelector(
               '.graduation-card .table-responsive'
@@ -571,10 +895,10 @@ document.addEventListener('DOMContentLoaded', function () {
             const footer = document.querySelector('.graduation-card .d-flex');
             if (tableWrapper)
               tableWrapper.innerHTML = `
-                        <div class="empty-state py-3">
-                            <div class="empty-state-icon"><i class="bi bi-mortarboard"></i></div>
-                            <p class="empty-state-text">no students eligible for graduation</p>
-                        </div>`;
+              <div class="empty-state py-3">
+                <div class="empty-state-icon"><i class="bi bi-mortarboard"></i></div>
+                <p class="empty-state-text">no students eligible for graduation</p>
+              </div>`;
             if (footer) footer.remove();
           }
 
