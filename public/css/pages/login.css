@@ -1,12 +1,48 @@
 /* LOGIN PAGE STYLES  */
 
+/* Animated gradient keyframes — shifts across your color palette */
+@keyframes gradientShift {
+  /* circular feel — colors blend from all sides */
+  /* diagonal drift — more dynamic */
+  0% {
+    background-position: 0% 0%;
+  }
+  50% {
+    background-position: 100% 100%;
+  }
+  100% {
+    background-position: 0% 0%;
+  }
+}
+
 /* BODY and wrapper setup */
 body {
   margin: 0;
   padding: 0;
   overflow-x: hidden;
-  background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 50%, #f5f7fa 100%);
+  background: linear-gradient(
+    135deg,
+    #6d2423e0 0%,
+    /* lightened --primary maroon */ #921e1ce8 60%,
+    /* hold lightened maroon dominant */ #302a58e3 80%,
+    /* brief lightened --secondary purple */ #a03937ee 100%
+      /* back to lightened --primary maroon */
+  );
+  background-size: 400% 400%;
+  animation: gradientShift 20s ease infinite;
   min-height: 100vh;
+}
+
+/* Geometric dot grid overlay — fixed so it doesn't scroll */
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  background-image: url("data:image/svg+xml,%3Csvg width='40' height='40' viewBox='0 0 40 40' xmlns='http://www.w3.org/2000/svg'%3E%3Ccircle cx='20' cy='20' r='1.8' fill='%2385120F' fill-opacity='0.18'/%3E%3C/svg%3E");
+  background-size: 40px 40px;
+  background-repeat: repeat;
 }
 
 /* WRAPPER for full page height and centering */
@@ -27,7 +63,8 @@ body {
   backdrop-filter: blur(20px);
   border-radius: 24px;
   overflow: hidden;
-  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.1), 0 0 0 1px rgba(255, 255, 255, 0.5);
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+  border: 1px solid rgba(133, 19, 15, 0.753);
   min-height: 600px;
 }
 
@@ -444,7 +481,7 @@ body {
   color: var(--danger);
 }
 
-/* INVALID FEEDBAC */
+/* INVALID FEEDBACK */
 .invalid-feedback {
   margin-top: 0.5rem;
   font-size: 0.875rem;
@@ -675,14 +712,14 @@ body {
 }
 
 .forgot-link {
-    font-size: 0.875rem;
-    font-weight: 600;
-    color: var(--primary);
-    text-decoration: none;
-    transition: color 0.2s ease;
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--primary);
+  text-decoration: none;
+  transition: color 0.2s ease;
 }
 
 .forgot-link:hover {
-    color: #a01410;
-    text-decoration: underline;
+  color: #a01410;
+  text-decoration: underline;
 }
