@@ -4,6 +4,7 @@ require_once __DIR__ . '/../models/User.php';
 require_once __DIR__ . '/../models/LoginLockout.php';
 require_once __DIR__ . '/../helpers/auth_helper.php';
 require_once __DIR__ . '/../models/PasswordReset.php';
+require_once __DIR__ . '/../helpers/activity_logger.php';
 
 class AuthController
 {
@@ -93,6 +94,16 @@ class AuthController
             ];
 
             if (isset($blocked_statuses[$user['status']])) {
+                // LOG FAILED LOGIN (BLOCKED STATUS)
+                logAction(
+                    'failed_login',
+                    "Failed login attempt for {$user['username']} - account {$user['status']}",
+                    'users',
+                    $user['id'],
+                    null,
+                    ['status' => $user['status'], 'ip' => $user_ip]
+                );
+                
                 $_SESSION['login_errors'] = ['general' => $blocked_statuses[$user['status']]];
                 $_SESSION['old_input'] = ['username_or_email' => $username_or_email];
                 header('Location: index.php?page=login');
@@ -113,6 +124,16 @@ class AuthController
             $_SESSION['user_lastname'] = $user['last_name'];
             // regenerate new csrf token after login
             $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
+            
+            // LOG SUCCESSFUL LOGIN
+            logAction(
+                'login',
+                "User logged in: {$user['username']} ({$user['role']})",
+                'users',
+                $user['id'],
+                null,
+                ['ip' => $user_ip]
+            );
             
             // set remember me cookie, pass model via dependency injection for helper function
             if (isset($_POST['remember_me'])) {
@@ -140,6 +161,16 @@ class AuthController
             } else {
                 $base_message = 'Invalid username or password.';
             }
+    
+            // LOG FAILED LOGIN (INVALID CREDENTIALS)
+            logAction(
+                'failed_login',
+                "Failed login attempt for identifier: {$username_or_email}",
+                null,
+                null,
+                null,
+                ['ip' => $user_ip, 'attempts' => $fail_count]
+            );
     
             if ($fail_count == 3) {
                 $errors['general'] = $base_message . ' Warning: 2 attempts remaining before lockout.';
@@ -171,11 +202,21 @@ class AuthController
 
     public function logout()
     {
+        // LOG LOGOUT before destroying session
+        if (isset($_SESSION['user_id'])) {
+            logAction(
+                'logout',
+                "User logged out: {$_SESSION['user_username']}",
+                'users',
+                $_SESSION['user_id']
+            );
+        }
+    
         // delete remember token
         if (isset($_COOKIE['remember_token'])) {
-        $tokenHash = hash('sha256', $_COOKIE['remember_token']);
-        $this->user_model->deleteRememberToken($tokenHash);
-        setcookie('remember_token', '', time() - 3600, '/', '', false, true);
+            $tokenHash = hash('sha256', $_COOKIE['remember_token']);
+            $this->user_model->deleteRememberToken($tokenHash);
+            setcookie('remember_token', '', time() - 3600, '/', '', false, true);
         }
         // clear session data
         $_SESSION = [];

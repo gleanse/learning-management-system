@@ -337,3 +337,22 @@ CREATE TABLE announcement_recipients (
     INDEX idx_user_unread (user_id, is_read),
     INDEX idx_announcement (announcement_id)
 );
+
+CREATE TABLE activity_logs (
+    log_id INT AUTO_INCREMENT PRIMARY KEY,
+    user_id INT NOT NULL,
+    action VARCHAR(50) NOT NULL,
+    description TEXT NULL,
+    table_affected VARCHAR(50) NULL,
+    record_id INT NULL,
+    old_data JSON NULL,
+    new_data JSON NULL,
+    ip_address VARCHAR(45) NULL,
+    user_agent TEXT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+    INDEX idx_user (user_id),
+    INDEX idx_action (action),
+    INDEX idx_table (table_affected),
+    INDEX idx_created (created_at)
+);

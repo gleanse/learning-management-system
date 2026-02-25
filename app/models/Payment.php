@@ -318,4 +318,26 @@ class Payment
         $stmt->execute();
         return $stmt->fetchAll();
     }
+
+    public function getPaymentById($payment_id)
+    {
+        $stmt = $this->connection->prepare("
+        SELECT 
+            ep.*,
+            s.student_id,
+            s.first_name,
+            s.last_name,
+            s.student_number,
+            (ep.net_amount - COALESCE((
+                SELECT SUM(amount_paid) 
+                FROM payment_transactions 
+                WHERE payment_id = ep.payment_id
+            ), 0)) as remaining_balance
+        FROM enrollment_payments ep
+        INNER JOIN students s ON ep.student_id = s.student_id
+        WHERE ep.payment_id = ?
+    ");
+        $stmt->execute([$payment_id]);
+        return $stmt->fetch();
+    }
 }

@@ -1,6 +1,7 @@
 <?php
 
 require_once __DIR__ . '/../models/FeeConfig.php';
+require_once __DIR__ . '/../helpers/activity_logger.php';
 
 class FeeConfigController
 {
@@ -91,10 +92,10 @@ class FeeConfigController
             $this->jsonResponse(['success' => false, 'errors' => $errors], 422);
         }
 
-        // confirm row exists
-        $fee = $this->fee_model->getById($fee_id);
+        // confirm row exists and get old data for log
+        $old_data = $this->fee_model->getById($fee_id);
 
-        if (!$fee) {
+        if (!$old_data) {
             $this->jsonResponse(['success' => false, 'message' => 'Fee configuration not found.'], 404);
         }
 
@@ -103,6 +104,26 @@ class FeeConfigController
         if (!$result) {
             $this->jsonResponse(['success' => false, 'message' => 'Failed to update fee configuration. Please try again.'], 500);
         }
+
+        // LOG THIS ACTION
+        logAction(
+            'update_fee_config',
+            "Updated fee configuration for {$old_data['education_level']} - {$old_data['strand_course']} ({$old_data['school_year']})",
+            'fee_config',
+            $fee_id,
+            [
+                'tuition_fee' => $old_data['tuition_fee'],
+                'miscellaneous' => $old_data['miscellaneous'],
+                'other_fees' => $old_data['other_fees'],
+                'total' => $old_data['tuition_fee'] + $old_data['miscellaneous'] + $old_data['other_fees']
+            ],
+            [
+                'tuition_fee' => $tuition_fee,
+                'miscellaneous' => $miscellaneous,
+                'other_fees' => $other_fees,
+                'total' => $tuition_fee + $miscellaneous + $other_fees
+            ]
+        );
 
         $total = $tuition_fee + $miscellaneous + $other_fees;
 

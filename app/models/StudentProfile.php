@@ -271,4 +271,22 @@ class StudentProfile
         $stmt = $this->connection->prepare("UPDATE users SET email = ?, updated_at = NOW() WHERE id = ?");
         return $stmt->execute([$email, $user_id]);
     }
+
+    public function getProfileData($student_id)
+    {
+        $stmt = $this->connection->prepare("
+        SELECT 
+            email,
+            date_of_birth,
+            gender,
+            contact_number,
+            home_address,
+            previous_school,
+            special_notes
+        FROM student_profiles 
+        WHERE student_id = ?
+    ");
+        $stmt->execute([$student_id]);
+        return $stmt->fetch();
+    }
 }

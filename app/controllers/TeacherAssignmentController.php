@@ -6,6 +6,7 @@ require_once __DIR__ . '/../models/Section.php';
 require_once __DIR__ . '/../models/Subject.php';
 require_once __DIR__ . '/../models/Student.php';
 require_once __DIR__ . '/../models/AcademicPeriod.php';
+require_once __DIR__ . '/../helpers/activity_logger.php';
 
 class TeacherAssignmentController
 {
@@ -215,6 +216,27 @@ class TeacherAssignmentController
         );
 
         if ($result === true) {
+
+            $teacher = $this->teacher_model->getTeacherById($teacher_id);
+            $section = $this->section_model->getSectionById($section_id);
+            $subject_codes = $this->subject_model->getSubjectCodesByIds($subject_ids);
+
+            logAction(
+                'assign_teacher',
+                "Assigned teacher {$teacher['full_name']} to section {$section['section_name']} (subjects: " . implode(', ', $subject_codes) . ")",
+                'teacher_subject_assignments',
+                null,
+                null,
+                [
+                    'teacher_id' => $teacher_id,
+                    'section_id' => $section_id,
+                    'subject_ids' => $subject_ids,
+                    'school_year' => $school_year,
+                    'semester' => $semester,
+                    'status' => 'active'
+                ]
+            );
+
             $this->enrollSectionStudentsInSubjects($section_id, $subject_ids, $school_year, $semester);
 
             if ($this->isAjax()) {
@@ -335,6 +357,36 @@ class TeacherAssignmentController
         );
 
         if ($result) {
+
+            $teacher = $this->teacher_model->getTeacherById($teacher_id);
+            $section = $this->section_model->getSectionById($section_id);
+            $subject_codes = $this->subject_model->getSubjectCodesByIds($subject_ids);
+
+            // get old subjects before update (you might need to fetch these)
+            $old_subjects = $this->assignment_model->getSubjectIdsBySection($section_id, $school_year, $semester);
+            $old_codes = $this->subject_model->getSubjectCodesByIds($old_subjects);
+
+            logAction(
+                'reassign_teacher',
+                "Updated teacher {$teacher['full_name']} assignments in section {$section['section_name']}",
+                'teacher_subject_assignments',
+                null,
+                [
+                    'teacher_id' => $teacher_id,
+                    'section_id' => $section_id,
+                    'subject_ids' => $old_subjects,
+                    'school_year' => $school_year,
+                    'semester' => $semester
+                ],
+                [
+                    'teacher_id' => $teacher_id,
+                    'section_id' => $section_id,
+                    'subject_ids' => $subject_ids,
+                    'school_year' => $school_year,
+                    'semester' => $semester
+                ]
+            );
+
             $this->enrollSectionStudentsInSubjects($section_id, $subject_ids, $school_year, $semester);
 
             if ($this->isAjax()) {
@@ -467,6 +519,35 @@ class TeacherAssignmentController
         $result = $this->assignment_model->removeTeacherSectionAssignments($teacher_id, $section_id, $school_year, $semester);
 
         if ($result) {
+
+            $teacher = $this->teacher_model->getTeacherById($teacher_id);
+            $section = $this->section_model->getSectionById($section_id);
+            $removed_subjects = $this->assignment_model->getSubjectIdsBySection($section_id, $school_year, $semester);
+            $subject_codes = $this->subject_model->getSubjectCodesByIds($removed_subjects);
+
+            logAction(
+                'remove_teacher_assignment',
+                "Removed teacher {$teacher['full_name']} from section {$section['section_name']} (subjects: " . implode(', ', $subject_codes) . ")",
+                'teacher_subject_assignments',
+                null,
+                [
+                    'teacher_id' => $teacher_id,
+                    'section_id' => $section_id,
+                    'subject_ids' => $removed_subjects,
+                    'school_year' => $school_year,
+                    'semester' => $semester,
+                    'status' => 'active'
+                ],
+                [
+                    'teacher_id' => $teacher_id,
+                    'section_id' => $section_id,
+                    'subject_ids' => $removed_subjects,
+                    'school_year' => $school_year,
+                    'semester' => $semester,
+                    'status' => 'inactive'
+                ]
+            );
+
             if ($this->isAjax()) {
                 $removedAssignment = $this->assignment_model->getGroupedAssignmentByTeacherSection(
                     $teacher_id,
@@ -533,6 +614,35 @@ class TeacherAssignmentController
         $result = $this->assignment_model->reactivateAssignments($teacher_id, $section_id, $school_year, $semester);
 
         if ($result) {
+
+            $teacher = $this->teacher_model->getTeacherById($teacher_id);
+            $section = $this->section_model->getSectionById($section_id);
+            $restored_subjects = $this->assignment_model->getSubjectIdsBySection($section_id, $school_year, $semester);
+            $subject_codes = $this->subject_model->getSubjectCodesByIds($restored_subjects);
+
+            logAction(
+                'restore_teacher_assignment',
+                "Restored teacher {$teacher['full_name']} to section {$section['section_name']} (subjects: " . implode(', ', $subject_codes) . ")",
+                'teacher_subject_assignments',
+                null,
+                [
+                    'teacher_id' => $teacher_id,
+                    'section_id' => $section_id,
+                    'subject_ids' => $restored_subjects,
+                    'school_year' => $school_year,
+                    'semester' => $semester,
+                    'status' => 'inactive'
+                ],
+                [
+                    'teacher_id' => $teacher_id,
+                    'section_id' => $section_id,
+                    'subject_ids' => $restored_subjects,
+                    'school_year' => $school_year,
+                    'semester' => $semester,
+                    'status' => 'active'
+                ]
+            );
+
             $restoredSubjects = $this->assignment_model->getSubjectIdsBySection($section_id, $school_year, $semester);
             if (!empty($restoredSubjects)) {
                 $this->enrollSectionStudentsInSubjects($section_id, $restoredSubjects, $school_year, $semester);

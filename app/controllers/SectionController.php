@@ -3,6 +3,7 @@
 require_once __DIR__ . '/../models/Section.php';
 require_once __DIR__ . '/../models/Student.php';
 require_once __DIR__ . '/../models/AcademicPeriod.php';
+require_once __DIR__ . '/../helpers/activity_logger.php';
 
 class SectionController
 {
@@ -333,6 +334,23 @@ class SectionController
         );
 
         if ($result) {
+            // LOG CREATE SECTION
+            logAction(
+                'create_section',
+                "Created section: {$section_name} ({$education_level} - {$year_level} - {$strand_course})",
+                'sections',
+                $result,
+                null,
+                [
+                    'section_name' => $section_name,
+                    'education_level' => $education_level,
+                    'year_level' => $year_level,
+                    'strand_course' => $strand_course,
+                    'max_capacity' => $capacity_value,
+                    'school_year' => $school_year
+                ]
+            );
+
             if ($this->isAjax()) {
                 $this->jsonResponse(['success' => true, 'message' => 'Section created successfully.']);
             }
@@ -410,6 +428,9 @@ class SectionController
             exit();
         }
 
+        // get old data for log
+        $old_data = $this->section_model->getSectionById($section_id);
+
         $result = $this->section_model->update(
             $section_id,
             $section_name,
@@ -421,6 +442,29 @@ class SectionController
         );
 
         if ($result) {
+            // LOG UPDATE SECTION
+            logAction(
+                'update_section',
+                "Updated section: {$section_name} ({$education_level} - {$year_level} - {$strand_course})",
+                'sections',
+                $section_id,
+                [
+                    'section_name' => $old_data['section_name'],
+                    'education_level' => $old_data['education_level'],
+                    'year_level' => $old_data['year_level'],
+                    'strand_course' => $old_data['strand_course'],
+                    'max_capacity' => $old_data['max_capacity']
+                ],
+                [
+                    'section_name' => $section_name,
+                    'education_level' => $education_level,
+                    'year_level' => $year_level,
+                    'strand_course' => $strand_course,
+                    'max_capacity' => $capacity_value,
+                    'school_year' => $school_year
+                ]
+            );
+
             if ($this->isAjax()) {
                 $this->jsonResponse(['success' => true, 'message' => 'Section updated successfully.']);
             }
@@ -452,9 +496,29 @@ class SectionController
             exit();
         }
 
+        // get old data for log before deleting
+        $old_data = $this->section_model->getSectionById($section_id);
+
         $result = $this->section_model->delete($section_id);
 
         if ($result) {
+            // LOG DELETE SECTION
+            logAction(
+                'delete_section',
+                "Deleted section: {$old_data['section_name']} ({$old_data['education_level']} - {$old_data['year_level']} - {$old_data['strand_course']})",
+                'sections',
+                $section_id,
+                [
+                    'section_name' => $old_data['section_name'],
+                    'education_level' => $old_data['education_level'],
+                    'year_level' => $old_data['year_level'],
+                    'strand_course' => $old_data['strand_course'],
+                    'max_capacity' => $old_data['max_capacity'],
+                    'school_year' => $old_data['school_year']
+                ],
+                null
+            );
+
             if ($this->isAjax()) {
                 $this->jsonResponse(['success' => true, 'message' => 'Section deleted successfully.']);
             }

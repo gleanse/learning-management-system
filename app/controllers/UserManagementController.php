@@ -2,6 +2,7 @@
 
 require_once __DIR__ . '/../models/User.php';
 require_once __DIR__ . '/../models/Student.php';
+require_once __DIR__ . '/../helpers/activity_logger.php';
 
 class UserManagementController
 {
@@ -220,7 +221,7 @@ class UserManagementController
             $this->jsonResponse(['success' => false, 'errors' => $errors]);
         }
 
-        $result = $this->user_model->register([
+        $user_data = [
             'username'    => $username,
             'email'       => $email,
             'password'    => $password,
@@ -229,7 +230,9 @@ class UserManagementController
             'middle_name' => $middle_name ?: null,
             'last_name'   => $last_name,
             'created_by'  => $_SESSION['user_id'],
-        ]);
+        ];
+
+        $result = $this->user_model->register($user_data);
 
         if (is_array($result)) {
             $errors = [];
@@ -239,6 +242,16 @@ class UserManagementController
         }
 
         if ($result) {
+            // LOG CREATE USER
+            logAction(
+                'create_user',
+                "Created new {$role} user: {$first_name} {$last_name} ({$username})",
+                'users',
+                $result,
+                null,
+                $user_data
+            );
+
             $this->jsonResponse(['success' => true, 'message' => 'User account created successfully.', 'user_id' => $result]);
         }
 
@@ -294,7 +307,7 @@ class UserManagementController
         try {
             $connection->beginTransaction();
 
-            $new_user_id = $this->user_model->register([
+            $user_data = [
                 'username'    => $username,
                 'email'       => $email,
                 'password'    => $password,
@@ -304,7 +317,9 @@ class UserManagementController
                 'last_name'   => $student['last_name'],
                 'created_by'  => $_SESSION['user_id'],
                 'student_id'  => $student_id,
-            ]);
+            ];
+
+            $new_user_id = $this->user_model->register($user_data);
 
             if (is_array($new_user_id)) {
                 $connection->rollBack();
@@ -328,6 +343,16 @@ class UserManagementController
 
             $connection->commit();
             $this->student_model->clearProfileEmail($student_id);
+
+            // LOG CREATE STUDENT ACCOUNT
+            logAction(
+                'create_student_account',
+                "Created and linked student account for: {$student['first_name']} {$student['last_name']} ({$student['student_number']})",
+                'users',
+                $new_user_id,
+                null,
+                $user_data
+            );
 
             $this->jsonResponse([
                 'success' => true,
@@ -391,11 +416,12 @@ class UserManagementController
             $this->jsonResponse(['success' => false, 'errors' => $errors]);
         }
 
-        if (!$this->user_model->getUserById($user_id)) {
+        $old_user = $this->user_model->getUserById($user_id);
+        if (!$old_user) {
             $this->jsonResponse(['success' => false, 'message' => 'User not found.']);
         }
 
-        $result = $this->user_model->updateUser($user_id, [
+        $update_data = [
             'username'    => $username,
             'email'       => $email,
             'password'    => $password,
@@ -404,7 +430,9 @@ class UserManagementController
             'first_name'  => $first_name,
             'middle_name' => $middle_name ?: null,
             'last_name'   => $last_name,
-        ]);
+        ];
+
+        $result = $this->user_model->updateUser($user_id, $update_data);
 
         if (is_array($result)) {
             $errors = [];
@@ -414,6 +442,17 @@ class UserManagementController
         }
 
         if ($result) {
+            // LOG UPDATE USER
+            $name = $first_name . ' ' . $last_name;
+            logAction(
+                'update_user',
+                "Updated user: {$name} ({$username})",
+                'users',
+                $user_id,
+                $old_user,
+                $update_data
+            );
+
             $this->jsonResponse(['success' => true, 'message' => 'User updated successfully.']);
         }
 
@@ -444,13 +483,25 @@ class UserManagementController
             $this->jsonResponse(['success' => false, 'message' => 'You cannot change your own account status.']);
         }
 
-        if (!$this->user_model->getUserById($user_id)) {
+        $old_user = $this->user_model->getUserById($user_id);
+        if (!$old_user) {
             $this->jsonResponse(['success' => false, 'message' => 'User not found.']);
         }
 
         $result = $this->user_model->updateStatus($user_id, $status);
 
         if ($result) {
+            // LOG STATUS CHANGE
+            $name = $old_user['first_name'] . ' ' . $old_user['last_name'];
+            logAction(
+                'update_user_status',
+                "Changed {$name} status from {$old_user['status']} to {$status}",
+                'users',
+                $user_id,
+                ['status' => $old_user['status']],
+                ['status' => $status]
+            );
+
             $this->jsonResponse(['success' => true, 'message' => "User status updated to {$status} successfully."]);
         }
 

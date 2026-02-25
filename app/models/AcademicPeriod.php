@@ -660,4 +660,13 @@ class AcademicPeriod
         $stmt->execute([$school_year, $semester]);
         return $stmt->fetchAll();
     }
+
+    public function getGradingPeriodById($period_id)
+    {
+        $stmt = $this->connection->prepare("
+        SELECT * FROM grading_periods WHERE period_id = ?
+    ");
+        $stmt->execute([$period_id]);
+        return $stmt->fetch();
+    }
 }

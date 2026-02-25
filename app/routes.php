@@ -20,6 +20,7 @@ require_once __DIR__ . '/controllers/FeeConfigController.php';
 require_once __DIR__ . '/controllers/AnnouncementController.php';
 require_once __DIR__ . '/controllers/ChangePasswordController.php';
 require_once __DIR__ . '/controllers/ReportController.php';
+require_once __DIR__ . '/controllers/ActivityLogController.php';
 
 $page = $_GET['page'] ?? 'login';
 $method = $_SERVER['REQUEST_METHOD'];
@@ -67,10 +68,67 @@ if ($page === 'ajax_change_password' && $method === 'POST') {
     exit();
 }
 
-// ANNOUNCEMENT ROUTES
-// admin: announcements management page
-if ($page === 'announcements' && $method === 'GET') {
+// ADMIN ACTIVITY LOGS
+if ($page === 'admin_activity_logs' && $method === 'GET') {
+    if (!isLoggedIn() || !isAdmin()) {
+        header('Location: index.php?page=login');
+        exit();
+    }
+
+    $controller = new ActivityLogController();
+
+    if (isset($_GET['action']) && $_GET['action'] === 'export') {
+        $controller->exportLogs();
+    } else {
+        $controller->showAdminLogs();
+    }
+    exit();
+}
+
+// SUPERADMIN ACTIVITY LOGS
+if ($page === 'activity_logs' && $method === 'GET') {
+    if (!isLoggedIn() || !isSuperAdmin()) {
+        header('Location: index.php?page=login');
+        exit();
+    }
+
+    $controller = new ActivityLogController();
+
+    if (isset($_GET['action']) && $_GET['action'] === 'export') {
+        $controller->exportLogs();
+    } else {
+        $controller->showSuperAdminLogs();
+    }
+    exit();
+}
+
+// AJAX GET LOG DETAILS (shared - both admin and superadmin can access)
+if ($page === 'ajax_get_log_details' && $method === 'GET') {
     if (!isLoggedIn() || (!isAdmin() && !isSuperAdmin())) {
+        http_response_code(403);
+        exit();
+    }
+
+    $controller = new ActivityLogController();
+    $controller->ajaxGetLogDetails();
+    exit();
+}
+
+// CLEAR OLD LOGS (superadmin only)
+if ($page === 'clear_old_logs' && $method === 'POST') {
+    if (!isLoggedIn() || !isSuperAdmin()) {
+        header('Location: index.php?page=login');
+        exit();
+    }
+
+    $controller = new ActivityLogController();
+    $controller->clearOldLogs();
+    exit();
+}
+
+// ANNOUNCEMENT ROUTES (admin only)
+if ($page === 'announcements' && $method === 'GET') {
+    if (!isLoggedIn() || !isAdmin()) {
         header('Location: index.php?page=login');
         exit();
     }
@@ -81,7 +139,7 @@ if ($page === 'announcements' && $method === 'GET') {
 
 // admin ajax: save draft
 if ($page === 'ajax_announcement_save_draft' && $method === 'POST') {
-    if (!isLoggedIn() || (!isAdmin() && !isSuperAdmin())) {
+    if (!isLoggedIn() || !isAdmin()) {
         header('Location: index.php?page=login');
         exit();
     }
@@ -92,7 +150,7 @@ if ($page === 'ajax_announcement_save_draft' && $method === 'POST') {
 
 // admin ajax: publish
 if ($page === 'ajax_announcement_publish' && $method === 'POST') {
-    if (!isLoggedIn() || (!isAdmin() && !isSuperAdmin())) {
+    if (!isLoggedIn() || !isAdmin()) {
         header('Location: index.php?page=login');
         exit();
     }
@@ -103,7 +161,7 @@ if ($page === 'ajax_announcement_publish' && $method === 'POST') {
 
 // admin ajax: delete draft
 if ($page === 'ajax_announcement_delete_draft' && $method === 'POST') {
-    if (!isLoggedIn() || (!isAdmin() && !isSuperAdmin())) {
+    if (!isLoggedIn() || !isAdmin()) {
         header('Location: index.php?page=login');
         exit();
     }
@@ -114,7 +172,7 @@ if ($page === 'ajax_announcement_delete_draft' && $method === 'POST') {
 
 // admin ajax: get single announcement for edit modal
 if ($page === 'ajax_get_announcement' && $method === 'GET') {
-    if (!isLoggedIn() || (!isAdmin() && !isSuperAdmin())) {
+    if (!isLoggedIn() || !isAdmin()) {
         header('Location: index.php?page=login');
         exit();
     }
@@ -169,7 +227,7 @@ if ($page === 'ajax_announcement_mark_all_read' && $method === 'POST') {
 
 // admin ajax: delete published announcement
 if ($page === 'ajax_announcement_delete_published' && $method === 'POST') {
-    if (!isLoggedIn() || (!isAdmin() && !isSuperAdmin())) {
+    if (!isLoggedIn() || !isAdmin()) {
         header('Location: index.php?page=login');
         exit();
     }
@@ -180,7 +238,7 @@ if ($page === 'ajax_announcement_delete_published' && $method === 'POST') {
 
 // admin ajax: update published announcement
 if ($page === 'ajax_announcement_update_published' && $method === 'POST') {
-    if (!isLoggedIn() || (!isAdmin() && !isSuperAdmin())) {
+    if (!isLoggedIn() || !isAdmin()) {
         header('Location: index.php?page=login');
         exit();
     }
@@ -192,7 +250,7 @@ if ($page === 'ajax_announcement_update_published' && $method === 'POST') {
 // REPORT ROUTES (admin only)
 // main reports page
 if ($page === 'reports' && $method === 'GET') {
-    if (!isLoggedIn() || (!isAdmin() && !isSuperAdmin())) {
+    if (!isLoggedIn() || !isAdmin()) {
         header('Location: index.php?page=login');
         exit();
     }
@@ -210,7 +268,7 @@ if ($page === 'reports' && $method === 'GET') {
 
 // ADMIN dashboard
 if ($page === 'admin_dashboard' && $method === 'GET') {
-    if (!isLoggedIn() || (!isAdmin() && !isSuperAdmin())) {
+    if (!isLoggedIn() || !isAdmin()) {
         header('Location: index.php?page=login');
         exit();
     }
@@ -245,9 +303,8 @@ if ($page === 'ajax_dashboard_stats' && $method === 'GET') {
 }
 
 // ACADEMIC PERIOD ROUTES (admin only)
-
 if ($page === 'academic_period' && $method === 'GET') {
-    if (!isLoggedIn() || (!isAdmin() && !isSuperAdmin())) {
+    if (!isLoggedIn() || !isAdmin()) {
         header('Location: index.php?page=login');
         exit();
     }
@@ -258,7 +315,7 @@ if ($page === 'academic_period' && $method === 'GET') {
 
 // ajax: initialize first academic period
 if ($page === 'ajax_academic_period_initialize' && $method === 'POST') {
-    if (!isLoggedIn() || (!isAdmin() && !isSuperAdmin())) {
+    if (!isLoggedIn() || !isAdmin()) {
         header('Location: index.php?page=login');
         exit();
     }
@@ -269,7 +326,7 @@ if ($page === 'ajax_academic_period_initialize' && $method === 'POST') {
 
 // ajax: advance to next academic period
 if ($page === 'ajax_academic_period_advance' && $method === 'POST') {
-    if (!isLoggedIn() || (!isAdmin() && !isSuperAdmin())) {
+    if (!isLoggedIn() || !isAdmin()) {
         header('Location: index.php?page=login');
         exit();
     }
@@ -280,7 +337,7 @@ if ($page === 'ajax_academic_period_advance' && $method === 'POST') {
 
 // ajax: graduate selected students
 if ($page === 'ajax_graduate_students' && $method === 'POST') {
-    if (!isLoggedIn() || (!isAdmin() && !isSuperAdmin())) {
+    if (!isLoggedIn() || !isAdmin()) {
         header('Location: index.php?page=login');
         exit();
     }
@@ -291,7 +348,7 @@ if ($page === 'ajax_graduate_students' && $method === 'POST') {
 
 // ajax: undo last academic period advancement
 if ($page === 'ajax_academic_period_undo' && $method === 'POST') {
-    if (!isLoggedIn() || (!isAdmin() && !isSuperAdmin())) {
+    if (!isLoggedIn() || !isAdmin()) {
         header('Location: index.php?page=login');
         exit();
     }
@@ -302,7 +359,7 @@ if ($page === 'ajax_academic_period_undo' && $method === 'POST') {
 
 // ajax: redo a previously undone advancement
 if ($page === 'ajax_academic_period_redo' && $method === 'POST') {
-    if (!isLoggedIn() || (!isAdmin() && !isSuperAdmin())) {
+    if (!isLoggedIn() || !isAdmin()) {
         header('Location: index.php?page=login');
         exit();
     }
@@ -313,7 +370,7 @@ if ($page === 'ajax_academic_period_redo' && $method === 'POST') {
 
 // ajax: toggle lock on a single grading period
 if ($page === 'ajax_toggle_grading_lock' && $method === 'POST') {
-    if (!isLoggedIn() || (!isAdmin() && !isSuperAdmin())) {
+    if (!isLoggedIn() || !isAdmin()) {
         header('Location: index.php?page=login');
         exit();
     }
@@ -324,7 +381,7 @@ if ($page === 'ajax_toggle_grading_lock' && $method === 'POST') {
 
 // ajax: lock all grading periods at once
 if ($page === 'ajax_lock_all_grading' && $method === 'POST') {
-    if (!isLoggedIn() || (!isAdmin() && !isSuperAdmin())) {
+    if (!isLoggedIn() || !isAdmin()) {
         header('Location: index.php?page=login');
         exit();
     }
@@ -335,7 +392,7 @@ if ($page === 'ajax_lock_all_grading' && $method === 'POST') {
 
 // ajax: save grading period deadlines
 if ($page === 'ajax_save_grading_periods' && $method === 'POST') {
-    if (!isLoggedIn() || (!isAdmin() && !isSuperAdmin())) {
+    if (!isLoggedIn() || !isAdmin()) {
         header('Location: index.php?page=login');
         exit();
     }
@@ -380,7 +437,7 @@ if ($page === 'ajax_update_fee' && $method === 'POST') {
 
 // SUBJECT MANAGEMENT ROUTES (admin only)
 if ($page === 'subjects' && $method === 'GET') {
-    if (!isLoggedIn() || (!isAdmin() && !isSuperAdmin())) {
+    if (!isLoggedIn() || !isAdmin()) {
         header('Location: index.php?page=login');
         exit();
     }
@@ -391,7 +448,7 @@ if ($page === 'subjects' && $method === 'GET') {
 }
 
 if ($page === 'ajax_search_subjects' && $method === 'GET') {
-    if (!isLoggedIn() || (!isAdmin() && !isSuperAdmin())) {
+    if (!isLoggedIn() || !isAdmin()) {
         header('Location: index.php?page=login');
         exit();
     }
@@ -402,7 +459,7 @@ if ($page === 'ajax_search_subjects' && $method === 'GET') {
 }
 
 if ($page === 'create_subject' && $method === 'GET') {
-    if (!isLoggedIn() || (!isAdmin() && !isSuperAdmin())) {
+    if (!isLoggedIn() || !isAdmin()) {
         header('Location: index.php?page=login');
         exit();
     }
@@ -413,7 +470,7 @@ if ($page === 'create_subject' && $method === 'GET') {
 }
 
 if ($page === 'create_subject_action' && $method === 'POST') {
-    if (!isLoggedIn() || (!isAdmin() && !isSuperAdmin())) {
+    if (!isLoggedIn() || !isAdmin()) {
         header('Location: index.php?page=login');
         exit();
     }
@@ -424,7 +481,7 @@ if ($page === 'create_subject_action' && $method === 'POST') {
 }
 
 if ($page === 'edit_subject' && $method === 'GET') {
-    if (!isLoggedIn() || (!isAdmin() && !isSuperAdmin())) {
+    if (!isLoggedIn() || !isAdmin()) {
         header('Location: index.php?page=login');
         exit();
     }
@@ -435,7 +492,7 @@ if ($page === 'edit_subject' && $method === 'GET') {
 }
 
 if ($page === 'update_subject_action' && $method === 'POST') {
-    if (!isLoggedIn() || (!isAdmin() && !isSuperAdmin())) {
+    if (!isLoggedIn() || !isAdmin()) {
         header('Location: index.php?page=login');
         exit();
     }
@@ -446,7 +503,7 @@ if ($page === 'update_subject_action' && $method === 'POST') {
 }
 
 if ($page === 'delete_subject_action' && $method === 'POST') {
-    if (!isLoggedIn() || (!isAdmin() && !isSuperAdmin())) {
+    if (!isLoggedIn() || !isAdmin()) {
         header('Location: index.php?page=login');
         exit();
     }
@@ -458,7 +515,7 @@ if ($page === 'delete_subject_action' && $method === 'POST') {
 
 // SECTION MANAGEMENT ROUTES (admin only)
 if ($page === 'manage_sections' && $method === 'GET') {
-    if (!isLoggedIn() || (!isAdmin() && !isSuperAdmin())) {
+    if (!isLoggedIn() || !isAdmin()) {
         header('Location: index.php?page=login');
         exit();
     }
@@ -469,7 +526,7 @@ if ($page === 'manage_sections' && $method === 'GET') {
 }
 
 if ($page === 'ajax_search_sections' && $method === 'GET') {
-    if (!isLoggedIn() || (!isAdmin() && !isSuperAdmin())) {
+    if (!isLoggedIn() || !isAdmin()) {
         header('Location: index.php?page=login');
         exit();
     }
@@ -480,7 +537,7 @@ if ($page === 'ajax_search_sections' && $method === 'GET') {
 }
 
 if ($page === 'ajax_section_students' && $method === 'GET') {
-    if (!isLoggedIn() || (!isAdmin() && !isSuperAdmin())) {
+    if (!isLoggedIn() || !isAdmin()) {
         header('Location: index.php?page=login');
         exit();
     }
@@ -491,7 +548,7 @@ if ($page === 'ajax_section_students' && $method === 'GET') {
 }
 
 if ($page === 'create_section' && $method === 'GET') {
-    if (!isLoggedIn() || (!isAdmin() && !isSuperAdmin())) {
+    if (!isLoggedIn() || !isAdmin()) {
         header('Location: index.php?page=login');
         exit();
     }
@@ -502,7 +559,7 @@ if ($page === 'create_section' && $method === 'GET') {
 }
 
 if ($page === 'create_section' && $method === 'POST') {
-    if (!isLoggedIn() || (!isAdmin() && !isSuperAdmin())) {
+    if (!isLoggedIn() || !isAdmin()) {
         header('Location: index.php?page=login');
         exit();
     }
@@ -513,7 +570,7 @@ if ($page === 'create_section' && $method === 'POST') {
 }
 
 if ($page === 'edit_section' && $method === 'GET') {
-    if (!isLoggedIn() || (!isAdmin() && !isSuperAdmin())) {
+    if (!isLoggedIn() || !isAdmin()) {
         header('Location: index.php?page=login');
         exit();
     }
@@ -524,7 +581,7 @@ if ($page === 'edit_section' && $method === 'GET') {
 }
 
 if ($page === 'update_section' && $method === 'POST') {
-    if (!isLoggedIn() || (!isAdmin() && !isSuperAdmin())) {
+    if (!isLoggedIn() || !isAdmin()) {
         header('Location: index.php?page=login');
         exit();
     }
@@ -535,7 +592,7 @@ if ($page === 'update_section' && $method === 'POST') {
 }
 
 if ($page === 'delete_section' && $method === 'POST') {
-    if (!isLoggedIn() || (!isAdmin() && !isSuperAdmin())) {
+    if (!isLoggedIn() || !isAdmin()) {
         header('Location: index.php?page=login');
         exit();
     }
@@ -546,7 +603,7 @@ if ($page === 'delete_section' && $method === 'POST') {
 }
 
 if ($page === 'view_section' && $method === 'GET') {
-    if (!isLoggedIn() || (!isAdmin() && !isSuperAdmin())) {
+    if (!isLoggedIn() || !isAdmin()) {
         header('Location: index.php?page=login');
         exit();
     }
@@ -558,7 +615,7 @@ if ($page === 'view_section' && $method === 'GET') {
 
 // STUDENT SECTION ASSIGNMENT ROUTES (admin only)
 if ($page === 'student_sections' && $method === 'GET') {
-    if (!isLoggedIn() || (!isAdmin() && !isSuperAdmin())) {
+    if (!isLoggedIn() || !isAdmin()) {
         header('Location: index.php?page=login');
         exit();
     }
@@ -569,7 +626,7 @@ if ($page === 'student_sections' && $method === 'GET') {
 }
 
 if ($page === 'student_section_data' && $method === 'GET') {
-    if (!isLoggedIn() || (!isAdmin() && !isSuperAdmin())) {
+    if (!isLoggedIn() || !isAdmin()) {
         header('Location: index.php?page=login');
         exit();
     }
@@ -580,7 +637,7 @@ if ($page === 'student_section_data' && $method === 'GET') {
 }
 
 if ($page === 'search_eligible_students' && $method === 'GET') {
-    if (!isLoggedIn() || (!isAdmin() && !isSuperAdmin())) {
+    if (!isLoggedIn() || !isAdmin()) {
         header('Location: index.php?page=login');
         exit();
     }
@@ -591,7 +648,7 @@ if ($page === 'search_eligible_students' && $method === 'GET') {
 }
 
 if ($page === 'search_current_students' && $method === 'GET') {
-    if (!isLoggedIn() || (!isAdmin() && !isSuperAdmin())) {
+    if (!isLoggedIn() || !isAdmin()) {
         header('Location: index.php?page=login');
         exit();
     }
@@ -602,7 +659,7 @@ if ($page === 'search_current_students' && $method === 'GET') {
 }
 
 if ($page === 'assign_students' && $method === 'POST') {
-    if (!isLoggedIn() || (!isAdmin() && !isSuperAdmin())) {
+    if (!isLoggedIn() || !isAdmin()) {
         header('Location: index.php?page=login');
         exit();
     }
@@ -613,7 +670,7 @@ if ($page === 'assign_students' && $method === 'POST') {
 }
 
 if ($page === 'remove_student' && $method === 'POST') {
-    if (!isLoggedIn() || (!isAdmin() && !isSuperAdmin())) {
+    if (!isLoggedIn() || !isAdmin()) {
         header('Location: index.php?page=login');
         exit();
     }
@@ -624,7 +681,7 @@ if ($page === 'remove_student' && $method === 'POST') {
 }
 
 if ($page === 'bulk_remove_students' && $method === 'POST') {
-    if (!isLoggedIn() || (!isAdmin() && !isSuperAdmin())) {
+    if (!isLoggedIn() || !isAdmin()) {
         header('Location: index.php?page=login');
         exit();
     }
@@ -638,7 +695,7 @@ if ($page === 'bulk_remove_students' && $method === 'POST') {
 
 // ajax paginated teacher list for schedule picker
 if ($page === 'ajax_get_teachers' && $method === 'GET') {
-    if (!isLoggedIn() || (!isAdmin() && !isSuperAdmin())) {
+    if (!isLoggedIn() || !isAdmin()) {
         header('Location: index.php?page=login');
         exit();
     }
@@ -650,7 +707,7 @@ if ($page === 'ajax_get_teachers' && $method === 'GET') {
 
 // teacher-first schedule management page
 if ($page === 'teacher_schedules' && $method === 'GET') {
-    if (!isLoggedIn() || (!isAdmin() && !isSuperAdmin())) {
+    if (!isLoggedIn() || !isAdmin()) {
         header('Location: index.php?page=login');
         exit();
     }
@@ -662,7 +719,7 @@ if ($page === 'teacher_schedules' && $method === 'GET') {
 
 // ajax: get assignments + schedules for a teacher
 if ($page === 'ajax_get_teacher_assignments' && $method === 'GET') {
-    if (!isLoggedIn() || (!isAdmin() && !isSuperAdmin())) {
+    if (!isLoggedIn() || !isAdmin()) {
         header('Location: index.php?page=login');
         exit();
     }
@@ -674,7 +731,7 @@ if ($page === 'ajax_get_teacher_assignments' && $method === 'GET') {
 
 // ajax: get schedule entries for a single assignment row
 if ($page === 'ajax_get_assignment_schedules' && $method === 'GET') {
-    if (!isLoggedIn() || (!isAdmin() && !isSuperAdmin())) {
+    if (!isLoggedIn() || !isAdmin()) {
         header('Location: index.php?page=login');
         exit();
     }
@@ -686,7 +743,7 @@ if ($page === 'ajax_get_assignment_schedules' && $method === 'GET') {
 
 // process create schedule (ajax from teacher_schedules modal)
 if ($page === 'create_schedule' && $method === 'POST') {
-    if (!isLoggedIn() || (!isAdmin() && !isSuperAdmin())) {
+    if (!isLoggedIn() || !isAdmin()) {
         header('Location: index.php?page=login');
         exit();
     }
@@ -698,7 +755,7 @@ if ($page === 'create_schedule' && $method === 'POST') {
 
 // process update schedule (ajax from teacher_schedules modal)
 if ($page === 'update_schedule' && $method === 'POST') {
-    if (!isLoggedIn() || (!isAdmin() && !isSuperAdmin())) {
+    if (!isLoggedIn() || !isAdmin()) {
         header('Location: index.php?page=login');
         exit();
     }
@@ -710,7 +767,7 @@ if ($page === 'update_schedule' && $method === 'POST') {
 
 // process delete schedule (ajax from teacher_schedules modal)
 if ($page === 'delete_schedule' && $method === 'POST') {
-    if (!isLoggedIn() || (!isAdmin() && !isSuperAdmin())) {
+    if (!isLoggedIn() || !isAdmin()) {
         header('Location: index.php?page=login');
         exit();
     }
@@ -722,7 +779,7 @@ if ($page === 'delete_schedule' && $method === 'POST') {
 
 // TEACHER ASSIGNMENT ROUTES (admin only)
 if ($page === 'teacher_assignments' && $method === 'GET') {
-    if (!isLoggedIn() || (!isAdmin() && !isSuperAdmin())) {
+    if (!isLoggedIn() || !isAdmin()) {
         header('Location: index.php?page=login');
         exit();
     }
@@ -733,7 +790,7 @@ if ($page === 'teacher_assignments' && $method === 'GET') {
 }
 
 if ($page === 'assign_teacher' && $method === 'POST') {
-    if (!isLoggedIn() || (!isAdmin() && !isSuperAdmin())) {
+    if (!isLoggedIn() || !isAdmin()) {
         header('Location: index.php?page=login');
         exit();
     }
@@ -744,7 +801,7 @@ if ($page === 'assign_teacher' && $method === 'POST') {
 }
 
 if ($page === 'show_reassign' && $method === 'GET') {
-    if (!isLoggedIn() || (!isAdmin() && !isSuperAdmin())) {
+    if (!isLoggedIn() || !isAdmin()) {
         header('Location: index.php?page=login');
         exit();
     }
@@ -755,7 +812,7 @@ if ($page === 'show_reassign' && $method === 'GET') {
 }
 
 if ($page === 'reassign_teacher' && $method === 'POST') {
-    if (!isLoggedIn() || (!isAdmin() && !isSuperAdmin())) {
+    if (!isLoggedIn() || !isAdmin()) {
         header('Location: index.php?page=login');
         exit();
     }
@@ -766,7 +823,7 @@ if ($page === 'reassign_teacher' && $method === 'POST') {
 }
 
 if ($page === 'remove_teacher_assignment' && $method === 'POST') {
-    if (!isLoggedIn() || (!isAdmin() && !isSuperAdmin())) {
+    if (!isLoggedIn() || !isAdmin()) {
         header('Location: index.php?page=login');
         exit();
     }
@@ -777,7 +834,7 @@ if ($page === 'remove_teacher_assignment' && $method === 'POST') {
 }
 
 if ($page === 'restore_teacher_assignment' && $method === 'POST') {
-    if (!isLoggedIn() || (!isAdmin() && !isSuperAdmin())) {
+    if (!isLoggedIn() || !isAdmin()) {
         header('Location: index.php?page=login');
         exit();
     }
@@ -788,7 +845,7 @@ if ($page === 'restore_teacher_assignment' && $method === 'POST') {
 }
 
 if ($page === 'ajax_search_assignment_subjects' && $method === 'GET') {
-    if (!isLoggedIn() || (!isAdmin() && !isSuperAdmin())) {
+    if (!isLoggedIn() || !isAdmin()) {
         header('Location: index.php?page=login');
         exit();
     }
@@ -799,7 +856,7 @@ if ($page === 'ajax_search_assignment_subjects' && $method === 'GET') {
 }
 
 if ($page === 'ajax_search_reassignment_subjects' && $method === 'GET') {
-    if (!isLoggedIn() || (!isAdmin() && !isSuperAdmin())) {
+    if (!isLoggedIn() || !isAdmin()) {
         header('Location: index.php?page=login');
         exit();
     }
@@ -810,7 +867,7 @@ if ($page === 'ajax_search_reassignment_subjects' && $method === 'GET') {
 }
 
 if ($page === 'ajax_search_assignment_teachers' && $method === 'GET') {
-    if (!isLoggedIn() || (!isAdmin() && !isSuperAdmin())) {
+    if (!isLoggedIn() || !isAdmin()) {
         header('Location: index.php?page=login');
         exit();
     }
@@ -821,7 +878,7 @@ if ($page === 'ajax_search_assignment_teachers' && $method === 'GET') {
 }
 
 if ($page === 'ajax_search_assignment_sections' && $method === 'GET') {
-    if (!isLoggedIn() || (!isAdmin() && !isSuperAdmin())) {
+    if (!isLoggedIn() || !isAdmin()) {
         header('Location: index.php?page=login');
         exit();
     }

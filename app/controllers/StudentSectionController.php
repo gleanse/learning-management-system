@@ -3,6 +3,7 @@
 require_once __DIR__ . '/../models/Student.php';
 require_once __DIR__ . '/../models/Section.php';
 require_once __DIR__ . '/../models/AcademicPeriod.php';
+require_once __DIR__ . '/../helpers/activity_logger.php';
 
 class StudentSectionController
 {
@@ -226,11 +227,14 @@ class StudentSectionController
         }
 
         // validate all students are eligible (match education_level, year_level, strand_course)
+        $student_names = [];
         foreach ($student_ids as $student_id) {
             $student = $this->student_model->getStudentById($student_id);
             if (!$student) {
                 $this->jsonResponse(['success' => false, 'message' => 'invalid student selected.']);
             }
+            
+            $student_names[] = $student['first_name'] . ' ' . $student['last_name'] . ' (' . $student['student_number'] . ')';
 
             if ($student['section_id'] !== null) {
                 $message = "student {$student['first_name']} {$student['last_name']} is already assigned to a section.";
@@ -269,6 +273,22 @@ class StudentSectionController
         if ($result) {
             $count = count($student_ids);
             $message = $count === 1 ? 'student assigned successfully.' : "{$count} students assigned successfully.";
+
+            // LOG ASSIGNMENT
+            logAction(
+                'assign_students',
+                "Assigned {$count} student(s) to section {$section['section_name']}: " . implode(', ', array_slice($student_names, 0, 3)) . (count($student_names) > 3 ? '...' : ''),
+                'student_assignments',
+                null,
+                null,
+                [
+                    'section_id' => $section_id,
+                    'section_name' => $section['section_name'],
+                    'student_ids' => $student_ids,
+                    'student_names' => $student_names,
+                    'count' => $count
+                ]
+            );
 
             if ($this->isAjax()) {
                 // return updated section data
@@ -332,6 +352,8 @@ class StudentSectionController
 
         // validate student is in this section
         $student = $this->student_model->getStudentById($student_id);
+        $section = $this->section_model->getSectionWithStudentCount($section_id);
+        
         if (!$student || $student['section_id'] != $section_id) {
             $message = 'student is not assigned to this section.';
             if ($this->isAjax()) {
@@ -345,8 +367,18 @@ class StudentSectionController
         $result = $this->student_model->removeFromSection($student_id);
 
         if ($result) {
-            $student_name = "{$student['first_name']} {$student['last_name']}";
-            $message = "student {$student_name} removed from section successfully.";
+            $student_name = "{$student['first_name']} {$student['last_name']} ({$student['student_number']})";
+            $message = "student {$student['first_name']} {$student['last_name']} removed from section successfully.";
+
+            // LOG REMOVAL
+            logAction(
+                'remove_student',
+                "Removed student {$student_name} from section {$section['section_name']}",
+                'students',
+                $student_id,
+                ['section_id' => $section_id],
+                ['section_id' => null]
+            );
 
             if ($this->isAjax()) {
                 // return updated section data
@@ -408,18 +440,38 @@ class StudentSectionController
             exit();
         }
 
+        $section = $this->section_model->getSectionWithStudentCount($section_id);
         $removed_count = 0;
+        $removed_students = [];
+
         foreach ($student_ids as $student_id) {
             $student = $this->student_model->getStudentById($student_id);
             if ($student && $student['section_id'] == $section_id) {
                 if ($this->student_model->removeFromSection($student_id)) {
                     $removed_count++;
+                    $removed_students[] = $student['first_name'] . ' ' . $student['last_name'] . ' (' . $student['student_number'] . ')';
                 }
             }
         }
 
         if ($removed_count > 0) {
             $message = "{$removed_count} student(s) removed from section successfully.";
+
+            // LOG BULK REMOVAL
+            logAction(
+                'bulk_remove_students',
+                "Removed {$removed_count} student(s) from section {$section['section_name']}",
+                'students',
+                null,
+                null,
+                [
+                    'section_id' => $section_id,
+                    'section_name' => $section['section_name'],
+                    'student_ids' => $student_ids,
+                    'student_names' => array_slice($removed_students, 0, 5),
+                    'count' => $removed_count
+                ]
+            );
 
             if ($this->isAjax()) {
                 $updated_section = $this->section_model->getSectionWithStudentCount($section_id);

@@ -1,5 +1,6 @@
 <?php
 require_once __DIR__ . '/../models/Payment.php';
+require_once __DIR__ . '/../helpers/activity_logger.php';
 
 class PaymentController
 {
@@ -134,6 +135,10 @@ class PaymentController
             exit();
         }
 
+        // get student and payment details before processing for log
+        $student = $this->payment_model->getStudentById($student_id);
+        $payment = $this->payment_model->getPaymentById($payment_id);
+
         $transaction_id = $this->payment_model->processPayment(
             $payment_id,
             (float) $data['amount_paid'],
@@ -146,6 +151,27 @@ class PaymentController
             header("Location: index.php?page=payment_process&student_id={$student_id}");
             exit();
         }
+
+        // LOG THE PAYMENT
+        $amount = (float) $data['amount_paid'];
+        $student_name = $student['first_name'] . ' ' . $student['last_name'] . ' (' . $student['student_number'] . ')';
+        
+        logAction(
+            'process_payment',
+            "Processed payment of ₱" . number_format($amount, 2) . " for {$student_name}",
+            'payment_transactions',
+            $transaction_id,
+            [
+                'payment_id' => $payment_id,
+                'previous_balance' => $payment ? $payment['remaining_balance'] + $amount : null
+            ],
+            [
+                'payment_id' => $payment_id,
+                'amount' => $amount,
+                'notes' => $data['notes'] ?? null,
+                'new_balance' => $payment ? $payment['remaining_balance'] - $amount : null
+            ]
+        );
 
         $_SESSION['last_transaction_id'] = $transaction_id;
 

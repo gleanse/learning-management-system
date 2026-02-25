@@ -188,4 +188,16 @@ class Subject
         $result = $stmt->fetch();
         return $result['count'];
     }
+
+    public function getSubjectCodesByIds($subject_ids)
+    {
+        if (empty($subject_ids)) return [];
+
+        $placeholders = implode(',', array_fill(0, count($subject_ids), '?'));
+        $stmt = $this->connection->prepare("
+        SELECT subject_code FROM subjects WHERE subject_id IN ($placeholders)
+    ");
+        $stmt->execute($subject_ids);
+        return $stmt->fetchAll(PDO::FETCH_COLUMN);
+    }
 }

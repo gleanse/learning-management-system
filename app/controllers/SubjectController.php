@@ -1,6 +1,7 @@
 <?php
 
 require_once __DIR__ . '/../models/Subject.php';
+require_once __DIR__ . '/../helpers/activity_logger.php';
 
 class SubjectController
 {
@@ -249,7 +250,23 @@ class SubjectController
         }
 
         // create subject
-        if ($this->subject_model->create($subject_code, $subject_name, $description)) {
+        $new_id = $this->subject_model->create($subject_code, $subject_name, $description);
+        
+        if ($new_id) {
+            // LOG CREATE SUBJECT
+            logAction(
+                'create_subject',
+                "Created new subject: {$subject_code} - {$subject_name}",
+                'subjects',
+                $new_id,
+                null,
+                [
+                    'subject_code' => $subject_code,
+                    'subject_name' => $subject_name,
+                    'description' => $description
+                ]
+            );
+
             echo json_encode([
                 'success' => true,
                 'message' => 'subject created successfully'
@@ -339,9 +356,9 @@ class SubjectController
             $errors['subject_name'] = 'subject name is required';
         }
 
-        // check if subject exists
-        $subject = $this->subject_model->getById($subject_id);
-        if (!$subject) {
+        // check if subject exists and get old data for log
+        $old_subject = $this->subject_model->getById($subject_id);
+        if (!$old_subject) {
             echo json_encode([
                 'success' => false,
                 'message' => 'subject not found'
@@ -370,6 +387,24 @@ class SubjectController
 
         // update subject
         if ($this->subject_model->update($subject_id, $subject_code, $subject_name, $description)) {
+            // LOG UPDATE SUBJECT
+            logAction(
+                'update_subject',
+                "Updated subject: {$subject_code} - {$subject_name}",
+                'subjects',
+                $subject_id,
+                [
+                    'subject_code' => $old_subject['subject_code'],
+                    'subject_name' => $old_subject['subject_name'],
+                    'description' => $old_subject['description']
+                ],
+                [
+                    'subject_code' => $subject_code,
+                    'subject_name' => $subject_name,
+                    'description' => $description
+                ]
+            );
+
             echo json_encode([
                 'success' => true,
                 'message' => 'subject updated successfully'
@@ -444,6 +479,20 @@ class SubjectController
 
         // delete subject
         if ($this->subject_model->delete($subject_id)) {
+            // LOG DELETE SUBJECT
+            logAction(
+                'delete_subject',
+                "Deleted subject: {$subject['subject_code']} - {$subject['subject_name']}",
+                'subjects',
+                $subject_id,
+                [
+                    'subject_code' => $subject['subject_code'],
+                    'subject_name' => $subject['subject_name'],
+                    'description' => $subject['description']
+                ],
+                null
+            );
+
             echo json_encode([
                 'success' => true,
                 'message' => 'subject deleted successfully'

@@ -1,5 +1,6 @@
 <?php
 require_once __DIR__ . '/../models/AcademicPeriod.php';
+require_once __DIR__ . '/../helpers/activity_logger.php';
 
 class AcademicPeriodController
 {
@@ -104,6 +105,20 @@ class AcademicPeriodController
             $this->jsonResponse(['success' => false, 'message' => 'Failed to initialize period. Please try again.'], 500);
         }
 
+        // LOG THIS ACTION
+        logAction(
+            'initialize_period',
+            "Initialized academic period: {$semester} Semester {$school_year}",
+            'school_settings',
+            null,
+            null,
+            [
+                'school_year' => $school_year,
+                'semester' => $semester,
+                'payment_records_created' => $result['created']
+            ]
+        );
+
         $this->jsonResponse(array_merge(
             ['success' => true, 'message' => "Period initialized: {$semester} Semester {$school_year}. {$result['created']} payment record(s) created."],
             $this->buildCurrentPeriodPayload($school_year, $semester)
@@ -141,6 +156,27 @@ class AcademicPeriodController
         }
 
         $next = $result['next'];
+
+        // LOG THIS ACTION
+        logAction(
+            'advance_period',
+            "Advanced academic period to: {$next['semester']} Semester {$next['school_year']}",
+            'school_settings',
+            null,
+            [
+                'previous' => [
+                    'school_year' => $current['school_year'],
+                    'semester' => $current['semester']
+                ]
+            ],
+            [
+                'current' => [
+                    'school_year' => $next['school_year'],
+                    'semester' => $next['semester']
+                ],
+                'payment_records_created' => $result['created']
+            ]
+        );
 
         $this->jsonResponse(array_merge(
             [
@@ -183,6 +219,26 @@ class AcademicPeriodController
 
         $prev = $result['previous'];
 
+        // LOG THIS ACTION
+        logAction(
+            'undo_period',
+            "Undid period advancement. Reverted to: {$prev['semester']} Semester {$prev['school_year']}",
+            'school_settings',
+            null,
+            [
+                'previous' => [
+                    'school_year' => $current['school_year'],
+                    'semester' => $current['semester']
+                ]
+            ],
+            [
+                'current' => [
+                    'school_year' => $prev['school_year'],
+                    'semester' => $prev['semester']
+                ]
+            ]
+        );
+
         $this->jsonResponse(array_merge(
             [
                 'success'  => true,
@@ -224,6 +280,27 @@ class AcademicPeriodController
 
         $target = $result['target'];
 
+        // LOG THIS ACTION
+        logAction(
+            'redo_period',
+            "Redid period advancement to: {$target['semester']} Semester {$target['school_year']}",
+            'school_settings',
+            null,
+            [
+                'previous' => [
+                    'school_year' => $current['school_year'],
+                    'semester' => $current['semester']
+                ]
+            ],
+            [
+                'current' => [
+                    'school_year' => $target['school_year'],
+                    'semester' => $target['semester']
+                ],
+                'payment_records_created' => $result['created']
+            ]
+        );
+
         $this->jsonResponse(array_merge(
             [
                 'success'  => true,
@@ -256,6 +333,21 @@ class AcademicPeriodController
         if (!$result) {
             $this->jsonResponse(['success' => false, 'message' => 'Failed to update lock status.'], 500);
         }
+
+        // GET PERIOD DETAILS FOR LOG
+        $period = $this->academic_model->getGradingPeriodById($period_id);
+        $action_text = $is_locked ? 'Locked' : 'Unlocked';
+        $period_name = $period['grading_period'] ?? 'Unknown';
+
+        // LOG THIS ACTION
+        logAction(
+            $is_locked ? 'lock_grading_period' : 'unlock_grading_period',
+            $action_text . ' ' . $period_name . ' grading period',
+            'grading_periods',
+            $period_id,
+            ['is_locked' => !$is_locked],
+            ['is_locked' => $is_locked]
+        );
 
         $current = $this->academic_model->getCurrentPeriod();
         $grading_periods = $current
@@ -292,6 +384,20 @@ class AcademicPeriodController
         foreach ($periods as $period) {
             $this->academic_model->lockGradingPeriod($period['period_id']);
         }
+
+        // LOG THIS ACTION
+        logAction(
+            'lock_all_grading',
+            "Locked all grading periods for {$current['semester']} Semester {$current['school_year']}",
+            'grading_periods',
+            null,
+            null,
+            [
+                'school_year' => $current['school_year'],
+                'semester' => $current['semester'],
+                'periods_locked' => count($periods)
+            ]
+        );
 
         $grading_periods = $this->academic_model->getGradingPeriodSummary($current['school_year'], $current['semester']);
 
@@ -330,6 +436,20 @@ class AcademicPeriodController
             $this->jsonResponse(['success' => false, 'message' => 'Failed to save grading periods.'], 500);
         }
 
+        // LOG THIS ACTION
+        logAction(
+            'update_grading_deadlines',
+            "Updated grading period deadlines for {$current['semester']} Semester {$current['school_year']}",
+            'grading_periods',
+            null,
+            null,
+            [
+                'school_year' => $current['school_year'],
+                'semester' => $current['semester'],
+                'deadlines' => $deadlines
+            ]
+        );
+
         $grading_periods = $this->academic_model->getGradingPeriodSummary($current['school_year'], $current['semester']);
 
         $this->jsonResponse([
@@ -361,6 +481,16 @@ class AcademicPeriodController
         if (!$result) {
             $this->jsonResponse(['success' => false, 'message' => 'Failed to graduate students. Please try again.'], 500);
         }
+
+        // LOG THIS ACTION
+        logAction(
+            'graduate_students',
+            "Graduated " . count($student_ids) . " student(s)",
+            'students',
+            null,
+            null,
+            ['student_ids' => $student_ids]
+        );
 
         $active_count = $this->academic_model->getActiveStudentCount();
         $graduatable  = $this->academic_model->getGraduatableStudents();

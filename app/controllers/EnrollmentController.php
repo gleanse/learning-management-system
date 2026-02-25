@@ -2,6 +2,7 @@
 
 require_once __DIR__ . '/../models/Enrollment.php';
 require_once __DIR__ . '/../models/AcademicPeriod.php';
+require_once __DIR__ . '/../helpers/activity_logger.php';
 
 class EnrollmentController
 {
@@ -168,6 +169,17 @@ class EnrollmentController
         }
 
         $this->enrollment_model->saveDraft($this->sanitize($_POST));
+        
+        // LOG DRAFT SAVE
+        logAction(
+            'save_enrollment_draft',
+            'Saved enrollment draft',
+            'students',
+            null,
+            null,
+            ['has_data' => true]
+        );
+        
         echo json_encode(['success' => true, 'message' => 'Draft saved']);
     }
 
@@ -209,6 +221,26 @@ class EnrollmentController
         }
 
         $this->enrollment_model->clearDraft();
+
+        // LOG NEW ENROLLMENT
+        logAction(
+            'enroll_student',
+            "Enrolled new student: {$data['first_name']} {$data['last_name']} - {$data['student_number']}",
+            'students',
+            $student_id,
+            null,
+            [
+                'student_number' => $data['student_number'] ?? null,
+                'first_name' => $data['first_name'],
+                'last_name' => $data['last_name'],
+                'education_level' => $data['education_level'],
+                'year_level' => $data['year_level'],
+                'strand_course' => $data['strand_course'],
+                'section_id' => $data['section_id'] ?? null,
+                'school_year' => $data['school_year'],
+                'semester' => $data['semester']
+            ]
+        );
 
         $_SESSION['enrollment_success'] = [
             'student_id'   => $student_id,

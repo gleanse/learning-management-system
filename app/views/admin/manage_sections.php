@@ -91,6 +91,12 @@
                     </a>
                 </li>
                 <li class="nav-item">
+                    <a class="nav-link" href="index.php?page=admin_activity_logs">
+                        <i class="bi bi-journal-text"></i>
+                        <span>Activity Logs</span>
+                    </a>
+                </li>
+                <li class="nav-item">
                     <a class="nav-link" href="index.php?page=logout">
                         <i class="bi bi-box-arrow-right"></i>
                         <span>Logout</span>

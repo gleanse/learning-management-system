@@ -4,6 +4,7 @@ require_once __DIR__ . '/../models/Schedule.php';
 require_once __DIR__ . '/../models/Teacher.php';
 require_once __DIR__ . '/../models/Subject.php';
 require_once __DIR__ . '/../models/Section.php';
+require_once __DIR__ . '/../helpers/activity_logger.php';
 
 class ScheduleManagementController
 {
@@ -244,6 +245,36 @@ class ScheduleManagementController
         $result = $this->schedule_model->create($teacher_id, $subject_id, $section_id, $day_of_week, $start_time, $end_time, $room, $school_year, $semester, $status);
 
         if ($result) {
+            // GET NAMES FOR LOG
+            $teacher = $this->teacher_model->getTeacherById($teacher_id);
+            $subject = $this->subject_model->getById($subject_id);
+            $section = $this->section_model->getSectionById($section_id);
+            
+            $time_display = date('g:i A', strtotime($start_time)) . ' - ' . date('g:i A', strtotime($end_time));
+            
+            logAction(
+                'create_schedule',
+                "Created schedule: {$teacher['full_name']} - {$subject['subject_code']} - {$section['section_name']} on {$day_of_week} {$time_display}",
+                'class_schedules',
+                $result,
+                null,
+                [
+                    'teacher_id' => $teacher_id,
+                    'teacher_name' => $teacher['full_name'],
+                    'subject_id' => $subject_id,
+                    'subject_code' => $subject['subject_code'],
+                    'section_id' => $section_id,
+                    'section_name' => $section['section_name'],
+                    'day_of_week' => $day_of_week,
+                    'start_time' => $start_time,
+                    'end_time' => $end_time,
+                    'room' => $room,
+                    'school_year' => $school_year,
+                    'semester' => $semester,
+                    'status' => $status
+                ]
+            );
+
             if ($this->isAjax()) {
                 $schedules = $this->schedule_model->getSchedulesByAssignment($teacher_id, $subject_id, $section_id, $school_year, $semester);
                 $this->jsonResponse(['success' => true, 'message' => 'Schedule created successfully.', 'schedules' => $schedules, 'row_key' => "{$teacher_id}_{$subject_id}_{$section_id}"]);
@@ -301,7 +332,8 @@ class ScheduleManagementController
             exit();
         }
 
-        if (!$this->schedule_model->getScheduleById($schedule_id)) {
+        $old_schedule = $this->schedule_model->getScheduleById($schedule_id);
+        if (!$old_schedule) {
             $msg = 'Schedule not found.';
             if ($this->isAjax()) $this->jsonResponse(['success' => false, 'message' => $msg]);
             $_SESSION['schedule_errors'] = ['schedule_id' => $msg];
@@ -347,6 +379,43 @@ class ScheduleManagementController
         $result = $this->schedule_model->update($schedule_id, $teacher_id, $subject_id, $section_id, $day_of_week, $start_time, $end_time, $room, $school_year, $semester, $status);
 
         if ($result) {
+            // GET NAMES FOR LOG
+            $teacher = $this->teacher_model->getTeacherById($teacher_id);
+            $subject = $this->subject_model->getById($subject_id);
+            $section = $this->section_model->getSectionById($section_id);
+            
+            $time_display = date('g:i A', strtotime($start_time)) . ' - ' . date('g:i A', strtotime($end_time));
+            
+            logAction(
+                'update_schedule',
+                "Updated schedule: {$teacher['full_name']} - {$subject['subject_code']} - {$section['section_name']} on {$day_of_week} {$time_display}",
+                'class_schedules',
+                $schedule_id,
+                [
+                    'teacher_id' => $old_schedule['teacher_id'],
+                    'subject_id' => $old_schedule['subject_id'],
+                    'section_id' => $old_schedule['section_id'],
+                    'day_of_week' => $old_schedule['day_of_week'],
+                    'start_time' => $old_schedule['start_time'],
+                    'end_time' => $old_schedule['end_time'],
+                    'room' => $old_schedule['room'],
+                    'status' => $old_schedule['status']
+                ],
+                [
+                    'teacher_id' => $teacher_id,
+                    'teacher_name' => $teacher['full_name'],
+                    'subject_id' => $subject_id,
+                    'subject_code' => $subject['subject_code'],
+                    'section_id' => $section_id,
+                    'section_name' => $section['section_name'],
+                    'day_of_week' => $day_of_week,
+                    'start_time' => $start_time,
+                    'end_time' => $end_time,
+                    'room' => $room,
+                    'status' => $status
+                ]
+            );
+
             if ($this->isAjax()) {
                 $schedules = $this->schedule_model->getSchedulesByAssignment($teacher_id, $subject_id, $section_id, $school_year, $semester);
                 $this->jsonResponse(['success' => true, 'message' => 'Schedule updated successfully.', 'schedules' => $schedules, 'row_key' => "{$teacher_id}_{$subject_id}_{$section_id}"]);
@@ -382,7 +451,8 @@ class ScheduleManagementController
             exit();
         }
 
-        if (!$this->schedule_model->getScheduleById($schedule_id)) {
+        $old_schedule = $this->schedule_model->getScheduleById($schedule_id);
+        if (!$old_schedule) {
             $message = 'Schedule not found.';
             if ($this->isAjax()) $this->jsonResponse(['success' => false, 'message' => $message]);
             $_SESSION['schedule_errors'] = ['schedule_id' => $message];
@@ -390,9 +460,39 @@ class ScheduleManagementController
             exit();
         }
 
+        // GET NAMES FOR LOG BEFORE DELETING
+        $teacher = $this->teacher_model->getTeacherById($old_schedule['teacher_id']);
+        $subject = $this->subject_model->getById($old_schedule['subject_id']);
+        $section = $this->section_model->getSectionById($old_schedule['section_id']);
+        
+        $time_display = date('g:i A', strtotime($old_schedule['start_time'])) . ' - ' . date('g:i A', strtotime($old_schedule['end_time']));
+
         $result = $this->schedule_model->delete($schedule_id);
 
         if ($result) {
+            logAction(
+                'delete_schedule',
+                "Deleted schedule: {$teacher['full_name']} - {$subject['subject_code']} - {$section['section_name']} on {$old_schedule['day_of_week']} {$time_display}",
+                'class_schedules',
+                $schedule_id,
+                [
+                    'teacher_id' => $old_schedule['teacher_id'],
+                    'teacher_name' => $teacher['full_name'],
+                    'subject_id' => $old_schedule['subject_id'],
+                    'subject_code' => $subject['subject_code'],
+                    'section_id' => $old_schedule['section_id'],
+                    'section_name' => $section['section_name'],
+                    'day_of_week' => $old_schedule['day_of_week'],
+                    'start_time' => $old_schedule['start_time'],
+                    'end_time' => $old_schedule['end_time'],
+                    'room' => $old_schedule['room'],
+                    'school_year' => $old_schedule['school_year'],
+                    'semester' => $old_schedule['semester'],
+                    'status' => $old_schedule['status']
+                ],
+                null
+            );
+
             if ($this->isAjax()) {
                 $schedules = ($teacher_id && $subject_id && $section_id)
                     ? $this->schedule_model->getSchedulesByAssignment($teacher_id, $subject_id, $section_id, $school_year, $semester)

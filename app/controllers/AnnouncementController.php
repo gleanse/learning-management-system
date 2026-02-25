@@ -1,6 +1,7 @@
 <?php
 
 require_once __DIR__ . '/../models/Announcement.php';
+require_once __DIR__ . '/../helpers/activity_logger.php';
 
 class AnnouncementController
 {
@@ -76,9 +77,39 @@ class AnnouncementController
 
         if ($edit_id) {
             $rows = $this->model->updateDraft($edit_id, $title, $content, $target_type, $target_value, $created_by);
+            
+            // LOG UPDATE DRAFT
+            logAction(
+                'update_draft',
+                "Updated announcement draft: {$title}",
+                'announcements',
+                $edit_id,
+                null,
+                [
+                    'title' => $title,
+                    'target_type' => $target_type,
+                    'target_value' => $target_value
+                ]
+            );
+            
             $this->jsonResponse(['success' => true, 'message' => 'Draft updated.', 'announcement_id' => $edit_id]);
         } else {
             $id = $this->model->createDraft($title, $content, $target_type, $target_value, $created_by);
+            
+            // LOG CREATE DRAFT
+            logAction(
+                'create_draft',
+                "Created announcement draft: {$title}",
+                'announcements',
+                $id,
+                null,
+                [
+                    'title' => $title,
+                    'target_type' => $target_type,
+                    'target_value' => $target_value
+                ]
+            );
+            
             $this->jsonResponse(['success' => true, 'message' => 'Draft saved.', 'announcement_id' => $id]);
         }
     }
@@ -108,6 +139,22 @@ class AnnouncementController
                 // update draft first then publish
                 $this->model->updateDraft($edit_id, $title, $content, $target_type, $target_value, $created_by);
                 $count = $this->model->publish($edit_id, $created_by);
+                
+                // LOG PUBLISH FROM DRAFT
+                logAction(
+                    'publish_announcement',
+                    "Published announcement from draft: {$title} to {$count} recipients",
+                    'announcements',
+                    $edit_id,
+                    ['status' => 'draft'],
+                    [
+                        'status' => 'published',
+                        'recipient_count' => $count,
+                        'target_type' => $target_type,
+                        'target_value' => $target_value
+                    ]
+                );
+                
                 $this->jsonResponse([
                     'success'         => true,
                     'message'         => "Announcement published to {$count} recipient(s).",
@@ -116,6 +163,23 @@ class AnnouncementController
                 ]);
             } else {
                 $result = $this->model->createAndPublish($title, $content, $target_type, $target_value, $created_by);
+                
+                // LOG CREATE AND PUBLISH
+                logAction(
+                    'create_publish_announcement',
+                    "Created and published announcement: {$title} to {$result['recipient_count']} recipients",
+                    'announcements',
+                    $result['announcement_id'],
+                    null,
+                    [
+                        'title' => $title,
+                        'target_type' => $target_type,
+                        'target_value' => $target_value,
+                        'recipient_count' => $result['recipient_count'],
+                        'status' => 'published'
+                    ]
+                );
+                
                 $this->jsonResponse([
                     'success'         => true,
                     'message'         => "Announcement published to {$result['recipient_count']} recipient(s).",
@@ -139,9 +203,22 @@ class AnnouncementController
             $this->jsonResponse(['success' => false, 'message' => 'Missing announcement ID.'], 422);
         }
 
+        // get draft details before deleting for log
+        $draft = $this->model->getById($announcement_id);
+        
         $rows = $this->model->deleteDraft($announcement_id, $created_by);
 
         if ($rows) {
+            // LOG DELETE DRAFT
+            logAction(
+                'delete_draft',
+                "Deleted announcement draft: {$draft['title']}",
+                'announcements',
+                $announcement_id,
+                $draft,
+                null
+            );
+            
             $this->jsonResponse(['success' => true, 'message' => 'Draft deleted.']);
         } else {
             $this->jsonResponse(['success' => false, 'message' => 'Draft not found or already published.'], 404);
@@ -220,10 +297,23 @@ class AnnouncementController
         if (!$announcement_id) {
             $this->jsonResponse(['success' => false, 'message' => 'Missing announcement ID.'], 422);
         }
-
+        
+        // get announcement details before deleting for log
+        $announcement = $this->model->getById($announcement_id);
+        
         $rows = $this->model->deletePublished($announcement_id, $created_by);
 
         if ($rows) {
+            // LOG DELETE PUBLISHED
+            logAction(
+                'delete_announcement',
+                "Deleted published announcement: {$announcement['title']}",
+                'announcements',
+                $announcement_id,
+                $announcement,
+                null
+            );
+            
             $this->jsonResponse(['success' => true, 'message' => 'Announcement deleted.']);
         } else {
             $this->jsonResponse(['success' => false, 'message' => 'Announcement not found.'], 404);
@@ -253,8 +343,32 @@ class AnnouncementController
             $this->jsonResponse(['success' => false, 'message' => 'Invalid target type.'], 422);
         }
 
+        // get old data for log
+        $old_data = $this->model->getById($announcement_id);
+
         try {
             $count = $this->model->updatePublished($announcement_id, $title, $content, $target_type, $target_value, $created_by);
+            
+            // LOG UPDATE PUBLISHED
+            logAction(
+                'update_announcement',
+                "Updated published announcement: {$title}",
+                'announcements',
+                $announcement_id,
+                [
+                    'title' => $old_data['title'],
+                    'content' => $old_data['content'],
+                    'target_type' => $old_data['target_type'],
+                    'target_value' => $old_data['target_value']
+                ],
+                [
+                    'title' => $title,
+                    'target_type' => $target_type,
+                    'target_value' => $target_value,
+                    'recipient_count' => $count
+                ]
+            );
+            
             $this->jsonResponse([
                 'success'         => true,
                 'message'         => "Announcement updated and re-sent to {$count} recipient(s).",

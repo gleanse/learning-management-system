@@ -2,6 +2,7 @@
 
 require_once __DIR__ . '/../models/StudentProfile.php';
 require_once __DIR__ . '/../models/AcademicPeriod.php';
+require_once __DIR__ . '/../helpers/activity_logger.php';
 
 class StudentProfileController
 {
@@ -138,6 +139,9 @@ class StudentProfileController
         $current     = $this->academic_model->getCurrentPeriod();
         $school_year = $current['school_year'] ?? '';
 
+        // get student details for log
+        $student = $this->profile_model->getStudentWithProfile($student_id, $school_year, $current['semester'] ?? 'First');
+
         // only accept known document fields, default unchecked to 0
         $docs = [
             'psa_birth_certificate'  => isset($_POST['psa_birth_certificate'])  ? 1 : 0,
@@ -147,10 +151,26 @@ class StudentProfileController
             'medical_certificate'    => isset($_POST['medical_certificate'])    ? 1 : 0,
         ];
 
+        // get old documents for log
+        $old_docs = $this->profile_model->getEnrollmentDocuments($student_id, $school_year);
+
         $result = $this->profile_model->saveEnrollmentDocuments($student_id, $school_year, $docs);
 
-        if ($this->isAjax()) {
-            if ($result) {
+        if ($result) {
+            // LOG DOCUMENT UPDATE
+            $completed = array_sum($docs);
+            $student_name = $student['first_name'] . ' ' . $student['last_name'] . ' (' . $student['student_number'] . ')';
+            
+            logAction(
+                'update_documents',
+                "Updated enrollment documents for {$student_name} - {$completed}/5 documents completed",
+                'enrollment_documents',
+                $student_id,
+                $old_docs ?: null,
+                $docs
+            );
+
+            if ($this->isAjax()) {
                 $submitted = array_sum($docs);
                 $this->jsonResponse([
                     'success'   => true,
@@ -160,6 +180,9 @@ class StudentProfileController
                     'docs'      => $docs,
                 ]);
             }
+        }
+
+        if ($this->isAjax()) {
             $this->jsonResponse(['success' => false, 'message' => 'Failed to update documents.'], 500);
         }
 
@@ -258,6 +281,10 @@ class StudentProfileController
             exit();
         }
 
+        // get old data for log
+        $old_data = $this->profile_model->getStudentWithProfile($student_id, '', '');
+        $old_profile = $this->profile_model->getProfileData($student_id);
+
         $this->profile_model->updateStudentName($student_id, $first_name, $middle_name ?: null, $last_name);
 
         // if student has a linked account, update email in users table instead
@@ -270,6 +297,24 @@ class StudentProfileController
         $result = $this->profile_model->saveProfile($student_id, $data);
 
         if ($result) {
+            // LOG PROFILE UPDATE
+            $student_name = $first_name . ' ' . $last_name . ' (' . ($old_data['student_number'] ?? 'N/A') . ')';
+            
+            logAction(
+                'update_profile',
+                "Updated profile for student: {$student_name}",
+                'student_profiles',
+                $student_id,
+                [
+                    'name' => ($old_data['first_name'] ?? '') . ' ' . ($old_data['last_name'] ?? ''),
+                    'profile' => $old_profile
+                ],
+                [
+                    'name' => $first_name . ' ' . $last_name,
+                    'profile' => $data
+                ]
+            );
+
             $_SESSION['profile_success'] = 'Student profile updated successfully.';
         } else {
             $_SESSION['profile_errors'] = ['general' => 'Failed to update profile. Please try again.'];

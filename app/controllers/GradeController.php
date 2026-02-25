@@ -7,6 +7,7 @@ require_once __DIR__ . '/../models/GradingPeriod.php';
 require_once __DIR__ . '/../models/Subject.php';
 require_once __DIR__ . '/../models/Section.php';
 require_once __DIR__ . '/../models/AcademicPeriod.php';
+require_once __DIR__ . '/../helpers/activity_logger.php';
 
 class GradeController
 {
@@ -262,6 +263,10 @@ class GradeController
             $errors['grade_value'] = 'Grade must be a number.';
         }
 
+        // get student and subject for log description
+        $student = $this->student_model->getStudentById($student_id);
+        $subject = $this->subject_model->getById($subject_id);
+
         // convert gpa to percentage if needed then validate
         $percentage_value = $grade_value;
         if ($grade_format === 'gpa' && !empty($grade_value) && is_numeric($grade_value)) {
@@ -302,6 +307,15 @@ class GradeController
             exit();
         }
 
+        // check if grade already exists (for before/after)
+        $existing_grade = $this->grade_model->getGrade(
+            $student_id,
+            $subject_id,
+            $grading_period,
+            $semester,
+            $school_year
+        );
+
         // store grades as percentage internally
         $grade_data = [
             'student_id'     => $student_id,
@@ -317,6 +331,27 @@ class GradeController
         $result = $this->grade_model->saveGrade($grade_data);
 
         if ($result) {
+            // LOG GRADE SAVE
+            $action = $existing_grade ? 'update_grade' : 'create_grade';
+            $action_text = $existing_grade ? 'Updated' : 'Added';
+            
+            logAction(
+                $action,
+                "{$action_text} grade for {$student['first_name']} {$student['last_name']} - {$subject['subject_code']} ({$grading_period})",
+                'grades',
+                $existing_grade ? $existing_grade['grade_id'] : null,
+                $existing_grade ?: null,
+                [
+                    'student_id' => $student_id,
+                    'subject_id' => $subject_id,
+                    'grading_period' => $grading_period,
+                    'semester' => $semester,
+                    'school_year' => $school_year,
+                    'grade_value' => $percentage_value,
+                    'remarks' => $remarks
+                ]
+            );
+
             if ($this->isAjax()) {
                 $this->jsonResponse(['success' => true, 'message' => 'Grade saved successfully.']);
             }
