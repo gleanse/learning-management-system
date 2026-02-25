@@ -19,6 +19,7 @@ require_once __DIR__ . '/controllers/StudentProfileController.php';
 require_once __DIR__ . '/controllers/FeeConfigController.php';
 require_once __DIR__ . '/controllers/AnnouncementController.php';
 require_once __DIR__ . '/controllers/ChangePasswordController.php';
+require_once __DIR__ . '/controllers/ReportController.php';
 
 $page = $_GET['page'] ?? 'login';
 $method = $_SERVER['REQUEST_METHOD'];
@@ -185,6 +186,25 @@ if ($page === 'ajax_announcement_update_published' && $method === 'POST') {
     }
     $controller = new AnnouncementController();
     $controller->ajaxUpdatePublished();
+    exit();
+}
+
+// REPORT ROUTES (admin only)
+// main reports page
+if ($page === 'reports' && $method === 'GET') {
+    if (!isLoggedIn() || (!isAdmin() && !isSuperAdmin())) {
+        header('Location: index.php?page=login');
+        exit();
+    }
+
+    $controller = new ReportController();
+
+    // check if export action
+    if (isset($_GET['action']) && $_GET['action'] === 'export') {
+        $controller->exportReport();
+    } else {
+        $controller->showReports();
+    }
     exit();
 }
 

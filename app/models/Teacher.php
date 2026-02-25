@@ -187,12 +187,13 @@ class Teacher
         return $result['total'] ?? 0;
     }
 
-    // get count of teachers with subject assignments
+    // get count of teachers with active subject assignments
     public function getAssignedTeachersCount()
     {
         $stmt = $this->connection->prepare("
             SELECT COUNT(DISTINCT teacher_id) as total 
             FROM teacher_subject_assignments
+            WHERE status = 'active'
         ");
         $stmt->execute();
         $result = $stmt->fetch();
