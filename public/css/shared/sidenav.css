@@ -232,7 +232,6 @@
   .user-details {
     display: none;
   }
-
 }
 
 /* sidebar overlay */
@@ -272,4 +271,80 @@
 .hamburger-btn i {
   font-size: 1.75rem;
   line-height: 1;
+}
+
+/* Ensure all nav items are visible with proper spacing */
+.sidenav {
+  display: flex;
+  flex-direction: column;
+  max-height: 100vh;
+}
+
+.sidenav-menu {
+  flex: 1;
+  overflow-y: auto; /* Makes only the menu scrollable, header stays fixed */
+  padding-bottom: 1rem;
+}
+
+/* Optional: Add a fade effect to indicate scrollability */
+.sidenav-menu::after {
+  content: '';
+  position: sticky;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 30px;
+  background: linear-gradient(to top, var(--secondary) 0%, transparent 100%);
+  pointer-events: none;
+  opacity: 0.5;
+  display: none;
+}
+
+.sidenav-menu:hover::after {
+  display: block;
+}
+
+/* Make nav items slightly more compact on smaller screens */
+@media (max-height: 800px) {
+  .sidenav-header {
+    padding: 1.5rem 1.5rem 1rem; /* Reduce header padding */
+  }
+
+  .sidenav-menu .nav-link {
+    padding: 0.6rem 1rem; /* Slightly smaller nav items */
+    font-size: 0.9rem;
+  }
+
+  .school-logo {
+    width: 45px;
+    height: 45px;
+  }
+
+  .school-info h5 {
+    font-size: 1rem;
+  }
+}
+
+@media (max-height: 600px) {
+  .sidenav-header {
+    padding: 1rem 1.5rem 0.75rem;
+  }
+
+  .school-logo {
+    width: 40px;
+    height: 40px;
+  }
+
+  .school-info h5 {
+    font-size: 0.95rem;
+    margin-bottom: 0;
+  }
+
+  .school-info .subtitle {
+    display: none; /* Hide subtitle on very short screens */
+  }
+
+  .sidenav-menu .nav-link {
+    padding: 0.5rem 1rem;
+  }
 }
