@@ -14,11 +14,12 @@
 </head>
 
 <body>
+    <div class="sidebar-overlay" id="sidebarOverlay"></div>
     <div class="toast-container position-fixed top-0 end-0 p-3" style="z-index: 1100;" id="toastContainer"></div>
 
     <div class="d-flex">
         <!-- sidebar -->
-        <div class="sidenav">
+        <div class="sidenav" id="sidebar">
             <div class="sidenav-header">
                 <div class="school-brand">
                     <div class="school-logo">
@@ -519,11 +520,11 @@
                                                 <?php foreach ($grading_periods as $period): ?>
                                                     <tr class="grading-period-row <?= $period['lock_status'] === 'locked' ? 'row-locked' : ($period['lock_status'] === 'expired' ? 'row-expired' : '') ?>"
                                                         data-period-id="<?= $period['period_id'] ?>">
-                                                        <td class="fw-semibold">
+                                                        <td data-label="Grading Period" class="fw-semibold">
                                                             <i class="bi bi-flag-fill me-2 text-primary"></i>
                                                             <?= htmlspecialchars($period['grading_period']) ?>
                                                         </td>
-                                                        <td>
+                                                        <td data-label="Deadline">
                                                             <?php if ($period['deadline_date']): ?>
                                                                 <span class="deadline-display <?= $period['lock_status'] === 'expired' ? 'text-danger' : '' ?>">
                                                                     <?= date('M d, Y', strtotime($period['deadline_date'])) ?>
@@ -532,7 +533,7 @@
                                                                 <span class="text-muted fst-italic">not set</span>
                                                             <?php endif; ?>
                                                         </td>
-                                                        <td>
+                                                        <td data-label="Status">
                                                             <?php if ($period['lock_status'] === 'locked'): ?>
                                                                 <span class="grading-badge grading-badge-locked">
                                                                     <i class="bi bi-lock-fill"></i> locked
@@ -547,7 +548,7 @@
                                                                 </span>
                                                             <?php endif; ?>
                                                         </td>
-                                                        <td class="text-center">
+                                                        <td data-label="Lock" class="text-center">
                                                             <div class="form-check form-switch d-flex justify-content-center mb-0">
                                                                 <input
                                                                     class="form-check-input grading-lock-toggle"
@@ -690,27 +691,27 @@
                                                 <tbody id="graduationTableBody">
                                                     <?php foreach ($graduatable_students as $student): ?>
                                                         <tr>
-                                                            <td>
+                                                            <td data-label="Select">
                                                                 <input type="checkbox" class="form-check-input graduate-checkbox"
                                                                     value="<?= $student['student_id'] ?>">
                                                             </td>
-                                                            <td>
+                                                            <td data-label="Student Number">
                                                                 <span class="fw-semibold"><?= htmlspecialchars($student['student_number']) ?></span>
                                                             </td>
-                                                            <td>
+                                                            <td data-label="Name">
                                                                 <?= htmlspecialchars(
                                                                     $student['first_name'] . ' ' .
                                                                         ($student['middle_name'] ? $student['middle_name'] . ' ' : '') .
                                                                         $student['last_name']
                                                                 ) ?>
                                                             </td>
-                                                            <td>
+                                                            <td data-label="Year Level">
                                                                 <span class="education-level-badge badge-shs">
                                                                     <?= htmlspecialchars($student['year_level']) ?>
                                                                 </span>
                                                             </td>
-                                                            <td><?= htmlspecialchars($student['strand_course']) ?></td>
-                                                            <td>
+                                                            <td data-label="Course / Strand"><?= htmlspecialchars($student['strand_course']) ?></td>
+                                                            <td data-label="Education Level">
                                                                 <span class="education-level-badge <?= $student['education_level'] === 'senior_high' ? 'badge-shs' : 'badge-college' ?>">
                                                                     <?= $student['education_level'] === 'senior_high' ? 'Senior High' : 'College' ?>
                                                                 </span>
@@ -915,6 +916,21 @@
     </script>
     <script src="js/academic-period.js"></script>
     <script src="js/shared/top-navbar.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const sidebar = document.getElementById('sidebar');
+            const toggleBtn = document.getElementById('sidebarToggle');
+            const overlay = document.getElementById('sidebarOverlay');
+
+            function toggleSidebar() {
+                sidebar.classList.toggle('show');
+                overlay.classList.toggle('show');
+            }
+
+            if (toggleBtn) toggleBtn.addEventListener('click', toggleSidebar);
+            if (overlay) overlay.addEventListener('click', toggleSidebar);
+        });
+    </script>
 </body>
 
 </html>

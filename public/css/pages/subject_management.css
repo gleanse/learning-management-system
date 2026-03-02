@@ -842,3 +842,57 @@
     justify-content: center;
   }
 }
+
+/* MOBILE TABLE RESPONSIVE FOR SUBJECT MANAGEMENT */
+@media (max-width: 768px) {
+  #subjectsTable,
+  #subjectsTable thead,
+  #subjectsTable tbody,
+  #subjectsTable tr,
+  #subjectsTable td {
+    display: block;
+    width: 100%;
+  }
+
+  #subjectsTable thead {
+    display: none;
+  }
+
+  #subjectsTable tr {
+    margin-bottom: 1rem;
+    border: 1px solid #e2e8f0;
+    border-radius: 0.75rem;
+    padding: 0.5rem;
+    background: #ffffff;
+  }
+
+  #subjectsTable td {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.5rem 0.75rem;
+    border-bottom: 1px solid #f1f5f9;
+    text-align: right;
+  }
+
+  #subjectsTable td:last-child {
+    border-bottom: none;
+  }
+
+  #subjectsTable td::before {
+    content: attr(data-label);
+    font-weight: 600;
+    color: var(--gray-500);
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    margin-right: 1rem;
+    text-align: left;
+  }
+
+  /* keep action buttons side by side on mobile */
+  #subjectsTable td[data-label='Actions'] .btn-sm {
+    margin: 0 0 0 0.25rem;
+    padding: 0.25rem 0.5rem;
+    font-size: 0.75rem;
+  }
+}

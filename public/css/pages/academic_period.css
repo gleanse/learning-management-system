@@ -991,3 +991,105 @@
   background: #e2e8f0;
   border-color: #94a3b8;
 }
+
+/* MOBILE TABLE RESPONSIVE FOR ACADEMIC PERIOD */
+@media (max-width: 768px) {
+  /* grading periods table */
+  #gradingPeriodsTable,
+  #gradingPeriodsTable thead,
+  #gradingPeriodsTable tbody,
+  #gradingPeriodsTable tr,
+  #gradingPeriodsTable td {
+    display: block;
+    width: 100%;
+  }
+
+  #gradingPeriodsTable thead {
+    display: none;
+  }
+
+  #gradingPeriodsTable tr {
+    margin-bottom: 1rem;
+    border: 1px solid #e2e8f0;
+    border-radius: 0.75rem;
+    padding: 0.5rem;
+    background: #ffffff;
+  }
+
+  #gradingPeriodsTable td {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.5rem 0.75rem;
+    border-bottom: 1px solid #f1f5f9;
+    text-align: right;
+  }
+
+  #gradingPeriodsTable td:last-child {
+    border-bottom: none;
+  }
+
+  #gradingPeriodsTable td::before {
+    content: attr(data-label);
+    font-weight: 600;
+    color: var(--gray-500);
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    margin-right: 1rem;
+    text-align: left;
+  }
+
+  /* graduation table */
+  #graduationTable,
+  #graduationTable thead,
+  #graduationTable tbody,
+  #graduationTable tr,
+  #graduationTable td {
+    display: block;
+    width: 100%;
+  }
+
+  #graduationTable thead {
+    display: none;
+  }
+
+  #graduationTable tr {
+    margin-bottom: 1rem;
+    border: 1px solid #e2e8f0;
+    border-radius: 0.75rem;
+    padding: 0.5rem;
+    background: #ffffff;
+  }
+
+  #graduationTable td {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.5rem 0.75rem;
+    border-bottom: 1px solid #f1f5f9;
+    text-align: right;
+  }
+
+  #graduationTable td:last-child {
+    border-bottom: none;
+  }
+
+  #graduationTable td::before {
+    content: attr(data-label);
+    font-weight: 600;
+    color: var(--gray-500);
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    margin-right: 1rem;
+    text-align: left;
+  }
+
+  /* keep checkbox aligned properly */
+  #graduationTable td[data-label='Select'] {
+    justify-content: flex-start;
+  }
+
+  #graduationTable td[data-label='Select']::before {
+    content: 'Select';
+  }
+}

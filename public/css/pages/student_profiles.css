@@ -575,3 +575,96 @@
     font-size: 1.125rem;
   }
 }
+
+/* mobile responsive table */
+@media (max-width: 768px) {
+  /* fix header search */
+  .card-header.d-flex {
+    flex-direction: column;
+    align-items: stretch !important;
+    gap: 0.75rem;
+  }
+  
+  .card-header .input-group {
+    width: 100% !important;
+  }
+  
+  .card-header .btn-outline-success {
+    width: 100%;
+  }
+  
+  /* make table responsive */
+  .table-responsive {
+    overflow: visible !important;
+    border: none !important;
+  }
+  
+  #profilesTable,
+  #profilesTable thead,
+  #profilesTable tbody,
+  #profilesTable tr,
+  #profilesTable td {
+    display: block;
+    width: 100%;
+  }
+  
+  #profilesTable thead {
+    display: none;
+  }
+  
+  #profilesTable tr {
+    margin-bottom: 1rem;
+    border: 1px solid #e2e8f0;
+    border-radius: 0.75rem;
+    padding: 0.5rem;
+    background: #ffffff;
+  }
+  
+  #profilesTable td {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.5rem 0.75rem;
+    border-bottom: 1px solid #f1f5f9;
+    text-align: right;
+  }
+  
+  #profilesTable td:last-child {
+    border-bottom: none;
+  }
+  
+  #profilesTable td::before {
+    content: attr(data-label);
+    font-weight: 600;
+    color: var(--gray-500);
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    margin-right: 1rem;
+    text-align: left;
+  }
+  
+  /* fix action buttons on mobile */
+  #profilesTable td[data-label="Actions"] .d-flex {
+    justify-content: flex-end;
+  }
+  
+  #profilesTable td[data-label="Actions"] .btn-sm {
+    padding: 0.25rem 0.5rem;
+    font-size: 0.75rem;
+  }
+  
+  /* fix pagination */
+  .pagination-wrapper {
+    padding: 0.75rem !important;
+  }
+  
+  .pagination {
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+  
+  .page-link {
+    padding: 0.4rem 0.6rem;
+    font-size: 0.75rem;
+  }
+}

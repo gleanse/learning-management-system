@@ -14,9 +14,10 @@
 </head>
 
 <body>
+    <div class="sidebar-overlay" id="sidebarOverlay"></div>
     <div class="d-flex">
         <!-- sidebar -->
-        <div class="sidenav">
+        <div class="sidenav" id="sidebar">
             <div class="sidenav-header">
                 <div class="school-brand">
                     <div class="school-logo">
@@ -262,7 +263,7 @@
                                     <tbody id="recent-users-tbody">
                                         <?php foreach ($recent_users as $user): ?>
                                             <tr>
-                                                <td class="user-full-name">
+                                                <td data-label="Name" class="user-full-name">
                                                     <?php
                                                     $fullName = $user['first_name'];
                                                     if (!empty($user['middle_name'])) $fullName .= ' ' . $user['middle_name'];
@@ -270,15 +271,15 @@
                                                     echo htmlspecialchars($fullName);
                                                     ?>
                                                 </td>
-                                                <td><?php echo htmlspecialchars($user['username']); ?></td>
-                                                <td>
+                                                <td data-label="Username"><?php echo htmlspecialchars($user['username']); ?></td>
+                                                <td data-label="Email">
                                                     <?php if (!empty($user['email'])): ?>
                                                         <?php echo htmlspecialchars($user['email']); ?>
                                                     <?php else: ?>
                                                         <span class="text-muted">-</span>
                                                     <?php endif; ?>
                                                 </td>
-                                                <td>
+                                                <td data-label="Role">
                                                     <?php
                                                     $role_badges = [
                                                         'student' => '<span class="badge bg-primary">Student</span>',
@@ -290,7 +291,7 @@
                                                     echo $role_badges[$user['role']] ?? '<span class="badge bg-secondary">' . htmlspecialchars($user['role']) . '</span>';
                                                     ?>
                                                 </td>
-                                                <td>
+                                                <td data-label="Status">
                                                     <?php
                                                     $status_badges = [
                                                         'active' => '<span class="badge bg-success">Active</span>',
@@ -300,13 +301,13 @@
                                                     echo $status_badges[$user['status']] ?? '<span class="badge bg-secondary">' . htmlspecialchars($user['status']) . '</span>';
                                                     ?>
                                                 </td>
-                                                <td>
+                                                <td data-label="Created Date">
                                                     <span class="text-muted">
                                                         <i class="bi bi-clock"></i>
                                                         <?php echo date('M d, Y', strtotime($user['created_at'])); ?>
                                                     </span>
                                                 </td>
-                                                <td>
+                                                <td data-label="Created By">
                                                     <?php if (!empty($user['created_by_username'])): ?>
                                                         <span class="admin-badge">
                                                             <i class="bi bi-person-badge-fill"></i>
@@ -339,6 +340,21 @@
     <script src="bootstrap/js/bootstrap.bundle.min.js"></script>
     <script src="js/superadmin-dashboard.js"></script>
     <script src="js/shared/top-navbar.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const sidebar = document.getElementById('sidebar');
+            const toggleBtn = document.getElementById('sidebarToggle');
+            const overlay = document.getElementById('sidebarOverlay');
+
+            function toggleSidebar() {
+                sidebar.classList.toggle('show');
+                overlay.classList.toggle('show');
+            }
+
+            if (toggleBtn) toggleBtn.addEventListener('click', toggleSidebar);
+            if (overlay) overlay.addEventListener('click', toggleSidebar);
+        });
+    </script>
 </body>
 
 </html>

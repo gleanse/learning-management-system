@@ -14,11 +14,12 @@
 </head>
 
 <body>
+    <div class="sidebar-overlay" id="sidebarOverlay"></div>
     <div class="toast-container position-fixed top-0 end-0 p-3" style="z-index: 1100;" id="toastContainer"></div>
 
     <div class="d-flex">
         <!-- sidebar -->
-        <div class="sidenav">
+        <div class="sidenav" id="sidebar">
             <div class="sidenav-header">
                 <div class="school-brand">
                     <div class="school-logo">
@@ -168,24 +169,26 @@
                                             };
                                         ?>
                                             <tr>
-                                                <td><?= htmlspecialchars($s['student_number']) ?></td>
-                                                <td><?= $full_name ?></td>
-                                                <td><?= $grade_label ?></td>
-                                                <td><?= $remaining !== null ? '₱' . number_format($remaining, 2) : '—' ?></td>
-                                                <td><?= $status_badge ?></td>
-                                                <td>
-                                                    <a href="index.php?page=edit_student_profile&student_id=<?= $s['student_id'] ?>"
-                                                        class="btn btn-sm btn-outline-primary me-1">
-                                                        <i class="bi bi-pencil-fill"></i> Edit
-                                                    </a>
-                                                    <a href="index.php?page=view_student_profile&student_id=<?= $s['student_id'] ?>"
-                                                        class="btn btn-sm btn-outline-secondary me-1">
-                                                        <i class="bi bi-eye-fill"></i> View
-                                                    </a>
-                                                    <a href="index.php?page=payment_process&student_id=<?= $s['student_id'] ?>"
-                                                        class="btn btn-sm btn-outline-warning">
-                                                        <i class="bi bi-cash-coin"></i> Payment
-                                                    </a>
+                                                <td data-label="Student ID"><?= htmlspecialchars($s['student_number']) ?></td>
+                                                <td data-label="Student Name"><?= $full_name ?></td>
+                                                <td data-label="Grade"><?= $grade_label ?></td>
+                                                <td data-label="Balance"><?= $remaining !== null ? '₱' . number_format($remaining, 2) : '—' ?></td>
+                                                <td data-label="Status"><?= $status_badge ?></td>
+                                                <td data-label="Actions">
+                                                    <div class="d-flex flex-wrap gap-1">
+                                                        <a href="index.php?page=edit_student_profile&student_id=<?= $s['student_id'] ?>"
+                                                            class="btn btn-sm btn-outline-primary">
+                                                            <i class="bi bi-pencil-fill"></i> Edit
+                                                        </a>
+                                                        <a href="index.php?page=view_student_profile&student_id=<?= $s['student_id'] ?>"
+                                                            class="btn btn-sm btn-outline-secondary">
+                                                            <i class="bi bi-eye-fill"></i> View
+                                                        </a>
+                                                        <a href="index.php?page=payment_process&student_id=<?= $s['student_id'] ?>"
+                                                            class="btn btn-sm btn-outline-warning">
+                                                            <i class="bi bi-cash-coin"></i> Payment
+                                                        </a>
+                                                    </div>
                                                 </td>
                                             </tr>
                                         <?php endforeach; ?>
@@ -242,6 +245,21 @@
     </script>
     <script src="js/student-profiles-ajax.js"></script>
     <script src="js/shared/top-navbar.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const sidebar = document.getElementById('sidebar');
+            const toggleBtn = document.getElementById('sidebarToggle');
+            const overlay = document.getElementById('sidebarOverlay');
+
+            function toggleSidebar() {
+                sidebar.classList.toggle('show');
+                overlay.classList.toggle('show');
+            }
+
+            if (toggleBtn) toggleBtn.addEventListener('click', toggleSidebar);
+            if (overlay) overlay.addEventListener('click', toggleSidebar);
+        });
+    </script>
 </body>
 
 </html>

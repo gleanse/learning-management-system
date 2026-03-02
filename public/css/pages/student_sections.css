@@ -996,3 +996,132 @@
     justify-content: center;
   }
 }
+/* MOBILE RESPONSIVE FIXES */
+@media (max-width: 768px) {
+  /* make table mobile-friendly */
+  #recentAssignmentsTable,
+  #recentAssignmentsTable thead,
+  #recentAssignmentsTable tbody,
+  #recentAssignmentsTable tr,
+  #recentAssignmentsTable td {
+    display: block;
+    width: 100%;
+  }
+
+  #recentAssignmentsTable thead {
+    display: none; /* hide headers */
+  }
+
+  #recentAssignmentsTable tr {
+    margin-bottom: 1rem;
+    border: 1px solid #e2e8f0;
+    border-radius: 0.75rem;
+    padding: 0.5rem;
+  }
+
+  #recentAssignmentsTable td {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.5rem 0.75rem;
+    border-bottom: 1px solid #f1f5f9;
+    text-align: right;
+  }
+
+  #recentAssignmentsTable td:last-child {
+    border-bottom: none;
+  }
+
+  #recentAssignmentsTable td::before {
+    content: attr(data-label);
+    font-weight: 600;
+    color: var(--gray-500);
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    margin-right: 1rem;
+    text-align: left;
+  }
+
+  /* stack section selector and students panels */
+  .assignment-interface-card .row {
+    flex-direction: column;
+  }
+
+  .assignment-interface-card .col-lg-4,
+  .assignment-interface-card .col-lg-8 {
+    width: 100%;
+    max-width: 100%;
+    flex: 0 0 100%;
+  }
+
+  /* make student items stack */
+  .student-item {
+    flex-wrap: wrap;
+  }
+
+  .student-actions {
+    width: 100%;
+    margin-left: 2rem;
+    margin-top: 0.5rem;
+  }
+
+  .btn-remove-student {
+    width: 100%;
+    justify-content: center;
+  }
+
+  /* fix search and buttons */
+  .panel-actions {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .search-wrapper {
+    width: 100%;
+    max-width: 100%;
+  }
+
+  .panel-actions .btn-sm {
+    width: 100%;
+    justify-content: center;
+  }
+
+  /* select all/clear all buttons */
+  .panel-actions .btn-outline-primary,
+  .panel-actions .btn-outline-secondary,
+  .panel-actions .btn-outline-danger {
+    width: 100%;
+    margin: 0.25rem 0;
+  }
+
+  /* section info grid */
+  .section-info-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* small phones */
+@media (max-width: 576px) {
+  .container-fluid.p-4 {
+    padding: 1rem !important;
+  }
+
+  .header-content {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .panel-header {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .badge {
+    white-space: normal;
+    word-break: break-word;
+  }
+
+  .student-details {
+    flex-wrap: wrap;
+  }
+}

@@ -14,11 +14,12 @@
 </head>
 
 <body>
+    <div class="sidebar-overlay" id="sidebarOverlay"></div>
     <div class="toast-container position-fixed top-0 end-0 p-3" style="z-index: 1100;" id="toastContainer"></div>
 
     <div class="d-flex">
         <!-- sidebar -->
-        <div class="sidenav">
+        <div class="sidenav" id="sidebar">
             <div class="sidenav-header">
                 <div class="school-brand">
                     <div class="school-logo">
@@ -206,18 +207,18 @@
                                     <tbody>
                                         <?php foreach ($subjects as $subject): ?>
                                             <tr>
-                                                <td>
+                                                <td data-label="Subject Code">
                                                     <span class="subject-code"><?= htmlspecialchars($subject['subject_code']) ?></span>
                                                 </td>
-                                                <td>
+                                                <td data-label="Subject Name">
                                                     <span class="subject-name"><?= htmlspecialchars($subject['subject_name']) ?></span>
                                                 </td>
-                                                <td>
+                                                <td data-label="Description">
                                                     <span class="subject-description">
                                                         <?= htmlspecialchars($subject['description'] ?? 'No description') ?>
                                                     </span>
                                                 </td>
-                                                <td>
+                                                <td data-label="Actions">
                                                     <a href="index.php?page=edit_subject&id=<?= $subject['subject_id'] ?>"
                                                         class="btn btn-sm btn-outline-primary me-1">
                                                         <i class="bi bi-pencil"></i> Edit
@@ -332,6 +333,21 @@
     </script>
     <script src="js/subject-management-ajax.js"></script>
     <script src="js/shared/top-navbar.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const sidebar = document.getElementById('sidebar');
+            const toggleBtn = document.getElementById('sidebarToggle');
+            const overlay = document.getElementById('sidebarOverlay');
+
+            function toggleSidebar() {
+                sidebar.classList.toggle('show');
+                overlay.classList.toggle('show');
+            }
+
+            if (toggleBtn) toggleBtn.addEventListener('click', toggleSidebar);
+            if (overlay) overlay.addEventListener('click', toggleSidebar);
+        });
+    </script>
 </body>
 
 </html>

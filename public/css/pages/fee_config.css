@@ -508,3 +508,62 @@
     padding: 0.625rem 0.75rem;
   }
 }
+
+/* MOBILE TABLE RESPONSIVE FOR FEE CONFIGURATION */
+@media (max-width: 768px) {
+  .fee-table,
+  .fee-table thead,
+  .fee-table tbody,
+  .fee-table tr,
+  .fee-table td {
+    display: block;
+    width: 100%;
+  }
+
+  .fee-table thead {
+    display: none;
+  }
+
+  .fee-table tr {
+    margin-bottom: 1rem;
+    border: 1px solid #e2e8f0;
+    border-radius: 0.75rem;
+    padding: 0.5rem;
+    background: #ffffff;
+  }
+
+  .fee-table td {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.5rem 0.75rem;
+    border-bottom: 1px solid #f1f5f9;
+    text-align: right;
+  }
+
+  .fee-table td:last-child {
+    border-bottom: none;
+  }
+
+  .fee-table td::before {
+    content: attr(data-label);
+    font-weight: 600;
+    color: var(--gray-500);
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    margin-right: 1rem;
+    text-align: left;
+  }
+
+  /* override text-end for mobile */
+  .fee-table td.text-end {
+    text-align: right;
+  }
+
+  /* keep action button aligned properly */
+  .fee-table td[data-label='Action'] .btn {
+    margin: 0;
+    width: 100%;
+    justify-content: center;
+  }
+}

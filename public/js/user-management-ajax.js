@@ -238,19 +238,21 @@ function renderUsersTable(users) {
 
     html += `
             <tr>
-                <td class="user-full-name">${escapeHtml(fullName)}</td>
-                <td>${escapeHtml(user.username)}</td>
-                <td>${
+                <td data-label="Name" class="user-full-name">${escapeHtml(
+                  fullName
+                )}</td>
+                <td data-label="Username">${escapeHtml(user.username)}</td>
+                <td data-label="Email">${
                   user.email
                     ? escapeHtml(user.email)
                     : '<span class="text-muted">-</span>'
                 }</td>
-                <td>${roleBadge}</td>
-                <td>${statusBadge}</td>
-                <td><span class="text-muted">${formatDate(
+                <td data-label="Role">${roleBadge}</td>
+                <td data-label="Status">${statusBadge}</td>
+                <td data-label="Created"><span class="text-muted">${formatDate(
                   user.created_at
                 )}</span></td>
-                <td>
+                <td data-label="Actions">
                     <div class="action-buttons">
                         <button class="btn-action btn-edit" onclick="openEditUserModal(${
                           user.id
@@ -451,23 +453,31 @@ function renderStudentsTable(students) {
 
     html += `
             <tr>
-                <td class="user-full-name">${escapeHtml(fullName)}</td>
-                <td>${escapeHtml(student.student_number)}</td>
-                <td>${
+                <td data-label="Name" class="user-full-name">${escapeHtml(
+                  fullName
+                )}</td>
+                <td data-label="Student Number">${escapeHtml(
+                  student.student_number
+                )}</td>
+                <td data-label="LRN">${
                   student.lrn
                     ? escapeHtml(student.lrn)
                     : '<span class="text-muted">-</span>'
                 }</td>
-                <td>${escapeHtml(student.year_level)}</td>
-                <td>${escapeHtml(student.strand_course)}</td>
-                <td>${
+                <td data-label="Year Level">${escapeHtml(
+                  student.year_level
+                )}</td>
+                <td data-label="Strand/Course">${escapeHtml(
+                  student.strand_course
+                )}</td>
+                <td data-label="Section">${
                   student.section_name
                     ? '<span class="badge bg-primary">' +
                       escapeHtml(student.section_name) +
                       '</span>'
                     : '<span class="text-muted">-</span>'
                 }</td>
-                <td>
+                <td data-label="Actions">
                     <button class="btn-action btn-create-account" onclick="openCreateStudentAccountModal(${
                       student.student_id
                     }, '${escapeHtml(fullName)}', '${escapeHtml(

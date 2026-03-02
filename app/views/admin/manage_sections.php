@@ -14,10 +14,11 @@
 </head>
 
 <body>
+    <div class="sidebar-overlay" id="sidebarOverlay"></div>
     <div class="toast-container position-fixed top-0 end-0 p-3" style="z-index: 1100;" id="toastContainer"></div>
 
     <div class="d-flex">
-        <div class="sidenav">
+        <div class="sidenav" id="sidebar">
             <div class="sidenav-header">
                 <div class="school-brand">
                     <div class="school-logo">
@@ -213,30 +214,30 @@
                                     <tbody id="sectionsTableBody">
                                         <?php foreach ($sections as $section): ?>
                                             <tr data-section-id="<?= $section['section_id'] ?>">
-                                                <td>
+                                                <td data-label="Section Name">
                                                     <span class="section-name"><?= htmlspecialchars($section['section_name']) ?></span>
                                                 </td>
-                                                <td>
+                                                <td data-label="Education Level">
                                                     <span class="education-level-badge <?= $section['education_level'] === 'senior_high' ? 'badge-shs' : 'badge-college' ?>">
                                                         <?= $section['education_level'] === 'senior_high' ? 'Senior High' : 'College' ?>
                                                     </span>
                                                 </td>
-                                                <td>
+                                                <td data-label="Year Level">
                                                     <span class="year-level"><?= htmlspecialchars($section['year_level']) ?></span>
                                                 </td>
-                                                <td>
+                                                <td data-label="Strand/Course">
                                                     <span class="strand-course"><?= htmlspecialchars($section['strand_course']) ?></span>
                                                 </td>
-                                                <td>
+                                                <td data-label="Students">
                                                     <span class="student-count">
                                                         <i class="bi bi-people-fill"></i>
                                                         <?= $section['student_count'] ?><?= $section['max_capacity'] ? '/' . $section['max_capacity'] : '' ?>
                                                     </span>
                                                 </td>
-                                                <td>
+                                                <td data-label="School Year">
                                                     <span class="school-year"><?= htmlspecialchars($section['school_year']) ?></span>
                                                 </td>
-                                                <td>
+                                                <td data-label="Actions">
                                                     <a href="index.php?page=view_section&section_id=<?= $section['section_id'] ?>"
                                                         class="btn btn-sm btn-outline-info me-1">
                                                         <i class="bi bi-eye-fill"></i> View
@@ -348,6 +349,21 @@
     </script>
     <script src="js/section-management-ajax.js"></script>
     <script src="js/shared/top-navbar.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const sidebar = document.getElementById('sidebar');
+            const toggleBtn = document.getElementById('sidebarToggle');
+            const overlay = document.getElementById('sidebarOverlay');
+
+            function toggleSidebar() {
+                sidebar.classList.toggle('show');
+                overlay.classList.toggle('show');
+            }
+
+            if (toggleBtn) toggleBtn.addEventListener('click', toggleSidebar);
+            if (overlay) overlay.addEventListener('click', toggleSidebar);
+        });
+    </script>
 </body>
 
 </html>

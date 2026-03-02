@@ -14,11 +14,12 @@
 </head>
 
 <body>
+    <div class="sidebar-overlay" id="sidebarOverlay"></div>
     <div class="toast-container position-fixed top-0 end-0 p-3" style="z-index: 1100;" id="toastContainer"></div>
 
     <div class="d-flex">
         <!-- sidebar -->
-        <div class="sidenav">
+        <div class="sidenav" id="sidebar">
             <div class="sidenav-header">
                 <div class="school-brand">
                     <div class="school-logo">
@@ -343,14 +344,14 @@
                                     <tbody>
                                         <?php foreach ($assignments as $assignment): ?>
                                             <tr data-row-key="<?= $assignment['teacher_id'] ?>_<?= $assignment['section_id'] ?>_<?= htmlspecialchars($assignment['school_year']) ?>_<?= htmlspecialchars($assignment['semester']) ?>">
-                                                <td><?= htmlspecialchars($assignment['teacher_name']) ?></td>
-                                                <td><?= htmlspecialchars($assignment['section_name']) ?></td>
-                                                <td><?= htmlspecialchars($assignment['year_level']) ?></td>
-                                                <td><?= htmlspecialchars($assignment['school_year']) ?></td>
-                                                <td>
+                                                <td data-label="Teacher"><?= htmlspecialchars($assignment['teacher_name']) ?></td>
+                                                <td data-label="Section"><?= htmlspecialchars($assignment['section_name']) ?></td>
+                                                <td data-label="Year Level"><?= htmlspecialchars($assignment['year_level']) ?></td>
+                                                <td data-label="School Year"><?= htmlspecialchars($assignment['school_year']) ?></td>
+                                                <td data-label="Semester">
                                                     <span class="badge bg-info"><?= htmlspecialchars($assignment['semester']) ?></span>
                                                 </td>
-                                                <td>
+                                                <td data-label="Subjects">
                                                     <?php if ($assignment['subject_count'] < 2): ?>
                                                         <span class="text-muted"><?= htmlspecialchars($assignment['subjects']) ?></span>
                                                     <?php else: ?>
@@ -362,7 +363,7 @@
                                                         </button>
                                                     <?php endif; ?>
                                                 </td>
-                                                <td>
+                                                <td data-label="Actions">
                                                     <button class="btn btn-sm btn-outline-primary me-1 btn-reassign"
                                                         data-teacher-id="<?= $assignment['teacher_id'] ?>"
                                                         data-section-id="<?= $assignment['section_id'] ?>"
@@ -425,14 +426,14 @@
                                     <tbody>
                                         <?php foreach ($inactive_assignments as $assignment): ?>
                                             <tr data-row-key="<?= $assignment['teacher_id'] ?>_<?= $assignment['section_id'] ?>_<?= htmlspecialchars($assignment['school_year']) ?>_<?= htmlspecialchars($assignment['semester']) ?>">
-                                                <td><?= htmlspecialchars($assignment['teacher_name']) ?></td>
-                                                <td><?= htmlspecialchars($assignment['section_name']) ?></td>
-                                                <td><?= htmlspecialchars($assignment['year_level']) ?></td>
-                                                <td><?= htmlspecialchars($assignment['school_year']) ?></td>
-                                                <td>
+                                                <td data-label="Teacher"><?= htmlspecialchars($assignment['teacher_name']) ?></td>
+                                                <td data-label="Section"><?= htmlspecialchars($assignment['section_name']) ?></td>
+                                                <td data-label="Year Level"><?= htmlspecialchars($assignment['year_level']) ?></td>
+                                                <td data-label="School Year"><?= htmlspecialchars($assignment['school_year']) ?></td>
+                                                <td data-label="Semester">
                                                     <span class="badge bg-secondary"><?= htmlspecialchars($assignment['semester']) ?></span>
                                                 </td>
-                                                <td>
+                                                <td data-label="Subjects">
                                                     <?php if ($assignment['subject_count'] < 2): ?>
                                                         <span class="text-muted"><?= htmlspecialchars($assignment['subjects']) ?></span>
                                                     <?php else: ?>
@@ -444,7 +445,7 @@
                                                         </button>
                                                     <?php endif; ?>
                                                 </td>
-                                                <td>
+                                                <td data-label="Actions">
                                                     <button class="btn btn-sm btn-outline-success btn-restore"
                                                         data-teacher-id="<?= $assignment['teacher_id'] ?>"
                                                         data-section-id="<?= $assignment['section_id'] ?>"
@@ -615,6 +616,21 @@
         });
     </script>
     <script src="js/shared/top-navbar.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const sidebar = document.getElementById('sidebar');
+            const toggleBtn = document.getElementById('sidebarToggle');
+            const overlay = document.getElementById('sidebarOverlay');
+
+            function toggleSidebar() {
+                sidebar.classList.toggle('show');
+                overlay.classList.toggle('show');
+            }
+
+            if (toggleBtn) toggleBtn.addEventListener('click', toggleSidebar);
+            if (overlay) overlay.addEventListener('click', toggleSidebar);
+        });
+    </script>
 </body>
 
 </html>
