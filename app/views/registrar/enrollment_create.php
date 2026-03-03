@@ -668,6 +668,10 @@
                                     <i class="bi bi-floppy"></i>
                                     Save as Draft
                                 </button>
+                                <button type="button" class="btn-save-draft" id="cancelEnrollmentBtn">
+                                    <i class="bi bi-x-circle"></i>
+                                    Cancel Enrollment
+                                </button>
                                 <div class="wizard-nav-btns">
                                     <button type="button" class="btn-wizard-back d-none" id="backBtn">
                                         <i class="bi bi-arrow-left"></i>

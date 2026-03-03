@@ -682,6 +682,19 @@ function openEditUserModal(userId) {
           document.getElementById('editUsername').value = user.username;
           document.getElementById('editEmail').value = user.email || '';
           document.getElementById('editRole').value = user.role;
+
+          if (user.role === 'student') {
+            document.getElementById('editRole').disabled = true;
+            document.getElementById('editFirstName').disabled = true;
+            document.getElementById('editMiddleName').disabled = true;
+            document.getElementById('editLastName').disabled = true;
+          } else {
+            document.getElementById('editRole').disabled = false;
+            document.getElementById('editFirstName').disabled = false;
+            document.getElementById('editMiddleName').disabled = false;
+            document.getElementById('editLastName').disabled = false;
+          }
+
           document.getElementById('editStatus').value = user.status;
           document.getElementById('editPassword').value = '';
 

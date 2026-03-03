@@ -56,11 +56,20 @@ document.addEventListener('DOMContentLoaded', function () {
           field: 'guardian_name',
           msg: 'Guardian name is required',
         });
-      if (!getValue('guardian_contact'))
+
+      const guardianContact = getValue('guardian_contact');
+      if (!guardianContact) {
         errors.push({
           field: 'guardian_contact',
           msg: 'Guardian contact is required',
         });
+      } else if (!/^09\d{9}$/.test(guardianContact)) {
+        errors.push({
+          field: 'guardian_contact',
+          msg: 'Guardian contact must be in format 09XXXXXXXXX (11 digits)',
+        });
+      }
+
       if (!getValue('gender'))
         errors.push({ field: 'gender', msg: 'Gender is required' });
 
@@ -76,6 +85,34 @@ document.addEventListener('DOMContentLoaded', function () {
             msg: 'Please enter a valid email address',
           });
         }
+      }
+
+      // block next if email is duplicate
+      if (emailIsDuplicate) {
+        errors.push({
+          field: 'email',
+          msg: 'This email is already registered to another student',
+        });
+      }
+
+      // lrn validation — numbers only, exactly 12 digits, only if senior high
+      const lrn = getValue('lrn');
+      if (getValue('education_level') === 'senior_high' || lrn) {
+        if (lrn && !/^\d{12}$/.test(lrn)) {
+          errors.push({
+            field: 'lrn',
+            msg: 'LRN must be exactly 12 digits, numbers only',
+          });
+        }
+      }
+
+      // contact number validation — PH format 09XXXXXXXXX
+      const contact = getValue('contact_number');
+      if (contact && !/^09\d{9}$/.test(contact)) {
+        errors.push({
+          field: 'contact_number',
+          msg: 'Contact number must be in format 09XXXXXXXXX (11 digits)',
+        });
       }
 
       const dob = getValue('date_of_birth');
@@ -146,8 +183,8 @@ document.addEventListener('DOMContentLoaded', function () {
     if (step === 3) {
       const total =
         parseFloat(document.getElementById('totalAmountInput').value) || 0;
-      const voucher = document.getElementById('shs_voucher');
-      const isVoucher = voucher && voucher.checked;
+      const isVoucher =
+        document.getElementById('shsVoucherInput').value === '1';
 
       if (total <= 0) {
         showToast(
@@ -301,9 +338,11 @@ document.addEventListener('DOMContentLoaded', function () {
 
   // email duplicate check
   const emailInput = document.getElementById('email');
+  let emailIsDuplicate = false;
   let emailCheckTimeout;
 
   emailInput.addEventListener('input', function () {
+    emailIsDuplicate = false;
     clearTimeout(emailCheckTimeout);
     const email = this.value.trim();
 
@@ -342,6 +381,7 @@ document.addEventListener('DOMContentLoaded', function () {
       .then((res) => {
         if (res.exists) {
           // show error message
+          emailIsDuplicate = true;
           const errorDiv = document.createElement('div');
           errorDiv.className = 'invalid-feedback email-exists-error d-block';
           errorDiv.textContent =
@@ -355,6 +395,7 @@ document.addEventListener('DOMContentLoaded', function () {
           if (oldError) oldError.remove();
           parent.appendChild(errorDiv);
         } else {
+          emailIsDuplicate = false;
           emailInput.classList.remove('is-invalid');
           const oldError = emailInput.parentNode.querySelector(
             '.email-exists-error'
@@ -404,7 +445,28 @@ document.addEventListener('DOMContentLoaded', function () {
     }
   });
 
-  strandCourseSelect.addEventListener('change', fetchFees);
+  strandCourseSelect.addEventListener('change', function () {
+    const strand = this.value;
+    const level = educationLevelSelect.value;
+
+    // ACT is only 2 years reset year level to 1st and 2nd only
+    if (strand === 'ACT') {
+      populateSelect(
+        yearLevelSelect,
+        ['1st Year', '2nd Year'],
+        'Select grade level'
+      );
+    } else if (level === 'college') {
+      // restore full college year levels if switching away from ACT
+      populateSelect(
+        yearLevelSelect,
+        yearLevelOptions['college'],
+        'Select grade level'
+      );
+    }
+
+    fetchFees();
+  });
   yearLevelSelect.addEventListener('change', fetchFees);
 
   function populateSelect(selectEl, options, placeholder) {
@@ -561,6 +623,40 @@ document.addEventListener('DOMContentLoaded', function () {
       goToStep(1);
       updatePaymentSummary();
       updateDocCount();
+    });
+
+  document
+    .getElementById('cancelEnrollmentBtn')
+    .addEventListener('click', function () {
+      // check if form has any data filled
+      const form = document.getElementById('enrollmentForm');
+      const inputs = form.querySelectorAll(
+        'input[type="text"], input[type="email"], input[type="date"], input[type="number"], select, textarea'
+      );
+
+      const hasData = Array.from(inputs).some((el) => {
+        // skip hidden, readonly, and always-populated fields
+        if (el.type === 'hidden' || el.readOnly) return false;
+        return el.value.trim() !== '' && el.value !== '0';
+      });
+
+      if (hasData) {
+        if (
+          !confirm(
+            'Are you sure you want to cancel this enrollment?\n\nAll entered data will be lost and cannot be recovered.'
+          )
+        ) {
+          return;
+        }
+      }
+
+      // clear draft and redirect to dashboard
+      fetch(ENROLLMENT_DATA.ajaxUrls.saveDraft, {
+        method: 'POST',
+        body: new FormData(), // empty post clears draft
+      }).finally(() => {
+        window.location.href = 'index.php?page=registrar_dashboard';
+      });
     });
 
   goToStep(1);

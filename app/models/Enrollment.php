@@ -154,7 +154,9 @@ class Enrollment
             $this->connection->commit();
             return $student_id;
         } catch (Exception $e) {
-            $this->connection->rollBack();
+            if ($this->connection->inTransaction()) {
+                $this->connection->rollBack();
+            }
             error_log('[Enrollment::enrollNewStudent] ' . $e->getMessage());
             return false;
         }

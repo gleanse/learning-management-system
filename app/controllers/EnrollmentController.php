@@ -169,7 +169,7 @@ class EnrollmentController
         }
 
         $this->enrollment_model->saveDraft($this->sanitize($_POST));
-        
+
         // LOG DRAFT SAVE
         logAction(
             'save_enrollment_draft',
@@ -179,7 +179,7 @@ class EnrollmentController
             null,
             ['has_data' => true]
         );
-        
+
         echo json_encode(['success' => true, 'message' => 'Draft saved']);
     }
 
@@ -278,6 +278,9 @@ class EnrollmentController
         if (empty($data['last_name']))         $errors['last_name']        = 'Last name is required';
         if (empty($data['guardian_name']))     $errors['guardian_name']    = 'Guardian name is required';
         if (empty($data['guardian_contact']))  $errors['guardian_contact'] = 'Guardian contact is required';
+        if (!empty($data['guardian_contact']) && !preg_match('/^09\d{9}$/', $data['guardian_contact'])) {
+            $errors['guardian_contact'] = 'Guardian contact must be in format 09XXXXXXXXX (11 digits)';
+        }
         if (empty($data['gender']))            $errors['gender']           = 'Gender is required';
         if (empty($data['email']))             $errors['email']            = 'Email is required';
 
@@ -315,9 +318,26 @@ class EnrollmentController
             }
         }
 
-        // add email format validation
+        // email format validation
         if (!empty($data['email']) && !filter_var($data['email'], FILTER_VALIDATE_EMAIL)) {
             $errors['email'] = 'Invalid email format';
+        }
+
+        // lrn — exactly 12 digits, numbers only
+        if (!empty($data['lrn']) && !preg_match('/^\d{12}$/', $data['lrn'])) {
+            $errors['lrn'] = 'LRN must be exactly 12 digits, numbers only';
+        }
+
+        // contact number — PH format 09XXXXXXXXX
+        if (!empty($data['contact_number']) && !preg_match('/^09\d{9}$/', $data['contact_number'])) {
+            $errors['contact_number'] = 'Contact number must be in format 09XXXXXXXXX (11 digits)';
+        }
+
+        // block duplicate email on submit
+        if (!empty($data['email']) && filter_var($data['email'], FILTER_VALIDATE_EMAIL)) {
+            if ($this->enrollment_model->emailExists($data['email'])) {
+                $errors['email'] = 'This email is already in use.';
+            }
         }
 
         return $errors;

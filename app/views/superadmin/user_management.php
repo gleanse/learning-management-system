@@ -353,7 +353,7 @@
                                     <span class="text-danger">*</span>
                                 </label>
                                 <select class="form-select" name="role" required>
-                                    <option value="">select role...</option>
+                                    <option value="">Select Role...</option>
                                     <option value="teacher">Teacher</option>
                                     <option value="registrar">Registrar</option>
                                     <option value="admin">Admin</option>
@@ -565,8 +565,7 @@
                                     <span class="text-danger">*</span>
                                 </label>
                                 <select class="form-select" name="role" id="editRole" required>
-                                    <option value="">select role...</option>
-                                    <option value="student">Student</option>
+                                    <option value="">Select Role...</option>
                                     <option value="teacher">Teacher</option>
                                     <option value="registrar">Registrar</option>
                                     <option value="admin">Admin</option>

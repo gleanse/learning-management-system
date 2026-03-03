@@ -22,6 +22,9 @@ require_once __DIR__ . '/controllers/ChangePasswordController.php';
 require_once __DIR__ . '/controllers/ReportController.php';
 require_once __DIR__ . '/controllers/ActivityLogController.php';
 require_once __DIR__ . '/controllers/ScheduleViewController.php';
+require_once __DIR__ . '/middleware.php';
+
+checkAuth();
 
 $page = $_GET['page'] ?? 'login';
 $method = $_SERVER['REQUEST_METHOD'];

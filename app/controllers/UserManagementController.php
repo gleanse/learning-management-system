@@ -389,7 +389,7 @@ class UserManagementController
         if (empty($username))   $errors['username']   = 'Username is required.';
         if (empty($email)) $errors['email'] = 'Email is required.';
 
-        $allowed_roles    = ['student', 'teacher', 'registrar', 'admin', 'superadmin'];
+        $allowed_roles = ['teacher', 'registrar', 'admin', 'superadmin'];
         $allowed_statuses = ['active', 'inactive', 'suspended'];
 
         if (empty($role) || !in_array($role, $allowed_roles, true)) {
@@ -419,6 +419,13 @@ class UserManagementController
         $old_user = $this->user_model->getUserById($user_id);
         if (!$old_user) {
             $this->jsonResponse(['success' => false, 'message' => 'User not found.']);
+        }
+
+        if ($old_user['role'] === 'student') {
+            $role = 'student';
+            $first_name  = $old_user['first_name'];
+            $middle_name = $old_user['middle_name'];
+            $last_name   = $old_user['last_name'];
         }
 
         $update_data = [
