@@ -669,4 +669,12 @@ class AcademicPeriod
         $stmt->execute([$period_id]);
         return $stmt->fetch();
     }
+
+    // get user password hash for verification
+    public function getUserPasswordById($user_id)
+    {
+        $stmt = $this->connection->prepare("SELECT password FROM users WHERE id = ? LIMIT 1");
+        $stmt->execute([$user_id]);
+        return $stmt->fetch();
+    }
 }

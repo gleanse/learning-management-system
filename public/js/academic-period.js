@@ -49,6 +49,77 @@ function formatDateTime(dateStr) {
   });
 }
 
+// password verification helper verifies before critical actions
+// returns true if verified, false if not
+async function verifyPassword(modalId) {
+  const modal = document.getElementById(modalId);
+  const input = modal.querySelector('.password-verify-input');
+  const errorEl = modal.querySelector('.password-verify-error');
+  const submitBtn = modal.querySelector('.password-verify-submit');
+
+  const password = input.value.trim();
+
+  if (!password) {
+    errorEl.textContent = 'Please enter your password.';
+    errorEl.classList.remove('d-none');
+    input.classList.add('is-invalid');
+    return false;
+  }
+
+  // show loading state
+  const originalHtml = submitBtn.innerHTML;
+  submitBtn.disabled = true;
+  submitBtn.innerHTML =
+    '<span class="spinner-border spinner-border-sm me-2"></span>Verifying...';
+  errorEl.classList.add('d-none');
+  input.classList.remove('is-invalid');
+
+  try {
+    const formData = new FormData();
+    formData.append('password', password);
+
+    const res = await fetch('index.php?page=ajax_verify_admin_password', {
+      method: 'POST',
+      headers: { 'X-Requested-With': 'XMLHttpRequest' },
+      body: formData,
+    });
+    const data = await res.json();
+
+    if (data.success) {
+      return true;
+    } else {
+      errorEl.textContent =
+        data.message || 'Incorrect password. Please try again.';
+      errorEl.classList.remove('d-none');
+      input.classList.add('is-invalid');
+      input.value = '';
+      input.focus();
+      return false;
+    }
+  } catch (err) {
+    errorEl.textContent =
+      'An error occurred while verifying. Please try again.';
+    errorEl.classList.remove('d-none');
+    return false;
+  } finally {
+    submitBtn.disabled = false;
+    submitBtn.innerHTML = originalHtml;
+  }
+}
+
+// clear password field and errors when modal closes
+function resetPasswordField(modalId) {
+  const modal = document.getElementById(modalId);
+  if (!modal) return;
+  const input = modal.querySelector('.password-verify-input');
+  const errorEl = modal.querySelector('.password-verify-error');
+  if (input) {
+    input.value = '';
+    input.classList.remove('is-invalid');
+  }
+  if (errorEl) errorEl.classList.add('d-none');
+}
+
 // update all 4 stat cards with fresh data
 function updateStatCards(data) {
   const current = data.current;
@@ -197,7 +268,6 @@ function updateGradingPeriods(gradingPeriods) {
     })
     .join('');
 
-  // update the locked count badge
   const lockedCount = gradingPeriods.filter(
     (p) => parseInt(p.is_locked) === 1
   ).length;
@@ -352,7 +422,7 @@ function updatePeriodPanel(data) {
   }
 }
 
-// bind advance button — separated so it can be re-bound after dom swap
+// bind advance button
 function bindAdvanceBtn() {
   const advanceBtn = document.getElementById('advanceBtn');
   if (!advanceBtn) return;
@@ -361,6 +431,7 @@ function bindAdvanceBtn() {
     document.getElementById('advanceConfirmModal')
   );
   advanceBtn.addEventListener('click', function () {
+    resetPasswordField('advanceConfirmModal');
     advanceModal.show();
   });
 }
@@ -374,6 +445,7 @@ function bindUndoBtn() {
     document.getElementById('undoConfirmModal')
   );
   undoBtn.addEventListener('click', function () {
+    resetPasswordField('undoConfirmModal');
     undoModal.show();
   });
 }
@@ -387,12 +459,15 @@ function bindRedoBtn() {
     document.getElementById('redoConfirmModal')
   );
   redoBtn.addEventListener('click', function () {
-    if (!redoBtn.disabled) redoModal.show();
+    if (!redoBtn.disabled) {
+      resetPasswordField('redoConfirmModal');
+      redoModal.show();
+    }
   });
 }
 
 document.addEventListener('DOMContentLoaded', function () {
-  // show flash messages passed from php on initial page load
+  // show flash messages on load
   if (academicPeriodConfig.success)
     showToast('success', academicPeriodConfig.success);
   if (academicPeriodConfig.error)
@@ -403,8 +478,45 @@ document.addEventListener('DOMContentLoaded', function () {
   bindUndoBtn();
   bindRedoBtn();
 
+  // clear password fields whenever any modal is hidden
+  ['advanceConfirmModal', 'undoConfirmModal', 'redoConfirmModal'].forEach(
+    (id) => {
+      const el = document.getElementById(id);
+      if (el)
+        el.addEventListener('hidden.bs.modal', () => resetPasswordField(id));
+    }
+  );
+
+  // show/hide password toggle for all password fields in modals
+  document.addEventListener('click', function (e) {
+    if (e.target.closest('.password-toggle-btn')) {
+      const btn = e.target.closest('.password-toggle-btn');
+      const input = btn
+        .closest('.input-group')
+        .querySelector('.password-verify-input');
+      const icon = btn.querySelector('i');
+      if (input.type === 'password') {
+        input.type = 'text';
+        icon.classList.replace('bi-eye', 'bi-eye-slash');
+      } else {
+        input.type = 'password';
+        icon.classList.replace('bi-eye-slash', 'bi-eye');
+      }
+    }
+  });
+
+  // enable submit button only when password field has value
+  document.addEventListener('input', function (e) {
+    if (e.target.classList.contains('password-verify-input')) {
+      const modal = e.target.closest('.modal');
+      if (!modal) return;
+      const submitBtn = modal.querySelector('.password-verify-submit');
+      if (submitBtn) submitBtn.disabled = e.target.value.trim() === '';
+    }
+  });
+
   // -------------------------------------------------------
-  // confirm advance
+  // confirm advance with password
   // -------------------------------------------------------
   const confirmAdvanceBtn = document.getElementById('confirmAdvanceBtn');
   if (confirmAdvanceBtn) {
@@ -413,6 +525,10 @@ document.addEventListener('DOMContentLoaded', function () {
       const advanceModal = bootstrap.Modal.getInstance(
         document.getElementById('advanceConfirmModal')
       );
+
+      // verify password first
+      const verified = await verifyPassword('advanceConfirmModal');
+      if (!verified) return;
 
       btn.disabled = true;
       btn.innerHTML =
@@ -447,7 +563,7 @@ document.addEventListener('DOMContentLoaded', function () {
   }
 
   // -------------------------------------------------------
-  // confirm undo
+  // confirm undo with password
   // -------------------------------------------------------
   const confirmUndoBtn = document.getElementById('confirmUndoBtn');
   if (confirmUndoBtn) {
@@ -456,6 +572,10 @@ document.addEventListener('DOMContentLoaded', function () {
       const undoModal = bootstrap.Modal.getInstance(
         document.getElementById('undoConfirmModal')
       );
+
+      // verify password first
+      const verified = await verifyPassword('undoConfirmModal');
+      if (!verified) return;
 
       btn.disabled = true;
       btn.innerHTML =
@@ -490,7 +610,7 @@ document.addEventListener('DOMContentLoaded', function () {
   }
 
   // -------------------------------------------------------
-  // confirm redo
+  // confirm redo with password
   // -------------------------------------------------------
   const confirmRedoBtn = document.getElementById('confirmRedoBtn');
   if (confirmRedoBtn) {
@@ -499,6 +619,10 @@ document.addEventListener('DOMContentLoaded', function () {
       const redoModal = bootstrap.Modal.getInstance(
         document.getElementById('redoConfirmModal')
       );
+
+      // verify password first
+      const verified = await verifyPassword('redoConfirmModal');
+      if (!verified) return;
 
       btn.disabled = true;
       btn.innerHTML =
@@ -532,7 +656,7 @@ document.addEventListener('DOMContentLoaded', function () {
   }
 
   // -------------------------------------------------------
-  // initialize period flow
+  // initialize period flow with year validation
   // -------------------------------------------------------
   const initializeBtn = document.getElementById('initializeBtn');
   if (initializeBtn) {
@@ -563,6 +687,42 @@ document.addEventListener('DOMContentLoaded', function () {
           'School year must be in YYYY-YYYY format (e.g. 2024-2025).'
         );
         return;
+      }
+
+      const parts = schoolYear.split('-');
+      const startYear = parseInt(parts[0]);
+      const endYear = parseInt(parts[1]);
+      const currentYear = new Date().getFullYear();
+
+      // hard block: end year must be start year + 1
+      if (endYear !== startYear + 1) {
+        showToast(
+          'danger',
+          `End year must be exactly one year after start year (e.g. ${startYear}-${
+            startYear + 1
+          }).`
+        );
+        return;
+      }
+
+      // hard block: future year
+      if (startYear > currentYear) {
+        showToast(
+          'danger',
+          `Cannot initialize a future school year. The current year is ${currentYear}.`
+        );
+        return;
+      }
+
+      // soft warning: past year — show warning in modal but allow proceed
+      const warningEl = document.getElementById('initializePastYearWarning');
+      if (startYear < currentYear) {
+        if (warningEl) {
+          warningEl.textContent = `Warning: ${schoolYear} is a past school year. Make sure this is intentional before proceeding.`;
+          warningEl.classList.remove('d-none');
+        }
+      } else {
+        if (warningEl) warningEl.classList.add('d-none');
       }
 
       initializeModal.show();
@@ -677,7 +837,6 @@ document.addEventListener('DOMContentLoaded', function () {
         showToast('success', data.message);
         if (data.grading_periods) updateGradingPeriods(data.grading_periods);
       } else {
-        // revert toggle on failure
         toggle.checked = !isLocked;
         showToast('danger', data.message || 'Failed to update lock status.');
       }
@@ -782,7 +941,7 @@ document.addEventListener('DOMContentLoaded', function () {
     });
   });
 
-  // auto-format school year input — inserts dash after 4 digits
+  // auto-format school year input
   const schoolYearInput = document.querySelector('input[name="school_year"]');
   if (schoolYearInput) {
     schoolYearInput.addEventListener('input', function () {
@@ -817,7 +976,6 @@ document.addEventListener('DOMContentLoaded', function () {
     const checked = document.querySelectorAll('.graduate-checkbox:checked');
     const countEl = document.getElementById('selectedGraduateCount');
     const btn = document.getElementById('graduateBtn');
-
     if (countEl) countEl.textContent = `${checked.length} selected`;
     if (btn) btn.disabled = checked.length === 0;
   }

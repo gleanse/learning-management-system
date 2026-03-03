@@ -756,16 +756,30 @@
                     <p class="fw-bold fs-5 text-primary mb-3">
                         <span id="advanceModalNextLabel"><?php if ($next_period): ?><?= htmlspecialchars($next_period) ?><?php endif; ?></span>
                     </p>
-                    <p class="mb-0 text-muted" style="font-size: 0.875rem;">
+                    <p class="mb-3 text-muted" style="font-size: 0.875rem;">
                         This will deactivate the current period and create payment records for all active students with a valid fee configuration. All grading periods must be locked before advancing.
                     </p>
+                    <!-- password confirmation -->
+                    <div class="border-top pt-3">
+                        <label class="form-label fw-semibold" style="font-size: 0.875rem;">
+                            <i class="bi bi-shield-lock-fill me-1 text-danger"></i>
+                            Enter your password to confirm
+                        </label>
+                        <div class="input-group">
+                            <input type="password" class="form-control password-verify-input" placeholder="Your password">
+                            <button type="button" class="btn btn-outline-secondary password-toggle-btn" tabindex="-1">
+                                <i class="bi bi-eye"></i>
+                            </button>
+                        </div>
+                        <div class="text-danger mt-1 d-none password-verify-error" style="font-size: 0.813rem;"></div>
+                    </div>
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
                         <i class="bi bi-x-circle"></i>
                         Cancel
                     </button>
-                    <button type="button" class="btn btn-primary" id="confirmAdvanceBtn">
+                    <button type="button" class="btn btn-primary password-verify-submit" id="confirmAdvanceBtn" disabled>
                         <i class="bi bi-skip-forward-fill"></i>
                         Confirm Advance
                     </button>
@@ -789,6 +803,9 @@
                     <p class="mb-0 text-muted" style="font-size: 0.875rem;">
                         This will initialize the first academic period and create payment records for all active students with a valid fee configuration. This action cannot be undone.
                     </p>
+                    <div class="alert alert-warning d-none mb-0 mt-2" id="initializePastYearWarning" style="font-size: 0.813rem;">
+                        <i class="bi bi-exclamation-triangle-fill me-2"></i>
+                    </div>
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
@@ -824,9 +841,23 @@
                         <li>The previous period will be reactivated.</li>
                         <li>Grading periods of the previous semester will be unlocked.</li>
                     </ul>
-                    <div class="alert alert-warning mb-0" style="font-size: 0.813rem;">
+                    <div class="alert alert-warning mb-3" style="font-size: 0.813rem;">
                         <i class="bi bi-exclamation-triangle-fill me-2"></i>
                         Undo is blocked if grades have already been submitted or if the school year has changed.
+                    </div>
+                    <!-- password confirmation -->
+                    <div class="border-top pt-3">
+                        <label class="form-label fw-semibold" style="font-size: 0.875rem;">
+                            <i class="bi bi-shield-lock-fill me-1 text-danger"></i>
+                            Enter your password to confirm
+                        </label>
+                        <div class="input-group">
+                            <input type="password" class="form-control password-verify-input" placeholder="Your password">
+                            <button type="button" class="btn btn-outline-secondary password-toggle-btn" tabindex="-1">
+                                <i class="bi bi-eye"></i>
+                            </button>
+                        </div>
+                        <div class="text-danger mt-1 d-none password-verify-error" style="font-size: 0.813rem;"></div>
                     </div>
                 </div>
                 <div class="modal-footer">
@@ -834,7 +865,7 @@
                         <i class="bi bi-x-circle"></i>
                         Cancel
                     </button>
-                    <button type="button" class="btn btn-warning" id="confirmUndoBtn">
+                    <button type="button" class="btn btn-warning password-verify-submit" id="confirmUndoBtn" disabled>
                         <i class="bi bi-arrow-counterclockwise"></i>
                         Confirm Undo
                     </button>
@@ -855,16 +886,30 @@
                     <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                 </div>
                 <div class="modal-body">
-                    <p class="mb-0 text-muted" style="font-size: 0.875rem;">
+                    <p class="mb-3 text-muted" style="font-size: 0.875rem;">
                         This will redo the previously undone advancement. Payment records will be recreated for students that don't have one yet. All grading periods must be locked before redoing.
                     </p>
+                    <!-- password confirmation -->
+                    <div class="border-top pt-3">
+                        <label class="form-label fw-semibold" style="font-size: 0.875rem;">
+                            <i class="bi bi-shield-lock-fill me-1 text-danger"></i>
+                            Enter your password to confirm
+                        </label>
+                        <div class="input-group">
+                            <input type="password" class="form-control password-verify-input" placeholder="Your password">
+                            <button type="button" class="btn btn-outline-secondary password-toggle-btn" tabindex="-1">
+                                <i class="bi bi-eye"></i>
+                            </button>
+                        </div>
+                        <div class="text-danger mt-1 d-none password-verify-error" style="font-size: 0.813rem;"></div>
+                    </div>
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
                         <i class="bi bi-x-circle"></i>
                         Cancel
                     </button>
-                    <button type="button" class="btn btn-primary" id="confirmRedoBtn">
+                    <button type="button" class="btn btn-primary password-verify-submit" id="confirmRedoBtn" disabled>
                         <i class="bi bi-arrow-clockwise"></i>
                         Confirm Redo
                     </button>

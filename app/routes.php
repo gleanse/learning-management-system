@@ -402,6 +402,17 @@ if ($page === 'ajax_save_grading_periods' && $method === 'POST') {
     exit();
 }
 
+// ajax: verify admin password for critical actions
+if ($page === 'ajax_verify_admin_password' && $method === 'POST') {
+    if (!isLoggedIn() || !isAdmin()) {
+        header('Location: index.php?page=login');
+        exit();
+    }
+    $controller = new AcademicPeriodController();
+    $controller->ajaxVerifyPassword();
+    exit();
+}
+
 // FEE CONFIG ROUTES (admin only)
 // fee config page
 if ($page === 'fee_config' && $method === 'GET') {

@@ -85,13 +85,29 @@ class AcademicPeriodController
 
         $school_year = trim($_POST['school_year'] ?? '');
         $semester    = trim($_POST['semester']    ?? '');
-        $errors      = [];
+        $errors = [];
 
         if (empty($school_year)) $errors['school_year'] = 'School year is required.';
         if (empty($semester))    $errors['semester']    = 'Semester is required.';
 
         if (!empty($school_year) && !preg_match('/^\d{4}-\d{4}$/', $school_year)) {
             $errors['school_year'] = 'School year must be in YYYY-YYYY format.';
+        }
+
+        // year range validation
+        if (empty($errors['school_year']) && !empty($school_year)) {
+            $parts        = explode('-', $school_year);
+            $start_year   = (int) $parts[0];
+            $end_year     = (int) $parts[1];
+            $current_year = (int) date('Y');
+
+            if ($end_year !== $start_year + 1) {
+                $errors['school_year'] = "End year must be exactly one year after start year (e.g. {$start_year}-" . ($start_year + 1) . ').';
+            }
+
+            if ($start_year > $current_year) {
+                $errors['school_year'] = "Cannot initialize a future school year. The current year is {$current_year}.";
+            }
         }
 
         if (!empty($errors)) {
@@ -555,5 +571,29 @@ class AcademicPeriodController
             'next_period',
             'can_redo'
         );
+    }
+
+    // ajax: verify current admin password before critical actions
+    public function ajaxVerifyPassword()
+    {
+        $this->requireAdmin();
+
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            $this->jsonResponse(['success' => false, 'message' => 'Invalid request method.'], 405);
+        }
+
+        $password = trim($_POST['password'] ?? '');
+
+        if (empty($password)) {
+            $this->jsonResponse(['success' => false, 'message' => 'Password is required.'], 422);
+        }
+
+        $user = $this->academic_model->getUserPasswordById($_SESSION['user_id']);
+
+        if (!$user || !password_verify($password, $user['password'])) {
+            $this->jsonResponse(['success' => false, 'message' => 'Incorrect password. Please try again.'], 401);
+        }
+
+        $this->jsonResponse(['success' => true]);
     }
 }
