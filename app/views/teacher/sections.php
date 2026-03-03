@@ -32,6 +32,12 @@
             <ul class="sidenav-menu">
                 <li class="nav-item"><a class="nav-link" href="index.php?page=teacher_dashboard"><i class="bi bi-house-door-fill"></i><span>Dashboard</span></a></li>
                 <li class="nav-item"><a class="nav-link active" href="index.php?page=grading"><i class="bi bi-journal-text"></i><span>Grading Management</span></a></li>
+                <li class="nav-item">
+                    <a class="nav-link" href="index.php?page=teacher_schedule">
+                        <i class="bi bi-calendar-week-fill"></i>
+                        <span>My Schedule</span>
+                    </a>
+                </li>
                 <li class="nav-item"><a class="nav-link" href="index.php?page=logout"><i class="bi bi-box-arrow-right"></i><span>Logout</span></a></li>
             </ul>
         </div>

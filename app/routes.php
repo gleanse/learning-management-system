@@ -21,6 +21,7 @@ require_once __DIR__ . '/controllers/AnnouncementController.php';
 require_once __DIR__ . '/controllers/ChangePasswordController.php';
 require_once __DIR__ . '/controllers/ReportController.php';
 require_once __DIR__ . '/controllers/ActivityLogController.php';
+require_once __DIR__ . '/controllers/ScheduleViewController.php';
 
 $page = $_GET['page'] ?? 'login';
 $method = $_SERVER['REQUEST_METHOD'];
@@ -1010,6 +1011,18 @@ if ($page === 'teacher_dashboard' && $method === 'GET') {
     exit();
 }
 
+// teacher weekly schedule
+if ($page === 'teacher_schedule' && $method === 'GET') {
+    if (!isLoggedIn() || !isTeacher()) {
+        header('Location: index.php?page=login');
+        exit();
+    }
+
+    $controller = new ScheduleViewController();
+    $controller->showTeacherSchedule();
+    exit();
+}
+
 // GRADING MANAGEMENT ROUTES (teacher only)
 if ($page === 'grading' && $method === 'GET') {
     if (!isLoggedIn() || !isTeacher()) {
@@ -1075,6 +1088,18 @@ if ($page === 'student_dashboard' && $method === 'GET') {
 
     $controller = new StudentController();
     $controller->showStudentDashboard();
+    exit();
+}
+
+// student weekly schedule
+if ($page === 'student_schedule' && $method === 'GET') {
+    if (!isLoggedIn() || !isStudent()) {
+        header('Location: index.php?page=login');
+        exit();
+    }
+
+    $controller = new ScheduleViewController();
+    $controller->showStudentSchedule();
     exit();
 }
 
